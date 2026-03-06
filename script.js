@@ -40,11 +40,22 @@ function contienePalabraProhibida(t) {
 // ── PANTALLA DE CARGA — a prueba de fallos ────
 function ocultarLoader() {
   const el = document.getElementById('loaderScreen');
-  if (el) { el.classList.add('hidden'); }
+  if (el) {
+    el.style.transition = 'opacity 0.5s ease';
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 500);
+  }
+  if (window._loaderTimer) clearTimeout(window._loaderTimer);
 }
-// Se oculta cuando carga la página, con un máximo de 3s por si algo falla
-window.addEventListener('load', () => setTimeout(ocultarLoader, 1600));
-setTimeout(ocultarLoader, 3000); // fallback absoluto
+
+// Ocultar en cuanto el DOM esté listo (no esperar imágenes/videos)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setTimeout(ocultarLoader, 1400));
+} else {
+  setTimeout(ocultarLoader, 400); // DOM ya estaba listo
+}
+// Fallback absoluto: máximo 5 segundos pase lo que pase
+setTimeout(ocultarLoader, 5000);
 
 // ── ESTADO GLOBAL ─────────────────────────────
 let currentUser  = null;

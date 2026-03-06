@@ -9,9 +9,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <!-- Fallback: oculta el loader máximo en 4s aunque el módulo JS falle -->
   <script>
-    window._loaderTimer = setTimeout(function() {
+    // Ocultar loader apenas cargue el DOM
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        var el = document.getElementById('loaderScreen');
+        if (el) { el.style.opacity='0'; el.style.transition='opacity 0.5s'; setTimeout(function(){ el.style.display='none'; }, 500); }
+      }, 1600);
+    });
+    // Fallback absoluto a los 4s
+    setTimeout(function() {
       var el = document.getElementById('loaderScreen');
-      if (el) { el.style.opacity = '0'; el.style.visibility = 'hidden'; }
+      if (el) { el.style.opacity='0'; el.style.display='none'; }
     }, 4000);
   </script>
 </head>
