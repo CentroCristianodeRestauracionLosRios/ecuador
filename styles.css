@@ -2249,21 +2249,21 @@ input[readonly] {
 .admin-img-btns {
   position: absolute; top: 6px; right: 6px; z-index: 10;
   display: flex; gap: 4px;
-  opacity: 0; transition: opacity 0.2s;
+  opacity: 1;
 }
-.gallery-item:hover .admin-img-btns { opacity: 1; }
 .admin-img-btns button {
   background: rgba(0,0,0,0.75); border: none; border-radius: 6px;
   color: #fff; font-size: 0.85rem; padding: 5px 8px;
   cursor: pointer; line-height: 1; transition: background 0.2s;
+  backdrop-filter: blur(4px);
 }
-.admin-img-btns .btn-delete-media:hover { background: rgba(220,38,38,0.9); }
-.admin-img-btns .btn-mover-media:hover  { background: rgba(37,99,235,0.9); }
+.admin-img-btns button:first-child:hover { background: rgba(220,38,38,0.9); }
+.admin-img-btns button:last-child:hover  { background: rgba(37,99,235,0.9); }
 
 /* En móvil: siempre visibles */
 @media (hover: none) {
-  .admin-img-btns       { opacity: 1; }
-  .admin-media-btns     { opacity: 1; }
+  .admin-img-btns   { opacity: 1; }
+  .admin-media-btns { opacity: 1; }
 }
 
 /* Botones admin en videos */

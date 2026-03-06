@@ -750,9 +750,10 @@ window.borrarVideo = async (key) => {
 
 // ── CARGAR IMÁGENES FIREBASE ──────────────────
 // ── CARGAR IMÁGENES FIREBASE ──────────────────
-let _imagenesCache = {}; // cache para re-render sin re-fetch
+let _imagenesCache = {};
 
 function reRenderGaleria() {
+  // 1. Re-renderizar imágenes Firebase
   document.querySelectorAll('.gallery-item.firebase-img').forEach(el => el.remove());
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
@@ -766,12 +767,29 @@ function reRenderGaleria() {
       <div class="overlay"><span>${img.caption||'Ver imagen'}</span></div>
       ${isAdmin ? `
         <div class="admin-img-btns">
-          <button class="btn-mini btn-delete-media" onclick="event.stopPropagation();borrarImagen('${key}')" title="Borrar">🗑️</button>
-          <button class="btn-mini btn-mover-media"  onclick="event.stopPropagation();abrirMoverMedia('${key}','imagen')" title="Asignar ministerio">📂</button>
+          <button onclick="event.stopPropagation();borrarImagen('${key}')" title="Borrar">🗑️</button>
+          <button onclick="event.stopPropagation();abrirMoverMedia('${key}','imagen')" title="Asignar ministerio">📂</button>
         </div>` : ''}`;
     div.onclick = () => openModalUrl(img.url, img.caption||'', '.gallery-item');
     grid.appendChild(div);
   });
+
+  // 2. Agregar/quitar botones admin en imágenes locales (hardcodeadas en HTML)
+  document.querySelectorAll('.gallery-item:not(.firebase-img)').forEach(item => {
+    // quitar botones viejos
+    item.querySelectorAll('.admin-img-btns').forEach(b => b.remove());
+    if (!isAdmin) return;
+    const imgEl  = item.querySelector('img');
+    const url    = imgEl?.getAttribute('data-src') || imgEl?.src || '';
+    const caption = imgEl?.alt || '';
+    // Para imágenes locales no hay key en Firebase — solo ofrecemos mover (subirla)
+    const btns = document.createElement('div');
+    btns.className = 'admin-img-btns';
+    btns.innerHTML = `
+      <button onclick="event.stopPropagation();subirImagenLocal('${url}','${caption.replace(/'/g,"\\'")}')" title="Subir a Firebase para gestionar">📤</button>`;
+    item.appendChild(btns);
+  });
+
   document.querySelectorAll('.gallery-item:not(.firebase-img) img').forEach(img => {
     if (!img.getAttribute('data-src')) img.setAttribute('data-src', img.src);
   });
@@ -782,6 +800,24 @@ onValue(ref(db,'imagenes'), (snap) => {
   _imagenesCache = snap.val() || {};
   reRenderGaleria();
 });
+
+// Subir imagen local a Firebase para poder gestionarla
+window.subirImagenLocal = async (url, caption) => {
+  if (!confirm(`¿Subir "${caption}" a Firebase para poder asignarle ministerio o borrarla?`)) return;
+  try {
+    // Descargar la imagen local y subirla a Cloudinary
+    const res    = await fetch(url);
+    const blob   = await res.blob();
+    const form   = new FormData();
+    form.append('file', blob, url);
+    form.append('upload_preset', 'ccrlr_preset');
+    const up   = await fetch('https://api.cloudinary.com/v1_1/dqxmetnvm/image/upload', {method:'POST', body:form});
+    const data = await up.json();
+    if (!data.secure_url) throw new Error('Error Cloudinary');
+    await push(ref(db,'imagenes'), { url:data.secure_url, publicId:data.public_id, caption, fecha:serverTimestamp() });
+    alert(`✅ "${caption}" subida a Firebase. Ahora puedes asignarle ministerio o borrarla.\nPuedes eliminar el archivo local del repositorio cuando quieras.`);
+  } catch(e) { alert('❌ Error: ' + e.message); }
+};
 
 // ── CARGAR LIBROS ─────────────────────────────
 onValue(ref(db,'libros'), (snap) => {
