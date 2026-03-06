@@ -66,7 +66,12 @@ onAuthStateChanged(auth, (user) => {
 
   actualizarEstadoChat(user);
   actualizarMenuUsuario(user);
-  if (isAdmin) cargarUsuariosAdmin();
+  if (isAdmin) {
+    cargarUsuariosAdmin();
+    reRenderGaleria(); // mostrar botones admin en imágenes ya cargadas
+  } else {
+    reRenderGaleria(); // ocultar botones si cerró sesión
+  }
 });
 
 function actualizarEstadoChat(user) {
@@ -744,13 +749,15 @@ window.borrarVideo = async (key) => {
 };
 
 // ── CARGAR IMÁGENES FIREBASE ──────────────────
-onValue(ref(db,'imagenes'), (snap) => {
+// ── CARGAR IMÁGENES FIREBASE ──────────────────
+let _imagenesCache = {}; // cache para re-render sin re-fetch
+
+function reRenderGaleria() {
   document.querySelectorAll('.gallery-item.firebase-img').forEach(el => el.remove());
   const grid = document.getElementById('galleryGrid');
-  const data = snap.val();
-  if (!data) return;
-  Object.entries(data).reverse().forEach(([key, img]) => {
-    if (img.ministerio) return; // imágenes de ministerio NO van a galería general
+  if (!grid) return;
+  Object.entries(_imagenesCache).reverse().forEach(([key, img]) => {
+    if (img.ministerio) return;
     const div = document.createElement('div');
     div.className = 'gallery-item firebase-img';
     div.dataset.key = key;
@@ -769,6 +776,11 @@ onValue(ref(db,'imagenes'), (snap) => {
     if (!img.getAttribute('data-src')) img.setAttribute('data-src', img.src);
   });
   observeCards();
+}
+
+onValue(ref(db,'imagenes'), (snap) => {
+  _imagenesCache = snap.val() || {};
+  reRenderGaleria();
 });
 
 // ── CARGAR LIBROS ─────────────────────────────

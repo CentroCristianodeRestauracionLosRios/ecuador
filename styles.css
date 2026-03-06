@@ -2244,12 +2244,27 @@ input[readonly] {
 .btn-edit-evento:hover  { border-color: var(--accent); color: var(--accent); }
 .btn-mover-media:hover  { border-color: #4285f4; color: #4285f4; }
 
+
 /* Botones admin en galería de imágenes */
 .admin-img-btns {
-  position: absolute; top: 8px; right: 8px; z-index: 5;
-  display: flex; gap: 5px; opacity: 0; transition: opacity 0.2s;
+  position: absolute; top: 6px; right: 6px; z-index: 10;
+  display: flex; gap: 4px;
+  opacity: 0; transition: opacity 0.2s;
 }
 .gallery-item:hover .admin-img-btns { opacity: 1; }
+.admin-img-btns button {
+  background: rgba(0,0,0,0.75); border: none; border-radius: 6px;
+  color: #fff; font-size: 0.85rem; padding: 5px 8px;
+  cursor: pointer; line-height: 1; transition: background 0.2s;
+}
+.admin-img-btns .btn-delete-media:hover { background: rgba(220,38,38,0.9); }
+.admin-img-btns .btn-mover-media:hover  { background: rgba(37,99,235,0.9); }
+
+/* En móvil: siempre visibles */
+@media (hover: none) {
+  .admin-img-btns       { opacity: 1; }
+  .admin-media-btns     { opacity: 1; }
+}
 
 /* Botones admin en videos */
 .admin-media-btns {
