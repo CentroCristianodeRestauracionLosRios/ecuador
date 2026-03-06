@@ -37,25 +37,17 @@ function contienePalabraProhibida(t) {
   return PALABRAS_PROHIBIDAS.some(p => new RegExp(`\\b${p}\\b`,'i').test(t));
 }
 
-// ── PANTALLA DE CARGA — a prueba de fallos ────
+// ── PANTALLA DE CARGA ─────────────────────────
 function ocultarLoader() {
   const el = document.getElementById('loaderScreen');
-  if (el) {
-    el.style.transition = 'opacity 0.5s ease';
-    el.style.opacity = '0';
-    setTimeout(() => { el.style.display = 'none'; }, 500);
-  }
+  if (!el) return;
+  el.classList.add('hidden');
   if (window._loaderTimer) clearTimeout(window._loaderTimer);
 }
-
-// Ocultar en cuanto el DOM esté listo (no esperar imágenes/videos)
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(ocultarLoader, 1400));
-} else {
-  setTimeout(ocultarLoader, 400); // DOM ya estaba listo
-}
-// Fallback absoluto: máximo 5 segundos pase lo que pase
-setTimeout(ocultarLoader, 5000);
+// Ocultar en cuanto el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => setTimeout(ocultarLoader, 1200));
+// Fallback absoluto
+window._loaderTimer = setTimeout(ocultarLoader, 3500);
 
 // ── ESTADO GLOBAL ─────────────────────────────
 let currentUser  = null;
