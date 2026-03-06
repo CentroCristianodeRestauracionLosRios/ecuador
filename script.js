@@ -753,9 +753,11 @@ window.borrarVideo = async (key) => {
 let _imagenesCache = {};
 
 function reRenderGaleria() {
+  // ── Imágenes Firebase ──
   document.querySelectorAll('.gallery-item.firebase-img').forEach(el => el.remove());
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
+
   Object.entries(_imagenesCache).reverse().forEach(([key, img]) => {
     if (img.ministerio) return;
     const div = document.createElement('div');
@@ -772,6 +774,25 @@ function reRenderGaleria() {
     div.onclick = () => openModalUrl(img.url, img.caption||'', '.gallery-item');
     grid.appendChild(div);
   });
+
+  // ── Imágenes locales: agregar/quitar botón 📤 según estado admin ──
+  document.querySelectorAll('.gallery-item.local-img').forEach(item => {
+    item.querySelectorAll('.admin-img-btns').forEach(b => b.remove());
+    // click para abrir modal
+    const imgEl  = item.querySelector('img');
+    const url    = imgEl?.getAttribute('data-src') || imgEl?.src || '';
+    const caption = item.dataset.caption || imgEl?.alt || '';
+    item.onclick = () => openModalUrl(url, caption, '.gallery-item');
+
+    if (!isAdmin) return;
+    const btns = document.createElement('div');
+    btns.className = 'admin-img-btns';
+    btns.innerHTML = `
+      <button onclick="event.stopPropagation();subirLocalAFirebase('${url}','${caption.replace(/'/g,"\\'")}')"
+        title="Subir a Firebase (para borrar o asignar ministerio)">📤</button>`;
+    item.appendChild(btns);
+  });
+
   observeCards();
 }
 
@@ -779,6 +800,23 @@ onValue(ref(db,'imagenes'), (snap) => {
   _imagenesCache = snap.val() || {};
   reRenderGaleria();
 });
+
+// Subir imagen local a Cloudinary + Firebase para poder gestionarla
+window.subirLocalAFirebase = async (url, caption) => {
+  if (!confirm(`¿Subir "${caption}" a Firebase?\nLuego podrás borrarla o asignarle un ministerio, y eliminar el archivo .jpg del repositorio.`)) return;
+  try {
+    const res  = await fetch(url);
+    const blob = await res.blob();
+    const form = new FormData();
+    form.append('file', blob, url.split('/').pop());
+    form.append('upload_preset', 'ccrlr_preset');
+    const up   = await fetch('https://api.cloudinary.com/v1_1/dqxmetnvm/image/upload', {method:'POST', body:form});
+    const data = await up.json();
+    if (!data.secure_url) throw new Error('Error Cloudinary: ' + (data.error?.message||''));
+    await push(ref(db,'imagenes'), { url:data.secure_url, publicId:data.public_id, caption, fecha:serverTimestamp() });
+    alert(`✅ "${caption}" subida exitosamente.\nYa aparece en Firebase con botones 🗑️ y 📂.\nPuedes borrar el archivo ${url} del repositorio cuando quieras.`);
+  } catch(e) { alert('❌ Error: ' + e.message); }
+};
 
 // ── CARGAR LIBROS ─────────────────────────────
 onValue(ref(db,'libros'), (snap) => {
