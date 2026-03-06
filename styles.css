@@ -2548,3 +2548,97 @@ body.tema-claro .footer { background: #0f1f30; }
 
 /* Sección alt */
 body.tema-claro .section:nth-child(even) { background: var(--section-alt-bg); }
+
+/* ===== TEMA CLARO — ICONOS NAVBAR ===== */
+body.tema-claro .nav-icon {
+  filter: none;
+  opacity: 0.75;
+}
+body.tema-claro .nav-icon-link:hover .nav-icon {
+  filter: none;
+  opacity: 1;
+}
+body.tema-claro .yo-icon {
+  filter: none;
+  opacity: 0.8;
+}
+body.tema-claro .nav-logo {
+  filter: none;
+}
+
+/* ===== MODAL MINISTERIO — SECCIONES ===== */
+.min-section-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 20px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--input-border);
+  width: 100%;
+}
+
+.min-imgs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+/* Botones admin sobre imágenes del modal */
+.min-img-item { position: relative; }
+.min-admin-btns {
+  position: absolute; top: 6px; right: 6px;
+  display: flex; gap: 4px;
+  opacity: 0; transition: opacity 0.2s; z-index: 5;
+}
+.min-img-item:hover .min-admin-btns { opacity: 1; }
+.min-admin-btns button {
+  background: rgba(0,0,0,0.7); border: none; border-radius: 5px;
+  color: #fff; font-size: 0.8rem; padding: 4px 7px;
+  cursor: pointer; line-height: 1;
+}
+.min-admin-btns button:hover { background: rgba(230,57,70,0.85); }
+
+/* Tarjeta de evento dentro del modal ministerio */
+.min-evento-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 10px; padding: 14px; margin-bottom: 10px;
+  width: 100%;
+}
+.min-evento-fecha {
+  background: #001f3f; color: #fff; border-radius: 8px;
+  min-width: 48px; text-align: center; padding: 8px 6px;
+  display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+}
+.min-evento-fecha span { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+.min-evento-fecha small { font-size: 0.65rem; opacity: 0.8; }
+.min-evento-info { flex: 1; min-width: 0; }
+.min-evento-info strong { display: block; color: var(--text); font-size: 0.95rem; margin-bottom: 4px; }
+.min-evento-info p { font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+.min-evento-info span { font-size: 0.78rem; color: var(--muted); display: block; margin-top: 2px; }
+.min-admin-btns-col {
+  display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+}
+.min-admin-btns-col button {
+  background: rgba(255,255,255,0.06); border: 1px solid var(--input-border);
+  border-radius: 5px; color: var(--muted); font-size: 0.78rem;
+  padding: 4px 7px; cursor: pointer; line-height: 1;
+  transition: all 0.2s;
+}
+.min-admin-btns-col button:hover { background: rgba(244,197,66,0.15); color: var(--accent); }
+
+/* Video dentro del modal ministerio */
+.min-video-card {
+  background: var(--input-bg); border: 1px solid var(--input-border);
+  border-radius: 10px; overflow: hidden; margin-bottom: 12px;
+  width: 100%; position: relative;
+}
+.min-video-card video { width: 100%; display: block; max-height: 220px; }
+.min-video-info { padding: 10px 14px; }
+.min-video-info strong { color: var(--text); font-size: 0.9rem; }
+.min-video-info p { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
+.min-video-card .min-admin-btns { top: 8px; right: 8px; opacity: 1; }
