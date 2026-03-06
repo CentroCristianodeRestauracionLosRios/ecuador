@@ -12,9 +12,6 @@ import {
 import {
   getDatabase, ref, push, onValue, serverTimestamp, remove, update, get
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-
 
 // ── CONFIGURACIÓN FIREBASE ────────────────────
 const firebaseConfig = {
@@ -28,10 +25,9 @@ const firebaseConfig = {
   measurementId: "G-P71V26NFRE"
 };
 
-const app     = initializeApp(firebaseConfig);
-const auth    = getAuth(app);
-const db      = getDatabase(app);
-const storage = getStorage(app);
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
 
 const ADMIN_EMAIL = "haroldolmedoanchundia@gmail.com";
 
@@ -41,10 +37,14 @@ function contienePalabraProhibida(t) {
   return PALABRAS_PROHIBIDAS.some(p => new RegExp(`\\b${p}\\b`,'i').test(t));
 }
 
-// ── PANTALLA DE CARGA ─────────────────────────
-window.addEventListener('load', () => {
-  setTimeout(() => document.getElementById('loaderScreen')?.classList.add('hidden'), 1900);
-});
+// ── PANTALLA DE CARGA — a prueba de fallos ────
+function ocultarLoader() {
+  const el = document.getElementById('loaderScreen');
+  if (el) { el.classList.add('hidden'); }
+}
+// Se oculta cuando carga la página, con un máximo de 3s por si algo falla
+window.addEventListener('load', () => setTimeout(ocultarLoader, 1600));
+setTimeout(ocultarLoader, 3000); // fallback absoluto
 
 // ── ESTADO GLOBAL ─────────────────────────────
 let currentUser  = null;

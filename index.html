@@ -7,6 +7,13 @@
   <link rel="icon" type="image/png" href="ICONO.png" />
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <!-- Fallback: oculta el loader máximo en 4s aunque el módulo JS falle -->
+  <script>
+    window._loaderTimer = setTimeout(function() {
+      var el = document.getElementById('loaderScreen');
+      if (el) { el.style.opacity = '0'; el.style.visibility = 'hidden'; }
+    }, 4000);
+  </script>
 </head>
 <body>
 
@@ -456,7 +463,7 @@
       <img src="LOGO_SIN_FONDO.png" alt="CCRLR" class="yo-logo"/>
       <div class="yo-iglesia-info">
         <h2>Centro Cristiano de Restauración Los Ríos</h2>
-        <p>📍 Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fé, Ecuador</p>
+        <p>📍 Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador</p>
         <p>✉️ <a href="/cdn-cgi/l/email-protection#adc9c8dfc8ded9ccd8dfcccec4c2c3ceedcac0ccc4c183cec2c0"><span class="__cf_email__" data-cfemail="b0d4d5c2d5c3c4d1c5c2d1d3d9dfded3f0d7ddd1d9dc9ed3dfdd">[email&#160;protected]</span></a></p>
         <div class="yo-redes">
           <a href="https://www.facebook.com/people/Centro-Cristiano-de-Restauraci%C3%B3n-Los-R%C3%ADos/61557973191098/" target="_blank" class="yo-red fb">
@@ -527,4 +534,17 @@
       <div class="ministerio-header">
         <img id="minIcon" src="" alt="" class="min-logo"/>
         <div>
-          
+                    <h2 id="minNombre"></h2>
+          <p id="minCategoria"></p>
+        </div>
+      </div>
+      <div class="min-gallery" id="minGallery">
+        <p class="loading-txt">Cargando imágenes...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVICE WORKER & SCRIPTS -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
