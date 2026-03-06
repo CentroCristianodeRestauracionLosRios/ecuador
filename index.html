@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Centro Cristiano de Restauración Los Ríos</title>
+  <link rel="icon" type="image/png" href="ICONO.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- PANTALLA DE CARGA -->
+  <div class="loader-screen" id="loaderScreen">
+    <img src="LOGO_SIN_FONDO.png" alt="Centro Cristiano de Restauración Los Ríos" class="loader-logo"/>
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="#inicio" title="Inicio">
+        <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo"/>
+      </a>
+    </div>
+    <ul class="nav-links">
+      <li>
+        <a href="#inicio" class="nav-icon-link" title="Inicio">
+          <img src="casa.png" class="nav-icon" alt="Inicio"/>
+          <span>Inicio</span>
+        </a>
+      </li>
+      <li>
+        <a href="#imagenes" class="nav-icon-link" title="Imágenes">
+          <span>Imágenes</span>
+        </a>
+      </li>
+      <li>
+        <a href="#libros" class="nav-icon-link" title="Inspiración">
+          <img src="inspiracion.png" class="nav-icon" alt="Inspiración"/>
+          <span>Inspiración</span>
+        </a>
+      </li>
+      <li>
+        <a href="#videos" class="nav-icon-link" title="Prédicas">
+          <img src="predicas.png" class="nav-icon" alt="Prédicas"/>
+          <span>Prédicas</span>
+        </a>
+      </li>
+      <li>
+        <a href="#calendario" class="nav-icon-link" title="Calendario">
+          <img src="calendario.png" class="nav-icon" alt="Calendario"/>
+          <span>Calendario</span>
+        </a>
+      </li>
+      <li>
+        <a href="#ubicacion" class="nav-icon-link" title="Ubicación">
+          <img src="direccion.png" class="nav-icon" alt="Ubicación"/>
+          <span>Ubicación</span>
+        </a>
+      </li>
+      <li>
+        <a href="#chat-anchor" class="nav-icon-link" onclick="abrirChat()" title="Punto de Encuentro">
+          <img src="CHAT.png" class="nav-icon" alt="Chat"/>
+          <span>Punto de Encuentro</span>
+        </a>
+      </li>
+    </ul>
+    <div class="nav-admin">
+      <div class="user-menu-wrap hidden" id="btnUsuarioMenu">
+        <button class="btn-user-menu" onclick="toggleUserMenu()">
+          👤 <span id="userEmailLabel"></span> ▾
+        </button>
+        <div class="user-dropdown hidden" id="userDropdown">
+          <button onclick="abrirCambiarContrasena()">🔑 Cambiar contraseña</button>
+          <button onclick="chatUserLogout()">🚪 Cerrar sesión</button>
+        </div>
+      </div>
+      <button class="btn-admin" id="btnAdminLogin" onclick="toggleLoginPanel()">Admin</button>
+      <button class="btn-admin btn-logout hidden" id="btnLogout" onclick="adminLogout()">Salir</button>
+      <button class="btn-tema" id="btnTema" onclick="toggleTema()" title="Cambiar tema">
+        <span id="temaIcono">🌙</span>
+        <span id="temaLabel">Claro</span>
+      </button>
+      <button class="btn-yo" onclick="togglePanelYo()" title="Sobre nosotros">
+        <img src="Yo.png" alt="Nosotros" class="yo-icon"/>
+      </button>
+    </div>
+  </nav>
+
+  <!-- PANEL LOGIN ADMIN -->
+  <div class="login-panel hidden" id="loginPanel">
+    <div class="login-box">
+      <h3>Acceso Administrador</h3>
+      <input type="email" id="loginEmail" placeholder="Correo electrónico"/>
+      <input type="password" id="loginPassword" placeholder="Contraseña"/>
+      <button onclick="adminLogin()">Ingresar</button>
+      <p class="login-error hidden" id="loginError">Correo o contraseña incorrectos</p>
+      <button class="btn-cancel" onclick="toggleLoginPanel()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- PANEL ADMIN -->
+  <div class="admin-panel hidden" id="adminPanel">
+    <div class="admin-inner">
+      <h3>Panel de Administración</h3>
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-img')">🖼 Imagen</button>
+        <button class="tab-btn" onclick="switchTab('tab-libro')">📚 Libro</button>
+        <button class="tab-btn" onclick="switchTab('tab-video')">🎬 Prédica</button>
+        <button class="tab-btn" onclick="switchTab('tab-inspiracion')">✨ Inspiración</button>
+        <button class="tab-btn" onclick="switchTab('tab-evento')">📅 Evento</button>
+        <button class="tab-btn" onclick="switchTab('tab-chat')">💬 Mensaje</button>
+        <button class="tab-btn" onclick="switchTab('tab-usuarios')">👥 Usuarios</button>
+      </div>
+      <div class="tab-content active" id="tab-img">
+        <label>Selecciona una imagen:</label>
+        <input type="file" id="imgFile" accept="image/*"/>
+        <input type="text" id="imgCaption" placeholder="Descripción (opcional)"/>
+        <label style="color:var(--muted);font-size:0.85rem;margin-top:4px;">Ministerio (opcional):</label>
+        <select id="imgMinisterio">
+          <option value="">— Galería general —</option>
+          <option value="jovenes">ECORESTAURACIÓN — Jóvenes</option>
+          <option value="alabanza">HEREDAD — Alabanza</option>
+          <option value="danza">HIJAS DE SION — Danza</option>
+          <option value="mujeres">MUJERES CON PROPÓSITO — Damas</option>
+          <option value="ninos">FORJADORES DEL MAÑANA — Niños</option>
+          <option value="teatro">Ministerio de Teatro</option>
+          <option value="ujieres">Ministerio de Ujieres</option>
+        </select>
+        <button onclick="publicarImagen()">Publicar Imagen</button>
+        <p class="admin-msg" id="msgImg"></p>
+      </div>
+      <div class="tab-content" id="tab-libro">
+        <input type="text" id="libroTitulo" placeholder="Título del libro"/>
+        <input type="text" id="libroAutor" placeholder="Autor"/>
+        <textarea id="libroDesc" placeholder="Descripción breve..."></textarea>
+        <input type="text" id="libroUrl" placeholder="Enlace (URL)"/>
+        <input type="text" id="libroColor" placeholder="Color de portada (ej: #e63946)"/>
+        <button onclick="publicarLibro()">Publicar Libro</button>
+        <p class="admin-msg" id="msgLibro"></p>
+      </div>
+      <div class="tab-content" id="tab-video">
+        <label>Video de prédica (máx. 100MB):</label>
+        <input type="file" id="videoFile" accept="video/*"/>
+        <input type="text" id="videoTitulo" placeholder="Título de la prédica"/>
+        <input type="text" id="videoDesc" placeholder="Descripción (opcional)"/>
+        <div class="upload-progress hidden" id="videoProgress">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <span id="progressTxt">0%</span>
+        </div>
+        <button onclick="publicarVideo()">Publicar Prédica</button>
+        <p class="admin-msg" id="msgVideo"></p>
+      </div>
+      <div class="tab-content" id="tab-inspiracion">
+        <label>Video de inspiración (máx. 100MB):</label>
+        <input type="file" id="inspFile" accept="video/*"/>
+        <input type="text" id="inspTitulo" placeholder="Título del mensaje"/>
+        <input type="text" id="inspDesc" placeholder="Descripción (opcional)"/>
+        <div class="upload-progress hidden" id="inspProgress">
+          <div class="progress-bar"><div class="progress-fill" id="inspProgressFill"></div></div>
+          <span id="inspProgressTxt">0%</span>
+        </div>
+        <button onclick="publicarInspiracion()">Publicar Inspiración</button>
+        <p class="admin-msg" id="msgInsp"></p>
+      </div>
+      <div class="tab-content" id="tab-evento">
+        <input type="text" id="eventoTitulo" placeholder="Título del evento"/>
+        <textarea id="eventoDesc" placeholder="Descripción del evento..."></textarea>
+        <label style="color:var(--muted);font-size:0.85rem;">Fecha y hora del evento:</label>
+        <input type="datetime-local" id="eventoFecha"/>
+        <input type="text" id="eventoLugar" placeholder="Lugar o enlace Meet/Zoom (si hay reunión virtual)"/>
+        <input type="text" id="eventoEnlace" placeholder="Enlace adicional (opcional)"/>
+        <select id="eventoMinisterio">
+          <option value="">— Sin ministerio —</option>
+          <option value="jovenes">ECORESTAURACIÓN — Jóvenes</option>
+          <option value="alabanza">HEREDAD — Alabanza</option>
+          <option value="danza">HIJAS DE SION — Danza</option>
+          <option value="mujeres">MUJERES CON PROPÓSITO</option>
+          <option value="ninos">FORJADORES DEL MAÑANA</option>
+          <option value="teatro">Teatro</option>
+          <option value="ujieres">Ujieres</option>
+        </select>
+        <button onclick="publicarEvento()">Publicar Evento</button>
+        <p class="admin-msg" id="msgEvento"></p>
+      </div>
+      <div class="tab-content" id="tab-chat">
+        <textarea id="adminMsgText" placeholder="Escribe un mensaje como admin..."></textarea>
+        <button onclick="publicarMensajeAdmin()">Publicar Mensaje</button>
+        <p class="admin-msg" id="msgChat"></p>
+      </div>
+      <div class="tab-content" id="tab-usuarios">
+        <p class="admin-users-title">📋 Usuarios registrados en el chat</p>
+        <div id="adminUserList"><p class="loading-txt">Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER PRINCIPAL -->
+  <div class="hero-banner" id="inicio">
+    <img src="PROTECTOR_DE_PANTALLA.png" alt="Centro Cristiano de Restauración Los Ríos"/>
+  </div>
+
+  <!-- SECCIÓN IMÁGENES -->
+  <section id="imagenes" class="section">
+    <h2 class="section-title">Galería de Imágenes</h2>
+    <p class="section-sub">Haz clic en una imagen para verla ampliada.</p>
+    <div class="gallery-grid" id="galleryGrid">
+      <div class="gallery-item" onclick="openModalUrl('0001.jpg','Lo veremos regresar','.gallery-item')">
+        <img src="0001.jpg" data-src="0001.jpg" alt="Lo veremos regresar"/><div class="overlay"><span>Lo veremos regresar</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0002.jpg','Servicio Dominical','.gallery-item')">
+        <img src="0002.jpg" data-src="0002.jpg" alt="Servicio Dominical"/><div class="overlay"><span>Servicio Dominical</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0003.jpg','Amigos de Dios','.gallery-item')">
+        <img src="0003.jpg" data-src="0003.jpg" alt="Amigos de Dios"/><div class="overlay"><span>Amigos de Dios</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0004.jpg','Familias con Propósitos','.gallery-item')">
+        <img src="0004.jpg" data-src="0004.jpg" alt="Familias con Propósitos"/><div class="overlay"><span>Familias con Propósitos</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0005.jpg','Centro Cristiano','.gallery-item')">
+        <img src="0005.jpg" data-src="0005.jpg" alt="Centro Cristiano"/><div class="overlay"><span>Centro Cristiano</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0006.jpg','Acción de Gracias','.gallery-item')">
+        <img src="0006.jpg" data-src="0006.jpg" alt="Acción de Gracias"/><div class="overlay"><span>Acción de Gracias</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0007.jpg','Veré tu rostro','.gallery-item')">
+        <img src="0007.jpg" data-src="0007.jpg" alt="Veré tu rostro"/><div class="overlay"><span>Veré tu rostro</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0008.jpg','Aniversario ECO','.gallery-item')">
+        <img src="0008.jpg" data-src="0008.jpg" alt="Aniversario ECO"/><div class="overlay"><span>Aniversario ECO</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0009.jpg','Ministerio de Danza','.gallery-item')">
+        <img src="0009.jpg" data-src="0009.jpg" alt="Ministerio de Danza"/><div class="overlay"><span>Ministerio de Danza</span></div></div>
+      <div class="gallery-item" onclick="openModalUrl('0010.jpg','Equipo CCRLR','.gallery-item')">
+        <img src="0010.jpg" data-src="0010.jpg" alt="Equipo CCRLR"/><div class="overlay"><span>Equipo CCRLR</span></div></div>
+    </div>
+  </section>
+
+  <!-- MODAL IMAGEN -->
+  <div class="modal" id="imgModal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <button class="modal-nav btn-prev" id="btnPrev" onclick="modalPrev()">&#8249;</button>
+      <img id="modalImg" src="" alt="Imagen ampliada"/>
+      <button class="modal-nav btn-next" id="btnNext" onclick="modalNext()">&#8250;</button>
+      <div class="modal-footer">
+        <span class="modal-caption" id="modalCaption"></span>
+        <span class="modal-counter" id="modalCounter"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN INSPIRACIÓN (libros) -->
+  <section id="libros" class="section section-alt">
+    <div class="section-header-icon">
+      <img src="inspiracion.png" alt="Inspiración" class="section-icon"/>
+      <div>
+        <h2 class="section-title">Inspiración</h2>
+        <p class="section-sub">Lecturas recomendadas para tu crecimiento espiritual.</p>
+      </div>
+    </div>
+    <div class="books-grid" id="booksGrid">
+      <p class="loading-txt">Cargando libros...</p>
+    </div>
+  </section>
+
+  <!-- SECCIÓN PRÉDICAS (videos) -->
+  <section id="videos" class="section">
+    <div class="section-header-icon">
+      <img src="predicas.png" alt="Prédicas" class="section-icon"/>
+      <div>
+        <h2 class="section-title">Prédicas</h2>
+        <p class="section-sub">Mensajes que edifican y transforman vidas.</p>
+      </div>
+    </div>
+    <div class="videos-grid" id="videosGrid">
+      <p class="loading-txt">Aún no hay prédicas publicadas.</p>
+    </div>
+  </section>
+
+  <!-- SECCIÓN MENSAJES DE INSPIRACIÓN (videos cortos) -->
+  <section id="inspiracion-videos" class="section section-alt">
+    <div class="section-header-icon">
+      <img src="predicas.png" alt="Inspiración" class="section-icon"/>
+      <div>
+        <h2 class="section-title">Mensajes de Inspiración</h2>
+        <p class="section-sub">Momentos breves que renuevan el espíritu.</p>
+      </div>
+    </div>
+    <div class="videos-grid" id="inspiracionGrid">
+      <p class="loading-txt">Aún no hay mensajes publicados.</p>
+    </div>
+  </section>
+
+  <!-- SECCIÓN CALENDARIO -->
+  <section id="calendario" class="section">
+    <div class="section-header-icon">
+      <img src="calendario.png" alt="Calendario" class="section-icon"/>
+      <div>
+        <h2 class="section-title">Calendario de Actividades</h2>
+        <p class="section-sub">Próximos eventos de la iglesia.</p>
+      </div>
+    </div>
+    <div class="eventos-lista" id="eventosLista">
+      <p class="loading-txt">Cargando eventos...</p>
+    </div>
+  </section>
+
+  <!-- SECCIÓN UBICACIÓN -->
+  <section id="ubicacion" class="section section-alt">
+    <div class="section-header-icon">
+      <img src="direccion.png" alt="Ubicación" class="section-icon"/>
+      <div>
+        <h2 class="section-title">Nuestra Ubicación</h2>
+        <p class="section-sub">Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre</p>
+      </div>
+    </div>
+    <div class="mapa-wrap">
+      <iframe
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.3!2d-79.46!3d-1.06!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMcKwMDMnMzYuMCJTIDc5wrAyNyczNi4wIlc!5e0!3m2!1ses!2sec!4v1"
+        width="100%" height="350" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy">
+      </iframe>
+    </div>
+  </section>
+
+  <!-- SECCIÓN CHAT -->
+  <section id="chat-anchor" class="section chat-promo">
+    <div class="chat-promo-inner" onclick="abrirChat()">
+      <img src="CHAT.png" alt="Punto de Encuentro" class="chat-promo-icon-img"/>
+      <div>
+        <h2 class="section-title">Punto de Encuentro</h2>
+        <p class="section-sub">Haz clic aquí para abrir el chat y unirte a la conversación.</p>
+      </div>
+      <button class="btn-abrir-chat">Abrir Chat →</button>
+    </div>
+  </section>
+
+  <!-- TOAST RECORDATORIO -->
+  <div class="toast-recordatorio hidden" id="toastRecordatorio">
+    <div class="toast-inner">
+      <img src="calendario.png" alt="" class="toast-icon"/>
+      <div class="toast-body">
+        <strong id="toastTitulo"></strong>
+        <span id="toastMsg"></span>
+      </div>
+      <button class="toast-close" onclick="cerrarToast()">✕</button>
+    </div>
+  </div>
+
+  <!-- CHAT FLOTANTE -->
+  <div class="chat-bubble hidden" id="chatBubble" onclick="restaurarChat()">
+    <img src="CHAT.png" alt="Punto de Encuentro" class="bubble-icon-img"/>
+    <span class="bubble-notif hidden" id="bubbleNotif">!</span>
+  </div>
+
+  <div class="chat-float hidden" id="chatFloat">
+    <div class="chat-welcome" id="chatWelcome">
+      <img src="CHAT.png" alt="Punto de Encuentro" class="welcome-icon"/>
+      <h2 class="welcome-title">Punto de Encuentro</h2>
+    </div>
+    <div class="chat-float-header">
+      <div class="chat-float-title-wrap">
+        <img src="CHAT.png" alt="" class="header-icon"/>
+        <span class="chat-float-title">Punto de Encuentro</span>
+      </div>
+      <div class="chat-float-btns">
+        <button class="cfbtn" title="Minimizar" onclick="minimizarChat()">─</button>
+        <button class="cfbtn" title="Maximizar" id="btnMaximizar" onclick="maximizarChat()">⛶</button>
+        <button class="cfbtn cfbtn-close" title="Cerrar" onclick="cerrarChat()">✕</button>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-warning hidden" id="chatWarning">⚠️ Mensaje con palabras no permitidas.</div>
+    <div class="chat-locked" id="chatLocked">
+      <div class="chat-locked-inner">
+        <span>🔒</span>
+        <p>Regístrate o inicia sesión para participar</p>
+        <button onclick="abrirModalChat()">Unirse al Chat</button>
+      </div>
+    </div>
+    <div class="chat-input-area hidden" id="chatInputArea">
+      <input type="text" id="nameInput" class="chat-name" placeholder="Tu usuario..." maxlength="20" readonly/>
+      <div class="chat-row">
+        <input type="text" id="msgInput" class="chat-input" placeholder="Escribe tu mensaje..." maxlength="200"/>
+        <button class="chat-send" onclick="sendMessage()">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL AUTH CHAT -->
+  <div class="chat-auth-overlay hidden" id="chatAuthModal">
+    <div class="chat-auth-box">
+      <button class="close-auth" onclick="cerrarModalChat()">✕</button>
+      <h3>Únete al Chat</h3>
+      <p class="auth-sub">Necesitas una cuenta para participar</p>
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="btnTab-registro" onclick="mostrarTabAuth('registro')">Registrarse</button>
+        <button class="auth-tab-btn" id="btnTab-login" onclick="mostrarTabAuth('login')">Iniciar sesión</button>
+        <button class="auth-tab-btn" id="btnTab-recuperar" onclick="mostrarTabAuth('recuperar')">¿Olvidé mi contraseña?</button>
+        <button class="auth-tab-btn hidden" id="btnTab-cambiar" onclick="mostrarTabAuth('cambiar')">Cambiar contraseña</button>
+      </div>
+      <div id="tab-registro">
+        <input type="text" id="regNickname" placeholder="Nombre de usuario" maxlength="20"/>
+        <input type="email" id="regEmail" placeholder="Correo electrónico"/>
+        <input type="password" id="regPass" placeholder="Contraseña (mínimo 6 caracteres)"/>
+        <label class="check-label"><input type="checkbox" id="regRecordar"/> Mantener sesión iniciada</label>
+        <button onclick="registrarChatUser()">Crear cuenta y entrar</button>
+      </div>
+      <div id="tab-login" class="hidden">
+        <input type="text" id="loginNickname" placeholder="Nombre de usuario" maxlength="20"/>
+        <input type="email" id="loginChatEmail" placeholder="Correo electrónico"/>
+        <input type="password" id="loginChatPass" placeholder="Contraseña"/>
+        <label class="check-label"><input type="checkbox" id="loginRecordar"/> Mantener sesión iniciada</label>
+        <button onclick="loginChatUser()">Ingresar</button>
+      </div>
+      <div id="tab-recuperar" class="hidden">
+        <p class="auth-info">Escribe tu correo y te enviaremos un enlace de recuperación.</p>
+        <input type="email" id="recEmail" placeholder="Correo electrónico"/>
+        <button onclick="recuperarContrasena()">Enviar correo de recuperación</button>
+      </div>
+      <div id="tab-cambiar" class="hidden">
+        <p class="auth-info">Ingresa tu contraseña actual y la nueva.</p>
+        <input type="password" id="passActual" placeholder="Contraseña actual"/>
+        <input type="password" id="passNueva" placeholder="Nueva contraseña"/>
+        <input type="password" id="passConfirm" placeholder="Confirmar nueva contraseña"/>
+        <button onclick="cambiarContrasena()">Actualizar contraseña</button>
+      </div>
+      <p class="chat-auth-error hidden" id="chatAuthError"></p>
+      <p class="chat-auth-success hidden" id="chatAuthSuccess"></p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <img src="LOGO_SIN_FONDO.png" alt="CCRLR" class="footer-logo"/>
+      <div class="footer-info">
+        <p><strong>Centro Cristiano de Restauración Los Ríos</strong></p>
+        <p>📍 Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador</p>
+        <p>✉️ <a href="/cdn-cgi/l/email-protection#2440415641575045515645474d4b4a47644349454d480a474b49"><span class="__cf_email__" data-cfemail="0d69687f687e796c787f6c6e6462636e4d6a606c6461236e6260">[email&#160;protected]</span></a></p>
+      </div>
+      <div class="footer-redes">
+        <a href="https://www.facebook.com/people/Centro-Cristiano-de-Restauraci%C3%B3n-Los-R%C3%ADos/61557973191098/" target="_blank" class="footer-red">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="#1877f2"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.514c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+          Facebook
+        </a>
+        <a href="https://www.tiktok.com/@ecorestauracion" target="_blank" class="footer-red">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.17 8.17 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+          @ecorestauracion
+        </a>
+      </div>
+    </div>
+    <p class="footer-copy">✦ Centro Cristiano de Restauración Los Ríos</p>
+  </footer>
+
+  <!-- PANEL "YO" — INFO + MINISTERIOS -->
+  <div class="yo-overlay hidden" id="yoOverlay" onclick="cerrarPanelYo()"></div>
+  <div class="yo-panel hidden" id="yoPanel">
+    <button class="yo-close" onclick="cerrarPanelYo()">✕</button>
+
+    <!-- INFO IGLESIA -->
+    <div class="yo-iglesia">
+      <img src="LOGO_SIN_FONDO.png" alt="CCRLR" class="yo-logo"/>
+      <div class="yo-iglesia-info">
+        <h2>Centro Cristiano de Restauración Los Ríos</h2>
+        <p>📍 Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador</p>
+        <p>✉️ <a href="/cdn-cgi/l/email-protection#adc9c8dfc8ded9ccd8dfcccec4c2c3ceedcac0ccc4c183cec2c0"><span class="__cf_email__" data-cfemail="b0d4d5c2d5c3c4d1c5c2d1d3d9dfded3f0d7ddd1d9dc9ed3dfdd">[email&#160;protected]</span></a></p>
+        <div class="yo-redes">
+          <a href="https://www.facebook.com/people/Centro-Cristiano-de-Restauraci%C3%B3n-Los-R%C3%ADos/61557973191098/" target="_blank" class="yo-red fb">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.514c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+            Facebook
+          </a>
+          <a href="https://www.tiktok.com/@ecorestauracion" target="_blank" class="yo-red tt">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.17 8.17 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+            TikTok: @ecorestauracion
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="yo-divider"><span>Nuestros Ministerios</span></div>
+
+    <!-- GRILLA MINISTERIOS -->
+    <div class="ministerios-grid">
+      <div class="ministerio-card" onclick="abrirMinisterio('jovenes')">
+        <img src="JOVENES_N.png" alt="ECO" class="min-logo-oscuro"/>
+        <img src="JOVENES.png"   alt="ECO" class="min-logo-claro"/>
+        <span>ECORESTAURACIÓN</span>
+        <small>Jóvenes</small>
+      </div>
+      <div class="ministerio-card" onclick="abrirMinisterio('alabanza')">
+        <img src="ALABANZA_N.png" alt="Heredad" class="min-logo-oscuro"/>
+        <img src="ALABANZA.png"   alt="Heredad" class="min-logo-claro"/>
+        <span>HEREDAD</span>
+        <small>Alabanza</small>
+      </div>
+      <div class="ministerio-card" onclick="abrirMinisterio('danza')">
+        <img src="DANZA_N.png" alt="Danza" class="min-logo-oscuro"/>
+        <img src="DANZA.png"   alt="Danza" class="min-logo-claro"/>
+        <span>HIJAS DE SION</span>
+        <small>Danza</small>
+      </div>
+      <div class="ministerio-card" onclick="abrirMinisterio('mujeres')">
+        <img src="MUJERES_CON_PROPOSITO_N.png" alt="Mujeres" class="min-logo-oscuro"/>
+        <img src="MUJERES_CON_PROPOSITO.png"   alt="Mujeres" class="min-logo-claro"/>
+        <span>MUJERES CON PROPÓSITO</span>
+        <small>Damas</small>
+      </div>
+      <div class="ministerio-card" onclick="abrirMinisterio('ninos')">
+        <img src="NIÑOS_N.png" alt="Niños" class="min-logo-oscuro"/>
+        <img src="NIÑOS.png"   alt="Niños" class="min-logo-claro"/>
+        <span>FORJADORES DEL MAÑANA</span>
+        <small>Niños</small>
+      </div>
+      <div class="ministerio-card" onclick="abrirMinisterio('teatro')">
+        <img src="TEATRO_N.png" alt="Teatro" class="min-logo-oscuro"/>
+        <img src="TEATRO.png"   alt="Teatro" class="min-logo-claro"/>
+        <span>MINISTERIO DE TEATRO</span>
+        <small>Teatro</small>
+      </div>
+      <div class="ministerio-card" onclick="abrirMinisterio('ujieres')">
+        <img src="UJIERES_N.png" alt="Ujieres" class="min-logo-oscuro"/>
+        <img src="UJIERES.png"   alt="Ujieres" class="min-logo-claro"/>
+        <span>MINISTERIO DE UJIERES</span>
+        <small>Ujieres</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MINISTERIO -->
+  <div class="ministerio-modal hidden" id="ministerioModal">
+    <div class="ministerio-modal-inner">
+      <button class="ministerio-close" onclick="cerrarMinisterio()">✕</button>
+      <div class="ministerio-header">
+        <img id="minIcon" src="" alt="" class="min-logo"/>
+        <div>
+          
