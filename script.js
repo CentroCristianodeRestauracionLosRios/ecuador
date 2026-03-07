@@ -1015,11 +1015,12 @@ window.bloquearUsuario = async (uid, nombre) => {
 
 // ── PANEL USUARIOS ADMIN ──────────────────────
 function cargarUsuariosAdmin() {
-  onValue(ref(db,'usuarios'), (snap) => {
-    const data = snap.val();
-    const lista = document.getElementById('adminUserList');
-    if (!lista) return;
+  const lista = document.getElementById('adminUserList');
+  if (!lista) return;
+  lista.innerHTML = '<p class="loading-txt">Cargando...</p>';
+  get(ref(db,'usuarios')).then((snap) => {
     lista.innerHTML = '';
+    const data = snap.val();
     if (!data) { lista.innerHTML='<p class="loading-txt">No hay usuarios registrados.</p>'; return; }
 
     Object.entries(data).forEach(([uid, u]) => {
@@ -1039,6 +1040,10 @@ function cargarUsuariosAdmin() {
         </div>`;
       lista.appendChild(row);
     });
+  }).catch(e => {
+    const lista2 = document.getElementById('adminUserList');
+    if (lista2) lista2.innerHTML = '<p class="loading-txt" style="color:#e63946;">⚠️ Sin permiso para leer usuarios. Verifica las reglas de Firebase.</p>';
+    console.error('cargarUsuariosAdmin error:', e);
   });
 }
 
@@ -1176,7 +1181,8 @@ document.getElementById('imgModal')?.addEventListener('touchend', e => {
 let chatMaximizado = false;
 let chatAbierto    = false;
 
-window.abrirChat = () => {
+window.abrirChat = (e) => {
+  if (e && e.preventDefault) e.preventDefault(); // evitar scroll al anchor
   chatAbierto = true;
   const floatEl   = document.getElementById('chatFloat');
   const welcomeEl = document.getElementById('chatWelcome');
@@ -1191,6 +1197,9 @@ window.abrirChat = () => {
     welcomeEl.classList.remove('welcome-playing');
     document.getElementById('chatMessages').scrollTop = 99999;
   }, 1800);
+  // Cerrar menú hamburguesa si está abierto
+  document.querySelector('.nav-links')?.classList.remove('menu-open');
+  document.getElementById('navHamburger')?.classList.remove('open');
 };
 
 window.minimizarChat = () => {
