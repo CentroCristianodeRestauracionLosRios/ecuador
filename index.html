@@ -540,16 +540,18 @@
   <!-- MODAL MINISTERIO -->
   <div class="ministerio-modal hidden" id="ministerioModal">
     <div class="ministerio-modal-inner">
-      <button class="ministerio-close" onclick="cerrarMinisterio()">✕</button>
-      <div class="ministerio-header">
-        <img id="minIcon" src="" alt="" class="min-logo"/>
-        <div>
-                    <h2 id="minNombre"></h2>
-          <p id="minCategoria"></p>
+      <div class="ministerio-sticky-header">
+        <div class="ministerio-header">
+          <img id="minIcon" src="" alt="" class="min-logo"/>
+          <div>
+            <h2 id="minNombre"></h2>
+            <p id="minCategoria"></p>
+          </div>
         </div>
+        <button class="ministerio-close" onclick="cerrarMinisterio()" title="Cerrar">✕</button>
       </div>
-      <div class="min-gallery" id="minGallery">
-        <p class="loading-txt">Cargando imágenes...</p>
+      <div id="minGallery">
+        <p class="loading-txt">Cargando contenido...</p>
       </div>
     </div>
   </div>

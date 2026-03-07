@@ -2123,26 +2123,43 @@ input[readonly] {
 }
 .ministerio-modal-inner {
   background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 20px;
-  width: min(780px, 100%); max-height: 90vh; overflow-y: auto;
-  padding: 28px 24px; position: relative;
+  width: min(780px, 100%); max-height: 90vh;
+  overflow-y: auto; position: relative;
   scrollbar-width: thin; scrollbar-color: #1e3050 transparent;
+  display: flex; flex-direction: column;
+  padding: 0;
 }
+
+/* Header sticky — siempre visible al hacer scroll */
+.ministerio-sticky-header {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--input-bg);
+  border-radius: 20px 20px 0 0;
+  border-bottom: 1px solid var(--input-border);
+  padding: 20px 24px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.ministerio-header {
+  display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0;
+}
+.min-logo { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
+.ministerio-header h2 { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent); }
+.ministerio-header p  { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+
 .ministerio-close {
-  position: absolute; top: 14px; right: 14px;
   background: rgba(255,255,255,0.07); border: none; color: #fff;
-  width: 32px; height: 32px; border-radius: 50%; font-size: 1rem;
+  width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; flex-shrink: 0;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background 0.2s;
 }
 .ministerio-close:hover { background: rgba(230,57,70,0.3); color: #e63946; }
 
-.ministerio-header {
-  display: flex; align-items: center; gap: 18px;
-  margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid #1e3050;
+/* Área scrollable del contenido */
+#minGallery {
+  padding: 16px 24px 24px;
+  display: flex; flex-direction: column; gap: 0;
+  overflow-y: visible;
 }
-.min-logo { width: 68px; height: 68px; object-fit: contain; flex-shrink: 0; }
-.ministerio-header h2 { font-family: var(--font-display); font-size: 1.2rem; color: var(--accent); }
-.ministerio-header p  { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
 
 /* Galería interna del ministerio */
 .min-gallery {
@@ -2704,3 +2721,43 @@ body.tema-claro .nav-logo {
 .min-video-info { padding: 8px 12px 4px; }
 .min-video-info strong { color: var(--text); font-size: 0.88rem; font-weight: 700; }
 .min-video-info p { color: var(--muted); font-size: 0.78rem; margin-top: 3px; }
+
+/* ===== ACORDEÓN MINISTERIO ===== */
+.min-acordeon {
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.min-acordeon-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; cursor: pointer;
+  background: var(--bg2, rgba(255,255,255,0.03));
+  user-select: none; transition: background 0.2s;
+}
+.min-acordeon-header:hover { background: rgba(244,197,66,0.07); }
+.min-acordeon-titulo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 0.8rem;
+  font-weight: 700; color: var(--accent);
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.min-acordeon-count {
+  background: rgba(244,197,66,0.15); color: var(--accent);
+  font-size: 0.7rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+}
+.min-acordeon-arrow {
+  font-size: 0.75rem; color: var(--muted);
+  transition: transform 0.3s; display: inline-block;
+}
+.min-acordeon.open .min-acordeon-arrow { transform: rotate(180deg); }
+.min-acordeon-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.3s ease;
+  padding: 0 16px;
+}
+.min-acordeon.open .min-acordeon-body {
+  max-height: 2000px;
+  padding: 14px 16px;
+}

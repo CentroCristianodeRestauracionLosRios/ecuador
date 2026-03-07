@@ -1230,7 +1230,6 @@ window.abrirMinisterio = (id) => {
   const m = MINISTERIOS[id];
   if (!m) return;
 
-  // Ícono correcto según tema
   const temaClaro = document.body.classList.contains('tema-claro');
   const iconoSrc  = temaClaro ? m.icono.replace('_N.png', '.png') : m.icono;
   document.getElementById('minIcon').src            = iconoSrc;
@@ -1244,9 +1243,35 @@ window.abrirMinisterio = (id) => {
   cerrarPanelYo();
   document.getElementById('ministerioModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  // Scroll al top del modal al abrirlo
+  document.querySelector('.ministerio-modal-inner').scrollTop = 0;
 
   let imgData = {}, evtData = {}, vidData = {};
   let cargados = 0;
+
+  // Helper: crea una sección acordeón
+  function crearAcordeon(emoji, titulo, count, contenidoFn) {
+    const sec = document.createElement('div');
+    sec.className = 'min-acordeon open'; // abierto por defecto
+    const header = document.createElement('div');
+    header.className = 'min-acordeon-header';
+    header.innerHTML = `
+      <div class="min-acordeon-titulo">
+        <span>${emoji}</span>
+        <span>${titulo}</span>
+        <span class="min-acordeon-count">${count}</span>
+      </div>
+      <span class="min-acordeon-arrow">▼</span>`;
+    header.addEventListener('click', () => {
+      sec.classList.toggle('open');
+    });
+    const body = document.createElement('div');
+    body.className = 'min-acordeon-body';
+    contenidoFn(body);
+    sec.appendChild(header);
+    sec.appendChild(body);
+    return sec;
+  }
 
   function renderTodo() {
     cargados++;
@@ -1267,91 +1292,85 @@ window.abrirMinisterio = (id) => {
 
     // ── IMÁGENES ──────────────────────────────────
     if (imgs.length) {
-      const h = document.createElement('h4');
-      h.className = 'min-section-title'; h.textContent = '🖼️ Imágenes';
-      gallery.appendChild(h);
-
-      const grid = document.createElement('div');
-      grid.className = 'min-imgs-grid';
-
-      imgs.forEach(([key, img], arrIdx) => {
-        const div = document.createElement('div');
-        div.className = 'min-img-item';
-        div.innerHTML = `
-          <img src="${img.url}" data-src="${img.url}" alt="${escapeHTML(img.caption||'')}" loading="lazy"/>
-          ${img.caption ? `<span>${escapeHTML(img.caption)}</span>` : ''}
-          ${isAdmin ? `<div class="min-admin-btns">
-            <button onclick="event.stopPropagation();borrarImagen('${key}')" title="Borrar">🗑️</button>
-            <button onclick="event.stopPropagation();abrirMoverMedia('${key}','imagen')" title="Quitar de ministerio">📂</button>
-          </div>` : ''}`;
-        // Abrir modal sin depender del selector DOM
-        div.addEventListener('click', () => {
-          galeriaActual = imgs.map(([,i]) => ({ url: i.url, alt: i.caption||'' }));
-          galeriaIndex  = arrIdx;
-          mostrarImagenModal(galeriaIndex);
-          document.getElementById('imgModal').classList.add('active');
-          document.body.style.overflow = 'hidden';
+      gallery.appendChild(crearAcordeon('🖼️', 'Imágenes', imgs.length, (body) => {
+        const grid = document.createElement('div');
+        grid.className = 'min-imgs-grid';
+        imgs.forEach(([key, img], arrIdx) => {
+          const div = document.createElement('div');
+          div.className = 'min-img-item';
+          div.innerHTML = `
+            <img src="${img.url}" data-src="${img.url}" alt="${escapeHTML(img.caption||'')}" loading="lazy"/>
+            ${img.caption ? `<span>${escapeHTML(img.caption)}</span>` : ''}
+            ${isAdmin ? `<div class="min-admin-btns">
+              <button onclick="event.stopPropagation();borrarImagen('${key}')" title="Borrar">🗑️</button>
+              <button onclick="event.stopPropagation();abrirMoverMedia('${key}','imagen')" title="Quitar de ministerio">📂</button>
+            </div>` : ''}`;
+          div.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            // Abrir modal con la galería del ministerio
+            galeriaActual = imgs.map(([,i]) => ({ url: i.url, alt: i.caption||'' }));
+            galeriaIndex  = arrIdx;
+            mostrarImagenModal(galeriaIndex);
+            document.getElementById('imgModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+          });
+          grid.appendChild(div);
         });
-        grid.appendChild(div);
-      });
-      gallery.appendChild(grid);
+        body.appendChild(grid);
+      }));
     }
 
     // ── ACTIVIDADES ───────────────────────────────
     if (evts.length) {
-      const h = document.createElement('h4');
-      h.className = 'min-section-title'; h.textContent = '📅 Actividades';
-      gallery.appendChild(h);
-
-      evts.forEach(([key, e]) => {
-        const fecha = new Date(e.fechaISO);
-        const esURL = s => s && (s.startsWith('http://') || s.startsWith('https://'));
-        const card  = document.createElement('div');
-        card.className = 'min-evento-card';
-        card.innerHTML = `
-          <div class="min-evento-fecha">
-            <span>${fecha.getDate()}</span>
-            <small>${fecha.toLocaleString('es',{month:'short'}).toUpperCase()}</small>
-          </div>
-          <div class="min-evento-info">
-            <strong>${escapeHTML(e.titulo)}</strong>
-            ${e.desc ? `<p>${escapeHTML(e.desc)}</p>` : ''}
-            ${e.lugar ? esURL(e.lugar)
-              ? `<a href="${escapeHTML(e.lugar)}" target="_blank" class="evento-meet-btn">🎥 Unirse al Meet</a>`
-              : `<em>📍 ${escapeHTML(e.lugar)}</em>` : ''}
-            ${e.enlace && esURL(e.enlace) ? `<a href="${escapeHTML(e.enlace)}" target="_blank" class="evento-meet-btn">🔗 Enlace</a>` : ''}
-            <em>🕐 ${fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</em>
-          </div>
-          ${isAdmin ? `<div class="min-admin-btns-col">
-            <button onclick="abrirEditarEvento('${key}')" title="Editar">✏️</button>
-            <button onclick="abrirMoverMedia('${key}','evento')" title="Quitar de ministerio">📂</button>
-            <button onclick="borrarEvento('${key}')" title="Borrar">🗑️</button>
-          </div>` : ''}`;
-        gallery.appendChild(card);
-      });
+      gallery.appendChild(crearAcordeon('📅', 'Actividades', evts.length, (body) => {
+        evts.forEach(([key, e]) => {
+          const fecha = new Date(e.fechaISO);
+          const esURL = s => s && (s.startsWith('http://') || s.startsWith('https://'));
+          const card  = document.createElement('div');
+          card.className = 'min-evento-card';
+          card.innerHTML = `
+            <div class="min-evento-fecha">
+              <span>${fecha.getDate()}</span>
+              <small>${fecha.toLocaleString('es',{month:'short'}).toUpperCase()}</small>
+            </div>
+            <div class="min-evento-info">
+              <strong>${escapeHTML(e.titulo)}</strong>
+              ${e.desc ? `<p>${escapeHTML(e.desc)}</p>` : ''}
+              ${e.lugar ? esURL(e.lugar)
+                ? `<a href="${escapeHTML(e.lugar)}" target="_blank" class="evento-meet-btn">🎥 Unirse al Meet</a>`
+                : `<em>📍 ${escapeHTML(e.lugar)}</em>` : ''}
+              ${e.enlace && esURL(e.enlace) ? `<a href="${escapeHTML(e.enlace)}" target="_blank" class="evento-meet-btn">🔗 Enlace</a>` : ''}
+              <em>🕐 ${fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</em>
+            </div>
+            ${isAdmin ? `<div class="min-admin-btns-col">
+              <button onclick="abrirEditarEvento('${key}')" title="Editar">✏️</button>
+              <button onclick="abrirMoverMedia('${key}','evento')" title="Quitar de ministerio">📂</button>
+              <button onclick="borrarEvento('${key}')" title="Borrar">🗑️</button>
+            </div>` : ''}`;
+          body.appendChild(card);
+        });
+      }));
     }
 
     // ── VIDEOS ────────────────────────────────────
     if (vids.length) {
-      const h = document.createElement('h4');
-      h.className = 'min-section-title'; h.textContent = '🎬 Videos';
-      gallery.appendChild(h);
-
-      vids.forEach(([key, vid]) => {
-        const card = document.createElement('div');
-        card.className = 'min-video-card';
-        card.innerHTML = `
-          <video src="${vid.url}" controls preload="metadata" playsinline></video>
-          <div class="min-video-info">
-            <strong>${escapeHTML(vid.titulo)}</strong>
-            ${vid.desc ? `<p>${escapeHTML(vid.desc)}</p>` : ''}
-          </div>
-          ${isAdmin ? `<div style="display:flex;gap:6px;padding:0 12px 10px;">
-            <button onclick="abrirMoverMedia('${key}','video')" class="btn-secondary" style="font-size:0.8rem;padding:5px 10px;">📂 Quitar</button>
-            <button onclick="borrarVideo('${key}')" class="btn-danger" style="font-size:0.8rem;padding:5px 10px;">🗑️ Borrar</button>
-          </div>` : ''}`;
-        gallery.appendChild(card);
-      });
+      gallery.appendChild(crearAcordeon('🎬', 'Videos', vids.length, (body) => {
+        vids.forEach(([key, vid]) => {
+          const card = document.createElement('div');
+          card.className = 'min-video-card';
+          card.innerHTML = `
+            <video src="${vid.url}" controls preload="metadata" playsinline></video>
+            <div class="min-video-info">
+              <strong>${escapeHTML(vid.titulo)}</strong>
+              ${vid.desc ? `<p>${escapeHTML(vid.desc)}</p>` : ''}
+            </div>
+            ${isAdmin ? `<div style="display:flex;gap:6px;padding:0 12px 10px;">
+              <button onclick="abrirMoverMedia('${key}','video')" class="btn-secondary" style="font-size:0.8rem;padding:5px 10px;">📂 Quitar</button>
+              <button onclick="borrarVideo('${key}')" class="btn-danger" style="font-size:0.8rem;padding:5px 10px;">🗑️ Borrar</button>
+            </div>` : ''}`;
+          body.appendChild(card);
+        });
+      }));
     }
   }
 
