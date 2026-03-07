@@ -80,11 +80,24 @@ function actualizarEstadoChat(user) {
   if (user) {
     inputArea.classList.remove('hidden');
     chatLocked.classList.add('hidden');
-    chatNickname = localStorage.getItem('chatNickname') || user.email.split('@')[0];
-    document.getElementById('nameInput').value = chatNickname;
+    // Obtener nickname: localStorage primero, luego Firebase
+    const localNick = localStorage.getItem('chatNickname');
+    if (localNick) {
+      chatNickname = localNick;
+      document.getElementById('nameInput').value = chatNickname;
+    } else {
+      // Buscar nickname en Firebase
+      get(ref(db, `usuarios/${user.uid}/nickname`)).then(snap => {
+        const nick = snap.val() || user.email.split('@')[0];
+        chatNickname = nick;
+        localStorage.setItem('chatNickname', nick);
+        document.getElementById('nameInput').value = nick;
+      });
+    }
   } else {
     inputArea.classList.add('hidden');
     chatLocked.classList.remove('hidden');
+    chatNickname = '';
   }
 }
 
@@ -171,11 +184,10 @@ window.registrarChatUser = async () => {
 };
 
 window.loginChatUser = async () => {
-  const nickname = document.getElementById('loginNickname').value.trim();
   const email    = document.getElementById('loginChatEmail').value.trim();
   const pass     = document.getElementById('loginChatPass').value;
-  const recordar = document.getElementById('loginRecordar').checked;
-  if (!nickname||!email||!pass) return mostrarAuthError('Todos los campos son obligatorios.');
+  const recordar = document.getElementById('loginRecordar')?.checked;
+  if (!email||!pass) return mostrarAuthError('Correo y contraseña son obligatorios.');
   try {
     await setPersistence(auth, recordar ? browserLocalPersistence : browserSessionPersistence);
     const cred = await signInWithEmailAndPassword(auth, email, pass);
@@ -185,11 +197,21 @@ window.loginChatUser = async () => {
       await signOut(auth);
       return mostrarAuthError('⛔ Tu cuenta ha sido bloqueada por el administrador.');
     }
-    localStorage.setItem('chatNickname', nickname);
-    chatNickname = nickname;
-    document.getElementById('nameInput').value = nickname;
+    // Recuperar nickname guardado en Firebase
+    const nickSnap = await get(ref(db, `usuarios/${cred.user.uid}/nickname`));
+    const nick = nickSnap.val() || localStorage.getItem('chatNickname') || email.split('@')[0];
+    localStorage.setItem('chatNickname', nick);
+    chatNickname = nick;
+    document.getElementById('nameInput').value = nick;
     cerrarModalChat();
-  } catch { mostrarAuthError('Correo o contraseña incorrectos.'); }
+  } catch(e) {
+    console.error('login error:', e.code, e.message);
+    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
+      mostrarAuthError('Correo o contraseña incorrectos.');
+    } else {
+      mostrarAuthError('Error al iniciar sesión: ' + e.message);
+    }
+  }
 };
 
 window.recuperarContrasena = async () => {
@@ -1005,7 +1027,11 @@ window.desbloquearUsuario = async (uid, nombre) => {
 // ── ENVIAR MENSAJE ────────────────────────────
 window.sendMessage = async () => {
   if (!currentUser) { abrirModalChat(); return; }
-  const nombre = document.getElementById('nameInput').value.trim() || chatNickname || 'Anónimo';
+  // Prioridad: nickname guardado > campo de nombre > email sin dominio
+  const nombre = chatNickname
+    || localStorage.getItem('chatNickname')
+    || document.getElementById('nameInput').value.trim()
+    || currentUser.email.split('@')[0];
   const texto  = document.getElementById('msgInput').value.trim();
   if (!texto) return;
   if (contienePalabraProhibida(texto)) {
@@ -1014,10 +1040,17 @@ window.sendMessage = async () => {
     setTimeout(()=>warn.classList.add('hidden'),4000);
     return;
   }
-  await push(ref(db,'chat'), {
-    nombre, texto, uid: currentUser.uid, esAdmin: isAdmin, fecha: serverTimestamp()
-  });
-  document.getElementById('msgInput').value='';
+  try {
+    await push(ref(db,'chat'), {
+      nombre, texto, uid: currentUser.uid, esAdmin: isAdmin, fecha: serverTimestamp()
+    });
+    document.getElementById('msgInput').value='';
+  } catch(e) {
+    console.error('sendMessage error:', e);
+    if (e.code === 'PERMISSION_DENIED') {
+      mostrarAuthError('No tienes permiso para enviar mensajes. Intenta cerrar sesión e ingresar de nuevo.');
+    }
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {

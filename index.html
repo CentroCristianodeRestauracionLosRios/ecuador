@@ -412,7 +412,9 @@
         <button onclick="registrarChatUser()">Crear cuenta y entrar</button>
       </div>
       <div id="tab-login" class="hidden">
-        <input type="text" id="loginNickname" placeholder="Nombre de usuario" maxlength="20"/>
+        <p class="auth-info" style="margin-bottom:12px;color:var(--muted);font-size:0.85rem;">
+          Tu nombre de usuario se recupera automáticamente de tu cuenta.
+        </p>
         <input type="email" id="loginChatEmail" placeholder="Correo electrónico"/>
         <input type="password" id="loginChatPass" placeholder="Contraseña"/>
         <label class="check-label"><input type="checkbox" id="loginRecordar"/> Mantener sesión iniciada</label>
