@@ -26,50 +26,43 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <div class="logo">
-      <a href="#inicio" title="Inicio">
+      <a href="#inicio" title="Inicio" class="logo-inicio-link">
         <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo"/>
       </a>
+      <button class="nav-hamburger" id="navHamburger" onclick="toggleNavMenu()" title="Menú" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
     </div>
     <ul class="nav-links">
-      <li>
-        <a href="#inicio" class="nav-icon-link" title="Inicio">
-          <img src="casa.png" class="nav-icon" alt="Inicio"/>
-          <span>Inicio</span>
-        </a>
-      </li>
+
       <li>
         <a href="#imagenes" class="nav-icon-link" title="Imágenes">
           <span>Imágenes</span>
+          <img src="imagenes.png" class="nav-icon" alt="Imágenes"/>
         </a>
       </li>
       <li>
         <a href="#libros" class="nav-icon-link" title="Inspiración">
-          <img src="inspiracion.png" class="nav-icon" alt="Inspiración"/>
           <span>Inspiración</span>
+          <img src="inspiracion.png" class="nav-icon" alt="Inspiración"/>
         </a>
       </li>
       <li>
         <a href="#videos" class="nav-icon-link" title="Prédicas">
-          <img src="predicas.png" class="nav-icon" alt="Prédicas"/>
           <span>Prédicas</span>
+          <img src="predicas.png" class="nav-icon" alt="Prédicas"/>
         </a>
       </li>
       <li>
         <a href="#calendario" class="nav-icon-link" title="Calendario">
-          <img src="calendario.png" class="nav-icon" alt="Calendario"/>
           <span>Calendario</span>
-        </a>
-      </li>
-      <li>
-        <a href="#ubicacion" class="nav-icon-link" title="Ubicación">
-          <img src="direccion.png" class="nav-icon" alt="Ubicación"/>
-          <span>Ubicación</span>
+          <img src="calendario.png" class="nav-icon" alt="Calendario"/>
         </a>
       </li>
       <li>
         <a href="#chat-anchor" class="nav-icon-link" onclick="abrirChat()" title="Punto de Encuentro">
-          <img src="CHAT.png" class="nav-icon" alt="Chat"/>
           <span>Punto de Encuentro</span>
+          <img src="CHAT.png" class="nav-icon" alt="Chat"/>
         </a>
       </li>
     </ul>
@@ -115,7 +108,7 @@
         <button class="tab-btn active" onclick="switchTab('tab-img')">🖼 Imagen</button>
         <button class="tab-btn" onclick="switchTab('tab-libro')">📚 Libro</button>
         <button class="tab-btn" onclick="switchTab('tab-video')">🎬 Prédica</button>
-        <button class="tab-btn" onclick="switchTab('tab-inspiracion')">✨ Inspiración</button>
+
         <button class="tab-btn" onclick="switchTab('tab-evento')">📅 Evento</button>
         <button class="tab-btn" onclick="switchTab('tab-chat')">💬 Mensaje</button>
         <button class="tab-btn" onclick="switchTab('tab-usuarios')">👥 Usuarios</button>
@@ -159,18 +152,7 @@
         <button onclick="publicarVideo()">Publicar Prédica</button>
         <p class="admin-msg" id="msgVideo"></p>
       </div>
-      <div class="tab-content" id="tab-inspiracion">
-        <label>Video de inspiración (máx. 100MB):</label>
-        <input type="file" id="inspFile" accept="video/*"/>
-        <input type="text" id="inspTitulo" placeholder="Título del mensaje"/>
-        <input type="text" id="inspDesc" placeholder="Descripción (opcional)"/>
-        <div class="upload-progress hidden" id="inspProgress">
-          <div class="progress-bar"><div class="progress-fill" id="inspProgressFill"></div></div>
-          <span id="inspProgressTxt">0%</span>
-        </div>
-        <button onclick="publicarInspiracion()">Publicar Inspiración</button>
-        <p class="admin-msg" id="msgInsp"></p>
-      </div>
+
       <div class="tab-content" id="tab-evento">
         <input type="text" id="eventoTitulo" placeholder="Título del evento"/>
         <textarea id="eventoDesc" placeholder="Descripción del evento..."></textarea>
@@ -213,26 +195,36 @@
     <h2 class="section-title">Galería de Imágenes</h2>
     <p class="section-sub">Haz clic en una imagen para verla ampliada.</p>
     <div class="gallery-grid" id="galleryGrid">
-      <div class="gallery-item" onclick="openModalUrl('0001.jpg','Lo veremos regresar','.gallery-item')">
-        <img src="0001.jpg" data-src="0001.jpg" alt="Lo veremos regresar"/><div class="overlay"><span>Lo veremos regresar</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0002.jpg','Servicio Dominical','.gallery-item')">
-        <img src="0002.jpg" data-src="0002.jpg" alt="Servicio Dominical"/><div class="overlay"><span>Servicio Dominical</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0003.jpg','Amigos de Dios','.gallery-item')">
-        <img src="0003.jpg" data-src="0003.jpg" alt="Amigos de Dios"/><div class="overlay"><span>Amigos de Dios</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0004.jpg','Familias con Propósitos','.gallery-item')">
-        <img src="0004.jpg" data-src="0004.jpg" alt="Familias con Propósitos"/><div class="overlay"><span>Familias con Propósitos</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0005.jpg','Centro Cristiano','.gallery-item')">
-        <img src="0005.jpg" data-src="0005.jpg" alt="Centro Cristiano"/><div class="overlay"><span>Centro Cristiano</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0006.jpg','Acción de Gracias','.gallery-item')">
-        <img src="0006.jpg" data-src="0006.jpg" alt="Acción de Gracias"/><div class="overlay"><span>Acción de Gracias</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0007.jpg','Veré tu rostro','.gallery-item')">
-        <img src="0007.jpg" data-src="0007.jpg" alt="Veré tu rostro"/><div class="overlay"><span>Veré tu rostro</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0008.jpg','Aniversario ECO','.gallery-item')">
-        <img src="0008.jpg" data-src="0008.jpg" alt="Aniversario ECO"/><div class="overlay"><span>Aniversario ECO</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0009.jpg','Ministerio de Danza','.gallery-item')">
-        <img src="0009.jpg" data-src="0009.jpg" alt="Ministerio de Danza"/><div class="overlay"><span>Ministerio de Danza</span></div></div>
-      <div class="gallery-item" onclick="openModalUrl('0010.jpg','Equipo CCRLR','.gallery-item')">
-        <img src="0010.jpg" data-src="0010.jpg" alt="Equipo CCRLR"/><div class="overlay"><span>Equipo CCRLR</span></div></div>
+      <!-- Imágenes locales — el admin puede subirlas a Firebase con 📤 -->
+      <div class="gallery-item local-img" data-caption="Lo veremos regresar">
+        <img src="0001.jpg" data-src="0001.jpg" alt="Lo veremos regresar"/>
+        <div class="overlay"><span>Lo veremos regresar</span></div>
+      </div>
+      <div class="gallery-item local-img" data-caption="Servicio Dominical">
+        <img src="0002.jpg" data-src="0002.jpg" alt="Servicio Dominical"/>
+        <div class="overlay"><span>Servicio Dominical</span></div>
+      </div>
+      <div class="gallery-item local-img" data-caption="Amigos de Dios">
+        <img src="0003.jpg" data-src="0003.jpg" alt="Amigos de Dios"/>
+        <div class="overlay"><span>Amigos de Dios</span></div>
+      </div>
+      <div class="gallery-item local-img" data-caption="Familias con Propósitos">
+        <img src="0004.jpg" data-src="0004.jpg" alt="Familias con Propósitos"/>
+        <div class="overlay"><span>Familias con Propósitos</span></div>
+      </div>
+      <div class="gallery-item local-img" data-caption="Horarios">
+        <img src="0005.jpg" data-src="0005.jpg" alt="Horarios"/>
+        <div class="overlay"><span>Horarios</span></div>
+      </div>
+      <div class="gallery-item local-img" data-caption="Centro Cristiano">
+        <img src="0006.jpg" data-src="0006.jpg" alt="Centro Cristiano"/>
+        <div class="overlay"><span>Centro Cristiano</span></div>
+      </div>
+      <div class="gallery-item local-img" data-caption="Veré tu rostro">
+        <img src="0007.jpg" data-src="0007.jpg" alt="Veré tu rostro"/>
+        <div class="overlay"><span>Veré tu rostro</span></div>
+      </div>
+      <!-- Las imágenes subidas desde Firebase se agregan aquí dinámicamente -->
     </div>
   </section>
 
@@ -278,19 +270,7 @@
     </div>
   </section>
 
-  <!-- SECCIÓN MENSAJES DE INSPIRACIÓN (videos cortos) -->
-  <section id="inspiracion-videos" class="section section-alt">
-    <div class="section-header-icon">
-      <img src="predicas.png" alt="Inspiración" class="section-icon"/>
-      <div>
-        <h2 class="section-title">Mensajes de Inspiración</h2>
-        <p class="section-sub">Momentos breves que renuevan el espíritu.</p>
-      </div>
-    </div>
-    <div class="videos-grid" id="inspiracionGrid">
-      <p class="loading-txt">Aún no hay mensajes publicados.</p>
-    </div>
-  </section>
+
 
   <!-- SECCIÓN CALENDARIO -->
   <section id="calendario" class="section">
@@ -307,21 +287,7 @@
   </section>
 
   <!-- SECCIÓN UBICACIÓN -->
-  <section id="ubicacion" class="section section-alt">
-    <div class="section-header-icon">
-      <img src="direccion.png" alt="Ubicación" class="section-icon"/>
-      <div>
-        <h2 class="section-title">Nuestra Ubicación</h2>
-        <p class="section-sub">Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre</p>
-      </div>
-    </div>
-    <div class="mapa-wrap">
-      <iframe
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.3!2d-79.46!3d-1.06!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMcKwMDMnMzYuMCJTIDc5wrAyNyczNi4wIlc!5e0!3m2!1ses!2sec!4v1"
-        width="100%" height="350" style="border:0;border-radius:12px;" allowfullscreen="" loading="lazy">
-      </iframe>
-    </div>
-  </section>
+
 
   <!-- SECCIÓN CHAT -->
   <section id="chat-anchor" class="section chat-promo">
@@ -407,7 +373,9 @@
         <button onclick="registrarChatUser()">Crear cuenta y entrar</button>
       </div>
       <div id="tab-login" class="hidden">
-        <input type="text" id="loginNickname" placeholder="Nombre de usuario" maxlength="20"/>
+        <p class="auth-info" style="margin-bottom:12px;color:var(--muted);font-size:0.85rem;">
+          Tu nombre de usuario se recupera automáticamente de tu cuenta.
+        </p>
         <input type="email" id="loginChatEmail" placeholder="Correo electrónico"/>
         <input type="password" id="loginChatPass" placeholder="Contraseña"/>
         <label class="check-label"><input type="checkbox" id="loginRecordar"/> Mantener sesión iniciada</label>
@@ -436,8 +404,13 @@
       <img src="LOGO_SIN_FONDO.png" alt="CCRLR" class="footer-logo"/>
       <div class="footer-info">
         <p><strong>Centro Cristiano de Restauración Los Ríos</strong></p>
-        <p>📍 Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador</p>
-        <p>✉️ <a href="/cdn-cgi/l/email-protection#2440415641575045515645474d4b4a47644349454d480a474b49"><span class="__cf_email__" data-cfemail="0d69687f687e796c787f6c6e6462636e4d6a606c6461236e6260">[email&#160;protected]</span></a></p>
+        <p class="footer-addr">
+          <img src="direccion.png" alt="ubicación" class="footer-contact-icon"/>
+          Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
+        </p>
+        <p><a href="/cdn-cgi/l/email-protection#ea8e8f988f999e8b9f988b8983858489aa8d878b8386c4898587" class="footer-email-link">
+          <img src="direccion.png" alt="email" class="footer-contact-icon"/> <span class="__cf_email__" data-cfemail="caaeafb8afb9beabbfb8aba9a3a5a4a98aada7aba3a6e4a9a5a7">[email&#160;protected]</span>
+        </a></p>
       </div>
       <div class="footer-redes">
         <a href="https://www.facebook.com/people/Centro-Cristiano-de-Restauraci%C3%B3n-Los-R%C3%ADos/61557973191098/" target="_blank" class="footer-red">
@@ -448,6 +421,9 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.17 8.17 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
           @ecorestauracion
         </a>
+      </div>
+    </div>
+  </footer>
 
   <!-- PANEL "YO" — INFO + MINISTERIOS -->
   <div class="yo-overlay hidden" id="yoOverlay" onclick="cerrarPanelYo()"></div>
@@ -459,8 +435,13 @@
       <img src="LOGO_SIN_FONDO.png" alt="CCRLR" class="yo-logo"/>
       <div class="yo-iglesia-info">
         <h2>Centro Cristiano de Restauración Los Ríos</h2>
-        <p>📍 Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador</p>
-        <p>✉️ <a href="/cdn-cgi/l/email-protection#adc9c8dfc8ded9ccd8dfcccec4c2c3ceedcac0ccc4c183cec2c0"><span class="__cf_email__" data-cfemail="b0d4d5c2d5c3c4d1c5c2d1d3d9dfded3f0d7ddd1d9dc9ed3dfdd">[email&#160;protected]</span></a></p>
+        <p class="yo-addr">
+          <img src="direccion.png" alt="ubicación" class="yo-contact-icon"/>
+          Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
+        </p>
+        <p><a href="/cdn-cgi/l/email-protection#82e6e7f0e7f1f6e3f7f0e3e1ebedece1c2e5efe3ebeeace1edef" class="yo-email-link">
+          <img src="direccion.png" alt="email" class="yo-contact-icon"/> <span class="__cf_email__" data-cfemail="7317160116000712060112101a1c1d1033141e121a1f5d101c1e">[email&#160;protected]</span>
+        </a></p>
         <div class="yo-redes">
           <a href="https://www.facebook.com/people/Centro-Cristiano-de-Restauraci%C3%B3n-Los-R%C3%ADos/61557973191098/" target="_blank" class="yo-red fb">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.514c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
@@ -526,21 +507,7 @@
   <!-- MODAL MINISTERIO -->
   <div class="ministerio-modal hidden" id="ministerioModal">
     <div class="ministerio-modal-inner">
-      <button class="ministerio-close" onclick="cerrarMinisterio()">✕</button>
-      <div class="ministerio-header">
-        <img id="minIcon" src="" alt="" class="min-logo"/>
-        <div>
-                    <h2 id="minNombre"></h2>
-          <p id="minCategoria"></p>
-        </div>
-      </div>
-      <div class="min-gallery" id="minGallery">
-        <p class="loading-txt">Cargando imágenes...</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SERVICE WORKER & SCRIPTS -->
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+      <div class="ministerio-sticky-header">
+        <div class="ministerio-header">
+          <img id="minIcon" src="" alt="" class="min-logo"/>
+          <div
