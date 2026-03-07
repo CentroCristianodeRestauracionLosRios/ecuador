@@ -2825,3 +2825,42 @@ body.tema-claro .nav-icon-link[href="#imagenes"] .nav-icon {
 @media (max-width: 768px) {
   #temaLabel { display: none; }
 }
+
+/* ===== ICONOS DE CONTACTO (footer y panel Yo) ===== */
+.footer-contact-icon,
+.yo-contact-icon {
+  width: 16px; height: 16px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 6px;
+  filter: brightness(0) invert(0.6);
+  flex-shrink: 0;
+}
+body.tema-claro .footer-contact-icon,
+body.tema-claro .yo-contact-icon {
+  filter: none; opacity: 0.6;
+}
+
+.footer-email-link,
+.yo-email-link {
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+.footer-email-link:hover,
+.yo-email-link:hover {
+  color: var(--accent);
+}
+.footer-email-link:hover .footer-contact-icon,
+.yo-email-link:hover .yo-contact-icon {
+  filter: brightness(0) saturate(100%) invert(78%) sepia(60%) saturate(500%) hue-rotate(5deg);
+}
+
+.footer-addr,
+.yo-addr {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
