@@ -12,6 +12,9 @@ import {
 import {
   getDatabase, ref, push, onValue, serverTimestamp, remove, update, get
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import {
+  getMessaging, getToken, onMessage
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 // ── CONFIGURACIÓN FIREBASE ────────────────────
 const firebaseConfig = {
@@ -28,6 +31,8 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
+let messaging_fcm = null;
+try { messaging_fcm = getMessaging(app); } catch(e) { console.warn('FCM no disponible:', e); }
 
 const ADMIN_EMAIL = "haroldolmedoanchundia@gmail.com";
 
@@ -554,6 +559,13 @@ onValue(ref(db,'eventos'), (snap) => {
             onclick="toggleNotifEvento('${e.key}','${escapeHTML(e.titulo).replace(/'/g,"\\'")}','${e.fechaISO}',this)">
             ${notifActiva ? '🔔 Recordatorio activo' : '🔔 Recordatorio'}
           </button>
+          <button
+            class="btn-rsvp ${e.rsvp&&e.rsvp[currentUser?.uid] ? 'btn-rsvp-ok' : ''}"
+            id="rsvp-${e.key}"
+            onclick="toggleRsvp('${e.key}',this)">
+            ${e.rsvp&&e.rsvp[currentUser?.uid] ? '✅ Asistiré' : '🙋 Asistiré'}
+          </button>
+          ${isAdmin&&e.rsvp ? `<span class="rsvp-count">👥 ${Object.keys(e.rsvp).length} confirmados</span>` : ''}
         </div>
       </div>
       <div class="evento-admin-btns">
@@ -633,10 +645,27 @@ window.marcarGcal = (key, el) => {
   el.textContent = '✅ Agregado al calendario';
 };
 
+// ── RSVP — Confirmar asistencia ──────────────
+window.toggleRsvp = async (key, btn) => {
+  if (!currentUser) { abrirModalChat(); return; }
+  const uid = currentUser.uid;
+  const rsvpRef = ref(db, `eventos/${key}/rsvp/${uid}`);
+  const snap = await get(rsvpRef);
+  if (snap.exists()) {
+    await remove(rsvpRef);
+    btn.classList.remove('btn-rsvp-ok');
+    btn.textContent = '🙋 Asistiré';
+  } else {
+    const nick = chatNickname || localStorage.getItem('chatNickname') || currentUser.email.split('@')[0];
+    await update(ref(db, `eventos/${key}/rsvp`), { [uid]: { nombre: nick, ts: Date.now() } });
+    btn.classList.add('btn-rsvp-ok');
+    btn.textContent = '✅ Asistiré';
+  }
+};
+
 window.toggleNotifEvento = async (key, titulo, fechaISO, btn) => {
   const activa = !!localStorage.getItem('notif_' + key);
   if (activa) {
-    // Desactivar
     localStorage.removeItem('notif_' + key);
     const ev = JSON.parse(localStorage.getItem('eventos_push') || '{}');
     delete ev[key];
@@ -663,13 +692,52 @@ function mostrarRecordatorio(evento) {
 window.cerrarToast = () =>
   document.getElementById('toastRecordatorio').classList.add('hidden');
 
-// ── NOTIFICACIONES PUSH (Service Worker) ──────
+// ── SERVICE WORKER + FCM ──────────────────────
+let swRegistration = null;
+
 async function registrarServiceWorker() {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  if (!('serviceWorker' in navigator)) return;
   try {
-    await navigator.serviceWorker.register('sw.js');
+    swRegistration = await navigator.serviceWorker.register('sw.js');
+    console.log('SW registrado OK');
+    // Escuchar mensajes push en foreground
+    if (messaging_fcm) {
+      onMessage(messaging_fcm, (payload) => {
+        const notif = payload.notification || {};
+        mostrarNotifLocal(notif.title || '📅 CCRLR', notif.body || '');
+      });
+    }
   } catch(e) { console.warn('SW no registrado:', e); }
 }
+
+// Solicitar permiso y obtener token FCM
+window.pedirPermisoNotificaciones = async () => {
+  if (!('Notification' in window)) return null;
+  const permiso = await Notification.requestPermission();
+  if (permiso !== 'granted') return null;
+  if (!messaging_fcm || !swRegistration) return null;
+  try {
+    const token = await getToken(messaging_fcm, {
+      vapidKey: 'BMTP5WhtWS0H1uK9z3pOeRtQvm2QPWcH3o_MMZ5kEQ_vB5mCLsXxLdjaudu_zpfVQhXtQ2efmyfmL-ix91UCYgM',
+      serviceWorkerRegistration: swRegistration
+    });
+    if (token) {
+      // Guardar token en Firebase vinculado al usuario
+      if (currentUser) {
+        await update(ref(db, `usuarios/${currentUser.uid}`), { fcmToken: token });
+      }
+      // Registrar token en nodo global para suscripción al tema "eventos"
+      // El admin puede usar estos tokens para enviar a todos desde Firebase Console
+      const tokenKey = token.replace(/[^a-zA-Z0-9]/g, '').slice(-30);
+      await update(ref(db, 'fcm_tokens/' + tokenKey), {
+        token,
+        uid: currentUser ? currentUser.uid : 'anonimo',
+        ts: Date.now()
+      }).catch(() => {});
+    }
+    return token;
+  } catch(e) { console.warn('FCM token error:', e); return null; }
+};
 
 window.suscribirNotifEvento = async (key, titulo, fechaISO, btn) => {
   if (!('Notification' in window)) {
@@ -683,73 +751,84 @@ window.suscribirNotifEvento = async (key, titulo, fechaISO, btn) => {
   eventos[key] = { titulo, fechaISO };
   localStorage.setItem('eventos_push', JSON.stringify(eventos));
   localStorage.setItem('notif_' + key, '1');
-
   if (btn) { btn.classList.add('btn-notif-ok'); btn.textContent = '🔔 Recordatorio activo'; }
 
-  const fechaEvento  = new Date(fechaISO).getTime();
-  const ahora        = Date.now();
-  const unDia        = 24 * 60 * 60 * 1000;
-  const msHastaNotif = (fechaEvento - unDia) - ahora;
+  const fechaEvento = new Date(fechaISO).getTime();
+  const ahora = Date.now();
+  const unDia = 86400000;
+  const unaHora = 3600000;
 
-  if (msHastaNotif <= 0) {
-    mostrarNotifInmediata(titulo, fechaISO);
+  // Recordatorio 1 día antes
+  const ms1dia = (fechaEvento - unDia) - ahora;
+  if (ms1dia > 0) setTimeout(() => mostrarNotifLocal(`📅 Mañana: ${titulo}`,
+    `El evento es mañana a las ${new Date(fechaISO).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}. ¡No faltes!`), ms1dia);
+
+  // Recordatorio 1 hora antes
+  const ms1hora = (fechaEvento - unaHora) - ahora;
+  if (ms1hora > 0) setTimeout(() => mostrarNotifLocal(`⏰ En 1 hora: ${titulo}`,
+    `El evento empieza en 1 hora. ¡Prepárate!`), ms1hora);
+
+  if (ms1dia <= 0 && ms1hora <= 0) {
+    mostrarNotifLocal(`📅 Hoy: ${titulo}`, '¡El evento es hoy!');
   } else {
-    setTimeout(() => mostrarNotifInmediata(titulo, fechaISO), msHastaNotif);
-    const horas = Math.round(msHastaNotif / 3600000);
-    alert(`✅ Recordatorio activado. Recibirás una notificación 1 día antes (en ~${horas} horas).`);
+    const horas = Math.round(Math.max(ms1dia, 0) / 3600000);
+    mostrarToastConfirm(`✅ Recordatorio activado — ${horas > 0 ? `notificación en ~${horas}h` : 'notificación pronto'}`);
   }
 };
 
-function mostrarNotifInmediata(titulo, fechaISO) {
-  const fecha = new Date(fechaISO);
-  const hora  = fecha.toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
-  if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification('📅 CCRLR — Recordatorio de evento', {
-        body: `"${titulo}" es mañana a las ${hora}. ¡No faltes!`,
-        icon: 'ICONO.png',
-        badge: 'ICONO.png',
-        vibrate: [200, 100, 200],
-        tag: 'evento-' + titulo,
-        requireInteraction: true
-      });
-    }).catch(() => {
-      // Fallback: notificación directa si SW no está listo
-      new Notification('📅 CCRLR — Recordatorio', {
-        body: `"${titulo}" es mañana a las ${hora}`,
-        icon: 'ICONO.png'
-      });
+function mostrarNotifLocal(titulo, cuerpo) {
+  if (Notification.permission !== 'granted') return;
+  navigator.serviceWorker.ready.then(reg => {
+    reg.showNotification(titulo, {
+      body: cuerpo,
+      icon: 'ICONO.png',
+      badge: 'ICONO.png',
+      vibrate: [200, 100, 200, 100, 200],
+      requireInteraction: true
     });
-  }
+  }).catch(() => new Notification(titulo, { body: cuerpo, icon: 'ICONO.png' }));
 }
 
-// Restaurar recordatorios pendientes al cargar la página
+function mostrarToastConfirm(msg) {
+  const t = document.getElementById('toastTitulo');
+  const m = document.getElementById('toastMsg');
+  const toast = document.getElementById('toastRecordatorio');
+  if (!toast) return;
+  if (t) t.textContent = msg;
+  if (m) m.textContent = '';
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), 4000);
+}
+
 function restaurarRecordatoriosPendientes() {
   if (Notification.permission !== 'granted') return;
   const eventos = JSON.parse(localStorage.getItem('eventos_push') || '{}');
-  const ahora   = Date.now();
-  const unDia   = 24 * 60 * 60 * 1000;
+  const ahora = Date.now();
+  const unDia = 86400000;
+  const unaHora = 3600000;
   Object.entries(eventos).forEach(([key, e]) => {
-    const fechaEvento  = new Date(e.fechaISO).getTime();
-    const msHastaNotif = (fechaEvento - unDia) - ahora;
-    if (msHastaNotif > 0) {
-      setTimeout(() => mostrarNotifInmediata(e.titulo, e.fechaISO), msHastaNotif);
-    } else if (fechaEvento > ahora) {
-      // El evento no ha pasado pero ya es el día — notificar
-      mostrarNotifInmediata(e.titulo, e.fechaISO);
-    }
-    // Limpiar eventos ya pasados
-    if (fechaEvento < ahora) {
-      delete eventos[key];
-      localStorage.setItem('eventos_push', JSON.stringify(eventos));
-    }
+    const ts = new Date(e.fechaISO).getTime();
+    if (ts < ahora) { delete eventos[key]; return; }
+    const ms1d = (ts - unDia) - ahora;
+    const ms1h = (ts - unaHora) - ahora;
+    if (ms1d > 0) setTimeout(() => mostrarNotifLocal(`📅 Mañana: ${e.titulo}`,
+      `El evento es mañana. ¡No faltes!`), ms1d);
+    if (ms1h > 0) setTimeout(() => mostrarNotifLocal(`⏰ En 1 hora: ${e.titulo}`,
+      `¡El evento empieza en 1 hora!`), ms1h);
   });
+  localStorage.setItem('eventos_push', JSON.stringify(eventos));
 }
 
 // Inicializar al cargar
 document.addEventListener('DOMContentLoaded', () => {
   registrarServiceWorker();
   restaurarRecordatoriosPendientes();
+  // Pedir permiso automáticamente después de 3 segundos
+  setTimeout(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      pedirPermisoNotificaciones();
+    }
+  }, 3000);
 });
 
 // ── AUTO-BORRAR MENSAJES CHAT +30 DÍAS ────────
@@ -1581,3 +1660,48 @@ window.togglePass = (inputId, btn) => {
     btn.style.opacity = '0.5';
   }
 };
+
+// ── PWA INSTALL BANNER ────────────────────────
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Mostrar banner solo si no fue descartado antes
+  if (!localStorage.getItem('pwa_banner_dismissed')) {
+    setTimeout(() => {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.style.display = 'flex';
+    }, 4000);
+  }
+});
+
+window.instalarPWA = async () => {
+  const banner = document.getElementById('pwa-install-banner');
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  if (outcome === 'accepted') {
+    if (banner) banner.style.display = 'none';
+    // Pedir permiso de notificaciones justo después de instalar
+    setTimeout(() => pedirPermisoNotificaciones(), 1500);
+  }
+  deferredInstallPrompt = null;
+};
+
+window.cerrarBannerPWA = () => {
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.style.display = 'none';
+  localStorage.setItem('pwa_banner_dismissed', '1');
+};
+
+// Una vez instalada como PWA, ocultar banner
+window.addEventListener('appinstalled', () => {
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.style.display = 'none';
+});
+
+// ── REGLAS FIREBASE RECOMENDADAS (recordatorio) ──
+// eventos: { ".read": true, ".write": "auth != null && auth.token.email === 'haroldolmedoanchundia@gmail.com'",
+//   "$id": { "rsvp": { "$uid": { ".write": "auth != null && auth.uid === $uid" } } } }
+// usuarios: agregar "fcmToken" en cada nodo $uid
