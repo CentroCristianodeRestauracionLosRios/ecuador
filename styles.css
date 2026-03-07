@@ -2864,3 +2864,100 @@ body.tema-claro .yo-contact-icon {
   align-items: flex-start;
   gap: 4px;
 }
+
+/* ===== MENÚ HAMBURGUESA MÓVIL ===== */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  margin-left: 6px;
+}
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--muted);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+@media (max-width: 768px) {
+  /* Mostrar hamburguesa, ocultar nav-links por defecto */
+  .nav-hamburger { display: flex; }
+
+  /* El logo hace de botón inicio */
+  .logo { display: flex; align-items: center; }
+
+  /* Nav-links: menú desplegable vertical en móvil */
+  .nav-links {
+    display: none;
+    position: fixed;
+    top: 57px;
+    left: 0;
+    right: 0;
+    background: var(--navbar-bg);
+    backdrop-filter: blur(12px);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--navbar-border);
+    z-index: 99;
+    overflow-x: unset;
+    overflow-y: auto;
+    max-height: calc(100vh - 57px);
+  }
+  .nav-links.menu-open {
+    display: flex;
+  }
+  .nav-links li {
+    width: 100%;
+  }
+  .nav-links a {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 24px;
+    font-size: 0.95rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .nav-links a .nav-icon {
+    width: 20px;
+    height: 20px;
+    order: -1; /* icono a la izquierda del texto */
+  }
+}
+
+/* ===== FOOTER RESPONSIVE MEJORADO ===== */
+@media (min-width: 769px) {
+  .footer-inner {
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+  .footer-info { text-align: left; }
+}
+
+@media (max-width: 768px) {
+  .footer-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-addr { justify-content: center; }
+  .footer-email-link { justify-content: center; }
+  .footer-redes { align-items: center; }
+}

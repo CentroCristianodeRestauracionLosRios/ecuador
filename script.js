@@ -1536,3 +1536,21 @@ window.toggleTema = () => {
   const actual = localStorage.getItem('tema') || 'oscuro';
   aplicarTema(actual === 'oscuro' ? 'claro' : 'oscuro');
 };
+
+// ── MENÚ HAMBURGUESA MÓVIL ────────────────────
+window.toggleNavMenu = () => {
+  const links = document.querySelector('.nav-links');
+  const btn   = document.getElementById('navHamburger');
+  links.classList.toggle('menu-open');
+  btn.classList.toggle('open');
+};
+
+// Cerrar menú al hacer clic en cualquier enlace del nav
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelector('.nav-links')?.classList.remove('menu-open');
+      document.getElementById('navHamburger')?.classList.remove('open');
+    });
+  });
+});
