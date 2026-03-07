@@ -510,4 +510,78 @@
       <div class="ministerio-sticky-header">
         <div class="ministerio-header">
           <img id="minIcon" src="" alt="" class="min-logo"/>
-          <div
+          <div><h2 id="minNombre"></h2><p id="minCategoria"></p></div>
+        </div>
+        <button class="ministerio-close" onclick="cerrarMinisterio()">✕</button>
+      </div>
+      <div id="minGallery"></div>
+    </div>
+  </div>
+
+  <!-- MODAL IMAGEN -->
+  <div class="modal" id="imgModal">
+    <button class="modal-nav modal-prev" onclick="prevImg()">&#8592;</button>
+    <div class="modal-content">
+      <button class="close-btn" onclick="cerrarModal()">✕</button>
+      <img id="modalImg" src="" alt=""/>
+      <div class="modal-footer">
+        <span class="modal-caption" id="modalCaption"></span>
+        <span class="modal-counter" id="modalCounter"></span>
+      </div>
+    </div>
+    <button class="modal-nav modal-next" onclick="nextImg()">&#8594;</button>
+  </div>
+
+  <!-- MODAL EDITAR EVENTO -->
+  <div class="modal-overlay hidden" id="editEventoModal">
+    <div class="modal-box">
+      <h3>Editar Evento</h3>
+      <input type="text" id="eeT" placeholder="Título"/>
+      <textarea id="eeD" placeholder="Descripción"></textarea>
+      <label style="color:var(--muted);font-size:0.85rem;">Fecha y hora:</label>
+      <input type="datetime-local" id="eeF"/>
+      <input type="text" id="eeL" placeholder="Lugar o enlace Meet/Zoom"/>
+      <input type="text" id="eeE" placeholder="Enlace adicional (opcional)"/>
+      <select id="eeM">
+        <option value="">— Sin ministerio —</option>
+        <option value="jovenes">ECORESTAURACIÓN — Jóvenes</option>
+        <option value="alabanza">HEREDAD — Alabanza</option>
+        <option value="danza">HIJAS DE SION — Danza</option>
+        <option value="mujeres">MUJERES CON PROPÓSITO — Damas</option>
+        <option value="ninos">FORJADORES DEL MAÑANA — Niños</option>
+        <option value="teatro">Ministerio de Teatro</option>
+        <option value="ujieres">Ministerio de Ujieres</option>
+      </select>
+      <p class="admin-msg" id="msgEditEvento"></p>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button onclick="guardarEvento()">💾 Guardar</button>
+        <button class="btn-cancel" onclick="cerrarEditarEvento()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MOVER MEDIA -->
+  <div class="modal-overlay hidden" id="moverMediaModal">
+    <div class="modal-box">
+      <h3>Asignar a Ministerio</h3>
+      <select id="moverSelect">
+        <option value="">— Galería general —</option>
+        <option value="jovenes">ECORESTAURACIÓN — Jóvenes</option>
+        <option value="alabanza">HEREDAD — Alabanza</option>
+        <option value="danza">HIJAS DE SION — Danza</option>
+        <option value="mujeres">MUJERES CON PROPÓSITO — Damas</option>
+        <option value="ninos">FORJADORES DEL MAÑANA — Niños</option>
+        <option value="teatro">Ministerio de Teatro</option>
+        <option value="ujieres">Ministerio de Ujieres</option>
+      </select>
+      <p class="admin-msg" id="msgMover"></p>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button onclick="confirmarMoverMedia()">✅ Confirmar</button>
+        <button class="btn-cancel" onclick="cerrarMoverMedia()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js" type="module"></script>
+</body>
+</html>

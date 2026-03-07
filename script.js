@@ -370,7 +370,9 @@ window.publicarVideo = async () => {
 
 // ── PUBLICAR INSPIRACIÓN (video) ─────────────
 window.publicarInspiracion = async () => {
-  const file   = document.getElementById('inspFile').files[0];
+  const inspFileEl = document.getElementById('inspFile');
+  if (!inspFileEl) return; // sección eliminada
+  const file   = inspFileEl.files[0];
   const titulo = document.getElementById('inspTitulo').value.trim();
   const desc   = document.getElementById('inspDesc').value.trim();
   const msg    = document.getElementById('msgInsp');
