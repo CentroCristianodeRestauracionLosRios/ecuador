@@ -1217,20 +1217,23 @@ window.cerrarPanelYo = () => {
 
 // ── MINISTERIOS ───────────────────────────────
 const MINISTERIOS = {
-  jovenes:  { nombre:'ECORESTAURACIÓN',        categoria:'Ministerio de Jóvenes',  icono:'JOVENES.png',            tag:'jovenes'  },
-  alabanza: { nombre:'HEREDAD',                categoria:'Ministerio de Alabanza',  icono:'ALABANZA.png',           tag:'alabanza' },
-  danza:    { nombre:'HIJAS DE SION',          categoria:'Ministerio de Danza',     icono:'DANZA.png',              tag:'danza'    },
-  mujeres:  { nombre:'MUJERES CON PROPÓSITO',  categoria:'Ministerio de Damas',     icono:'MUJERES_CON_PROPOSITO.png', tag:'mujeres' },
-  ninos:    { nombre:'FORJADORES DEL MAÑANA',  categoria:'Ministerio de Niños',     icono:'NIÑOS.png',              tag:'ninos'    },
-  teatro:   { nombre:'MINISTERIO DE TEATRO',   categoria:'Teatro',                  icono:'TEATRO.png',             tag:'teatro'   },
-  ujieres:  { nombre:'MINISTERIO DE UJIERES',  categoria:'Ujieres',                 icono:'UJIERES.png',            tag:'ujieres'  },
+  jovenes:  { nombre:'ECORESTAURACIÓN',        categoria:'Ministerio de Jóvenes',  icono:'JOVENES_N.png',               tag:'jovenes'  },
+  alabanza: { nombre:'HEREDAD',                categoria:'Ministerio de Alabanza',  icono:'ALABANZA_N.png',              tag:'alabanza' },
+  danza:    { nombre:'HIJAS DE SION',          categoria:'Ministerio de Danza',     icono:'DANZA_N.png',                 tag:'danza'    },
+  mujeres:  { nombre:'MUJERES CON PROPÓSITO',  categoria:'Ministerio de Damas',     icono:'MUJERES_CON_PROPOSITO_N.png', tag:'mujeres'  },
+  ninos:    { nombre:'FORJADORES DEL MAÑANA',  categoria:'Ministerio de Niños',     icono:'NIÑOS_N.png',                 tag:'ninos'    },
+  teatro:   { nombre:'MINISTERIO DE TEATRO',   categoria:'Teatro',                  icono:'TEATRO_N.png',                tag:'teatro'   },
+  ujieres:  { nombre:'MINISTERIO DE UJIERES',  categoria:'Ujieres',                 icono:'UJIERES_N.png',               tag:'ujieres'  },
 };
 
 window.abrirMinisterio = (id) => {
   const m = MINISTERIOS[id];
   if (!m) return;
 
-  document.getElementById('minIcon').src            = m.icono;
+  // Ícono correcto según tema
+  const temaClaro = document.body.classList.contains('tema-claro');
+  const iconoSrc  = temaClaro ? m.icono.replace('_N.png', '.png') : m.icono;
+  document.getElementById('minIcon').src            = iconoSrc;
   document.getElementById('minIcon').alt            = m.nombre;
   document.getElementById('minNombre').textContent     = m.nombre;
   document.getElementById('minCategoria').textContent  = m.categoria;
@@ -1242,54 +1245,70 @@ window.abrirMinisterio = (id) => {
   document.getElementById('ministerioModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 
-  // Cargar todo el contenido del ministerio desde Firebase
   let imgData = {}, evtData = {}, vidData = {};
   let cargados = 0;
 
   function renderTodo() {
     cargados++;
-    if (cargados < 3) return; // esperar los 3 onValue
+    if (cargados < 3) return;
     gallery.innerHTML = '';
 
-    // ── IMÁGENES ──
-    const imgs = Object.entries(imgData).filter(([,i]) => i.ministerio === m.tag);
+    const imgs = Object.entries(imgData).filter(([,i]) => i.ministerio === m.tag).reverse();
+    const ahora = Date.now();
+    const evts  = Object.entries(evtData)
+      .filter(([,e]) => e.ministerio === m.tag && new Date(e.fechaISO).getTime() >= ahora - 86400000)
+      .sort((a,b) => new Date(a[1].fechaISO) - new Date(b[1].fechaISO));
+    const vids  = Object.entries(vidData).filter(([,v]) => v.ministerio === m.tag).reverse();
+
+    if (!imgs.length && !evts.length && !vids.length) {
+      gallery.innerHTML = '<p class="loading-txt">Aún no hay contenido en este ministerio.</p>';
+      return;
+    }
+
+    // ── IMÁGENES ──────────────────────────────────
     if (imgs.length) {
       const h = document.createElement('h4');
       h.className = 'min-section-title'; h.textContent = '🖼️ Imágenes';
       gallery.appendChild(h);
+
       const grid = document.createElement('div');
       grid.className = 'min-imgs-grid';
-      imgs.reverse().forEach(([key, img]) => {
+
+      imgs.forEach(([key, img], arrIdx) => {
         const div = document.createElement('div');
         div.className = 'min-img-item';
         div.innerHTML = `
-          <img src="${img.url}" data-src="${img.url}" alt="${img.caption||''}" loading="lazy"/>
+          <img src="${img.url}" data-src="${img.url}" alt="${escapeHTML(img.caption||'')}" loading="lazy"/>
           ${img.caption ? `<span>${escapeHTML(img.caption)}</span>` : ''}
           ${isAdmin ? `<div class="min-admin-btns">
             <button onclick="event.stopPropagation();borrarImagen('${key}')" title="Borrar">🗑️</button>
-            <button onclick="event.stopPropagation();abrirMoverMedia('${key}','imagen')" title="Mover">📂</button>
+            <button onclick="event.stopPropagation();abrirMoverMedia('${key}','imagen')" title="Quitar de ministerio">📂</button>
           </div>` : ''}`;
-        div.onclick = () => openModalUrl(img.url, img.caption||'', '.min-img-item');
+        // Abrir modal sin depender del selector DOM
+        div.addEventListener('click', () => {
+          galeriaActual = imgs.map(([,i]) => ({ url: i.url, alt: i.caption||'' }));
+          galeriaIndex  = arrIdx;
+          mostrarImagenModal(galeriaIndex);
+          document.getElementById('imgModal').classList.add('active');
+          document.body.style.overflow = 'hidden';
+        });
         grid.appendChild(div);
       });
       gallery.appendChild(grid);
     }
 
-    // ── EVENTOS ──
-    const ahora = Date.now();
-    const evts = Object.entries(evtData)
-      .filter(([,e]) => e.ministerio === m.tag && new Date(e.fechaISO).getTime() >= ahora - 86400000)
-      .sort((a,b) => new Date(a[1].fechaISO) - new Date(b[1].fechaISO));
+    // ── ACTIVIDADES ───────────────────────────────
     if (evts.length) {
       const h = document.createElement('h4');
       h.className = 'min-section-title'; h.textContent = '📅 Actividades';
       gallery.appendChild(h);
+
       evts.forEach(([key, e]) => {
         const fecha = new Date(e.fechaISO);
-        const esEnlace = s => s && (s.startsWith('http://') || s.startsWith('https://'));
-        const div = document.createElement('div');
-        div.className = 'min-evento-card';
-        div.innerHTML = `
+        const esURL = s => s && (s.startsWith('http://') || s.startsWith('https://'));
+        const card  = document.createElement('div');
+        card.className = 'min-evento-card';
+        card.innerHTML = `
           <div class="min-evento-fecha">
             <span>${fecha.getDate()}</span>
             <small>${fecha.toLocaleString('es',{month:'short'}).toUpperCase()}</small>
@@ -1297,49 +1316,42 @@ window.abrirMinisterio = (id) => {
           <div class="min-evento-info">
             <strong>${escapeHTML(e.titulo)}</strong>
             ${e.desc ? `<p>${escapeHTML(e.desc)}</p>` : ''}
-            ${e.lugar ? esEnlace(e.lugar)
+            ${e.lugar ? esURL(e.lugar)
               ? `<a href="${escapeHTML(e.lugar)}" target="_blank" class="evento-meet-btn">🎥 Unirse al Meet</a>`
-              : `<span>📍 ${escapeHTML(e.lugar)}</span>` : ''}
-            ${e.enlace ? esEnlace(e.enlace)
-              ? `<a href="${escapeHTML(e.enlace)}" target="_blank" class="evento-meet-btn">🔗 Enlace</a>`
-              : '' : ''}
-            <span>🕐 ${fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</span>
+              : `<em>📍 ${escapeHTML(e.lugar)}</em>` : ''}
+            ${e.enlace && esURL(e.enlace) ? `<a href="${escapeHTML(e.enlace)}" target="_blank" class="evento-meet-btn">🔗 Enlace</a>` : ''}
+            <em>🕐 ${fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</em>
           </div>
           ${isAdmin ? `<div class="min-admin-btns-col">
             <button onclick="abrirEditarEvento('${key}')" title="Editar">✏️</button>
-            <button onclick="abrirMoverMedia('${key}','evento')" title="Mover">📂</button>
+            <button onclick="abrirMoverMedia('${key}','evento')" title="Quitar de ministerio">📂</button>
             <button onclick="borrarEvento('${key}')" title="Borrar">🗑️</button>
           </div>` : ''}`;
-        gallery.appendChild(div);
+        gallery.appendChild(card);
       });
     }
 
-    // ── VIDEOS ──
-    const vids = Object.entries(vidData).filter(([,v]) => v.ministerio === m.tag);
+    // ── VIDEOS ────────────────────────────────────
     if (vids.length) {
       const h = document.createElement('h4');
       h.className = 'min-section-title'; h.textContent = '🎬 Videos';
       gallery.appendChild(h);
-      vids.reverse().forEach(([key, vid]) => {
-        const div = document.createElement('div');
-        div.className = 'min-video-card';
-        div.innerHTML = `
+
+      vids.forEach(([key, vid]) => {
+        const card = document.createElement('div');
+        card.className = 'min-video-card';
+        card.innerHTML = `
           <video src="${vid.url}" controls preload="metadata" playsinline></video>
           <div class="min-video-info">
             <strong>${escapeHTML(vid.titulo)}</strong>
             ${vid.desc ? `<p>${escapeHTML(vid.desc)}</p>` : ''}
           </div>
-          ${isAdmin ? `<div class="min-admin-btns">
-            <button onclick="abrirMoverMedia('${key}','video')" title="Mover">📂</button>
-            <button onclick="borrarVideo('${key}')" title="Borrar">🗑️</button>
+          ${isAdmin ? `<div style="display:flex;gap:6px;padding:0 12px 10px;">
+            <button onclick="abrirMoverMedia('${key}','video')" class="btn-secondary" style="font-size:0.8rem;padding:5px 10px;">📂 Quitar</button>
+            <button onclick="borrarVideo('${key}')" class="btn-danger" style="font-size:0.8rem;padding:5px 10px;">🗑️ Borrar</button>
           </div>` : ''}`;
-        gallery.appendChild(div);
+        gallery.appendChild(card);
       });
-    }
-
-    // Sin contenido
-    if (!imgs.length && !evts.length && !vids.length) {
-      gallery.innerHTML = '<p class="loading-txt">Aún no hay contenido en este ministerio.</p>';
     }
   }
 
@@ -1347,7 +1359,6 @@ window.abrirMinisterio = (id) => {
   onValue(ref(db,'eventos'),  s => { evtData = s.val()||{}; renderTodo(); }, {onlyOnce:true});
   onValue(ref(db,'videos'),   s => { vidData = s.val()||{}; renderTodo(); }, {onlyOnce:true});
 };
-
 window.cerrarMinisterio = () => {
   document.getElementById('ministerioModal').classList.add('hidden');
   document.body.style.overflow = '';
