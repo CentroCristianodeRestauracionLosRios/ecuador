@@ -193,8 +193,13 @@
 
   <!-- SECCIÓN IMÁGENES -->
   <section id="imagenes" class="section">
-    <h2 class="section-title">Galería de Imágenes</h2>
-    <p class="section-sub">Haz clic en una imagen para verla ampliada.</p>
+    <div class="section-header-icon">
+      <img src="imagenes.png" alt="Galería" class="section-icon"/>
+      <div>
+        <h2 class="section-title">Galería de Imágenes</h2>
+        <p class="section-sub">Haz clic en una imagen para verla ampliada.</p>
+      </div>
+    </div>
     <div class="gallery-grid" id="galleryGrid">
       <!-- Imágenes locales — el admin puede subirlas a Firebase con 📤 -->
       <div class="gallery-item local-img" data-caption="Lo veremos regresar">
@@ -424,8 +429,8 @@
           <img src="direccion.png" alt="ubicación" class="footer-contact-icon"/>
           Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
         </p>
-        <p><a href="mailto:derestauracionc@gmail.com" class="footer-email-link">
-          <img src="direccion.png" alt="email" class="footer-contact-icon"/> derestauracionc@gmail.com
+        <p><a href="/cdn-cgi/l/email-protection#c7a3a2b5a2b4b3a6b2b5a6a4aea8a9a487a0aaa6aeabe9a4a8aa" class="footer-email-link">
+          <img src="direccion.png" alt="email" class="footer-contact-icon"/> <span class="__cf_email__" data-cfemail="f99d9c8b9c8a8d988c8b989a9096979ab99e94989095d79a9694">[email&#160;protected]</span>
         </a></p>
       </div>
       <div class="footer-redes">
@@ -593,11 +598,4 @@
       <p class="admin-msg" id="msgMover"></p>
       <div style="display:flex;gap:10px;margin-top:8px;">
         <button onclick="confirmarMoverMedia()">✅ Confirmar</button>
-        <button class="btn-cancel" onclick="cerrarMoverMedia()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js" type="module"></script>
-</body>
-</html>
+        <button class="btn-cancel" 
