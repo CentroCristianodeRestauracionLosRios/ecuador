@@ -27,7 +27,8 @@
   <nav class="navbar">
     <div class="logo">
       <a href="#inicio" title="Inicio" class="logo-inicio-link">
-        <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo"/>
+        <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo nav-logo-desktop"/>
+        <img src="casa.png" alt="Inicio" class="nav-logo nav-logo-mobile nav-icon-home"/>
       </a>
       <button class="nav-hamburger" id="navHamburger" onclick="toggleNavMenu()" title="Menú" aria-label="Abrir menú">
         <span></span><span></span><span></span>
@@ -368,7 +369,10 @@
       <div id="tab-registro">
         <input type="text" id="regNickname" placeholder="Nombre de usuario" maxlength="20"/>
         <input type="email" id="regEmail" placeholder="Correo electrónico"/>
-        <input type="password" id="regPass" placeholder="Contraseña (mínimo 6 caracteres)"/>
+        <div class="pass-wrap">
+          <input type="password" id="regPass" placeholder="Contraseña (mínimo 6 caracteres)"/>
+          <button type="button" class="btn-eye" onclick="togglePass('regPass',this)" tabindex="-1">👁</button>
+        </div>
         <label class="check-label"><input type="checkbox" id="regRecordar"/> Mantener sesión iniciada</label>
         <button onclick="registrarChatUser()">Crear cuenta y entrar</button>
       </div>
@@ -377,7 +381,10 @@
           Tu nombre de usuario se recupera automáticamente de tu cuenta.
         </p>
         <input type="email" id="loginChatEmail" placeholder="Correo electrónico"/>
-        <input type="password" id="loginChatPass" placeholder="Contraseña"/>
+        <div class="pass-wrap">
+          <input type="password" id="loginChatPass" placeholder="Contraseña"/>
+          <button type="button" class="btn-eye" onclick="togglePass('loginChatPass',this)" tabindex="-1">👁</button>
+        </div>
         <label class="check-label"><input type="checkbox" id="loginRecordar"/> Mantener sesión iniciada</label>
         <button onclick="loginChatUser()">Ingresar</button>
       </div>
@@ -388,9 +395,18 @@
       </div>
       <div id="tab-cambiar" class="hidden">
         <p class="auth-info">Ingresa tu contraseña actual y la nueva.</p>
-        <input type="password" id="passActual" placeholder="Contraseña actual"/>
-        <input type="password" id="passNueva" placeholder="Nueva contraseña"/>
-        <input type="password" id="passConfirm" placeholder="Confirmar nueva contraseña"/>
+        <div class="pass-wrap">
+          <input type="password" id="passActual" placeholder="Contraseña actual"/>
+          <button type="button" class="btn-eye" onclick="togglePass('passActual',this)" tabindex="-1">👁</button>
+        </div>
+        <div class="pass-wrap">
+          <input type="password" id="passNueva" placeholder="Nueva contraseña"/>
+          <button type="button" class="btn-eye" onclick="togglePass('passNueva',this)" tabindex="-1">👁</button>
+        </div>
+        <div class="pass-wrap">
+          <input type="password" id="passConfirm" placeholder="Confirmar nueva contraseña"/>
+          <button type="button" class="btn-eye" onclick="togglePass('passConfirm',this)" tabindex="-1">👁</button>
+        </div>
         <button onclick="cambiarContrasena()">Actualizar contraseña</button>
       </div>
       <p class="chat-auth-error hidden" id="chatAuthError"></p>
@@ -408,8 +424,8 @@
           <img src="direccion.png" alt="ubicación" class="footer-contact-icon"/>
           Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
         </p>
-        <p><a href="/cdn-cgi/l/email-protection#ea8e8f988f999e8b9f988b8983858489aa8d878b8386c4898587" class="footer-email-link">
-          <img src="direccion.png" alt="email" class="footer-contact-icon"/> <span class="__cf_email__" data-cfemail="caaeafb8afb9beabbfb8aba9a3a5a4a98aada7aba3a6e4a9a5a7">[email&#160;protected]</span>
+        <p><a href="mailto:derestauracionc@gmail.com" class="footer-email-link">
+          <img src="direccion.png" alt="email" class="footer-contact-icon"/> derestauracionc@gmail.com
         </a></p>
       </div>
       <div class="footer-redes">

@@ -1557,3 +1557,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// ── VER/OCULTAR CONTRASEÑA ────────────────────
+window.togglePass = (inputId, btn) => {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+    btn.style.opacity = '1';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+    btn.style.opacity = '0.5';
+  }
+};

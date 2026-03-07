@@ -2928,3 +2928,59 @@ body.tema-claro .yo-contact-icon {
   .footer-email-link { justify-content: center; }
   .footer-redes { align-items: center; }
 }
+
+/* ===== LOGO MÓVIL VS DESKTOP ===== */
+.nav-logo-mobile { display: none; }
+.nav-logo-desktop { display: block; }
+
+@media (max-width: 768px) {
+  .nav-logo-desktop { display: none; }
+  .nav-logo-mobile {
+    display: block;
+    width: 28px; height: 28px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+    opacity: 0.85;
+  }
+}
+
+/* ===== VER/OCULTAR CONTRASEÑA ===== */
+.pass-wrap {
+  position: relative;
+  width: 100%;
+}
+.pass-wrap input {
+  width: 100%;
+  padding-right: 42px;
+  box-sizing: border-box;
+}
+.btn-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.5;
+  padding: 4px;
+  line-height: 1;
+  transition: opacity 0.2s;
+}
+.btn-eye:hover { opacity: 1; }
+
+/* Iconos del menú hamburguesa — mostrar en fila con texto */
+@media (max-width: 768px) {
+  .nav-links a {
+    flex-direction: row !important;
+    gap: 14px;
+  }
+  .nav-links a .nav-icon {
+    order: 0;
+    flex-shrink: 0;
+  }
+  .nav-links a span {
+    flex: 1;
+  }
+}
