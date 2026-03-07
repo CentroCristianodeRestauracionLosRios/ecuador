@@ -1328,6 +1328,16 @@ window.abrirMinisterio = (id) => {
           const esURL = s => s && (s.startsWith('http://') || s.startsWith('https://'));
           const card  = document.createElement('div');
           card.className = 'min-evento-card';
+          // Google Calendar URL
+          const gcStart = e.fechaISO.replace(/[-:]/g,'').slice(0,13) + '00Z';
+          const gcEnd   = new Date(new Date(e.fechaISO).getTime() + 2*3600000).toISOString().replace(/[-:]/g,'').slice(0,13) + '00Z';
+          const gcUrl   = `https://calendar.google.com/calendar/render?action=TEMPLATE`
+            + `&text=${encodeURIComponent(e.titulo)}`
+            + `&dates=${gcStart}/${gcEnd}`
+            + `&details=${encodeURIComponent((e.desc||'') + (e.enlace ? '\n\nEnlace: ' + e.enlace : ''))}`
+            + `&location=${encodeURIComponent(e.lugar||'')}`;
+          const gcGuardado = !!localStorage.getItem('gcal_' + key);
+
           card.innerHTML = `
             <div class="min-evento-fecha">
               <span>${fecha.getDate()}</span>
@@ -1341,6 +1351,16 @@ window.abrirMinisterio = (id) => {
                 : `<em>📍 ${escapeHTML(e.lugar)}</em>` : ''}
               ${e.enlace && esURL(e.enlace) ? `<a href="${escapeHTML(e.enlace)}" target="_blank" class="evento-meet-btn">🔗 Enlace</a>` : ''}
               <em>🕐 ${fecha.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</em>
+              <a href="${gcUrl}" target="_blank"
+                 class="btn-gcal ${gcGuardado?'btn-gcal-ok':''}"
+                 id="gcal-${key}"
+                 onclick="marcarGcal('${key}',this)"
+                 style="margin-top:8px;display:inline-flex;font-size:0.78rem;padding:5px 10px;"
+                 title="Agregar a Google Calendar">
+                <img src="https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_${fecha.getDate()}_2x.png"
+                     onerror="this.src='calendario.png'" class="gcal-icon" alt="" style="width:16px;height:16px;margin-right:5px;"/>
+                ${gcGuardado ? '✅ Agregado' : '📅 Google Calendar'}
+              </a>
             </div>
             ${isAdmin ? `<div class="min-admin-btns-col">
               <button onclick="abrirEditarEvento('${key}')" title="Editar">✏️</button>

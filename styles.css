@@ -520,15 +520,59 @@ body {
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 640px) {
-  .navbar { padding: 10px 16px; }
-  .nav-logo { height: 40px; }
-  .nav-links { gap: 18px; }
-  .section { padding: 70px 20px; }
+@media (max-width: 768px) {
+  .navbar {
+    padding: 8px 12px;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .nav-logo { height: 36px; }
+  .nav-links {
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    padding: 2px 0;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a {
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+  }
+  .nav-admin {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .btn-admin {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+  .btn-tema {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    min-width: unset;
+  }
+  .btn-tema span:last-child { display: none; }
+  .yo-icon { width: 28px; height: 28px; }
+  .section { padding: 70px 16px; }
   .hero-banner { height: 22vh; min-height: 130px; }
-  .banner-overlay { padding: 0 20px; }
+  .banner-overlay { padding: 0 16px; }
   .chat-row { flex-direction: column; }
   .chat-send { width: 100%; }
+  /* ocultar etiqueta de usuario en móvil, dejar solo icono */
+  #userEmailLabel { display: none; }
+  .btn-user-menu { padding: 5px 8px; font-size: 0.72rem; }
+}
+
+@media (max-width: 480px) {
+  .nav-links { gap: 8px; }
+  .nav-links a { font-size: 0.62rem; }
+  .nav-icon { width: 14px; height: 14px; }
 }
 
 /* ===== ADMIN NAVBAR BUTTON ===== */
@@ -1759,8 +1803,11 @@ input[readonly] {
 /* ===== ICONOS EN NAVBAR ===== */
 .nav-icon-link {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .nav-icon {
@@ -1768,11 +1815,12 @@ input[readonly] {
   height: 20px;
   object-fit: contain;
   filter: brightness(0) invert(1);
-  opacity: 0.85;
+  opacity: 0.7;
   transition: opacity 0.2s;
 }
 
 .nav-icon-link:hover .nav-icon { opacity: 1; }
+.nav-icon-link:hover span { color: var(--accent); }
 
 /* ===== SECTION HEADER CON ICONO ===== */
 .section-header-icon {
@@ -2760,4 +2808,20 @@ body.tema-claro .nav-logo {
 .min-acordeon.open .min-acordeon-body {
   max-height: 2000px;
   padding: 14px 16px;
+}
+
+/* ===== ICONO IMÁGENES EN NAVBAR ===== */
+/* El icono imagenes.png es azul — necesita filtro para tema oscuro */
+.nav-icon-link[href="#imagenes"] .nav-icon {
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+body.tema-claro .nav-icon-link[href="#imagenes"] .nav-icon {
+  filter: none;
+  opacity: 0.75;
+}
+
+/* Navbar en móvil — label del tema solo muestra icono */
+@media (max-width: 768px) {
+  #temaLabel { display: none; }
 }
