@@ -80,18 +80,29 @@ function actualizarEstadoChat(user) {
   if (user) {
     inputArea.classList.remove('hidden');
     chatLocked.classList.add('hidden');
-    // Obtener nickname: localStorage primero, luego Firebase
+
+    const aplicarNick = (nick) => {
+      chatNickname = nick;
+      localStorage.setItem('chatNickname', nick);
+      if (document.getElementById('nameInput'))
+        document.getElementById('nameInput').value = nick;
+      // Actualizar label del navbar con el nickname real
+      const label = document.getElementById('userEmailLabel');
+      if (label && !isAdmin) label.textContent = nick;
+    };
+
     const localNick = localStorage.getItem('chatNickname');
     if (localNick) {
-      chatNickname = localNick;
-      document.getElementById('nameInput').value = chatNickname;
-    } else {
-      // Buscar nickname en Firebase
+      aplicarNick(localNick);
+      // Verificar en Firebase si tiene un nickname más actualizado
       get(ref(db, `usuarios/${user.uid}/nickname`)).then(snap => {
-        const nick = snap.val() || user.email.split('@')[0];
-        chatNickname = nick;
-        localStorage.setItem('chatNickname', nick);
-        document.getElementById('nameInput').value = nick;
+        if (snap.val() && snap.val() !== localNick) aplicarNick(snap.val());
+      }).catch(() => {});
+    } else {
+      get(ref(db, `usuarios/${user.uid}/nickname`)).then(snap => {
+        aplicarNick(snap.val() || user.email.split('@')[0]);
+      }).catch(() => {
+        aplicarNick(user.email.split('@')[0]);
       });
     }
   } else {
@@ -188,30 +199,42 @@ window.loginChatUser = async () => {
   const pass     = document.getElementById('loginChatPass').value;
   const recordar = document.getElementById('loginRecordar')?.checked;
   if (!email||!pass) return mostrarAuthError('Correo y contraseña son obligatorios.');
+
+  // 1. Autenticar con Firebase Auth
+  let cred;
   try {
     await setPersistence(auth, recordar ? browserLocalPersistence : browserSessionPersistence);
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
-    // Verificar si está bloqueado
+    cred = await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
+      return mostrarAuthError('Correo o contraseña incorrectos.');
+    }
+    return mostrarAuthError('Error al iniciar sesión. Intenta de nuevo.');
+  }
+
+  // 2. Verificar bloqueo y obtener nickname (cada uno en su propio try/catch)
+  try {
     const snap = await get(ref(db, `usuarios/${cred.user.uid}/bloqueado`));
     if (snap.val() === true) {
       await signOut(auth);
       return mostrarAuthError('⛔ Tu cuenta ha sido bloqueada por el administrador.');
     }
-    // Recuperar nickname guardado en Firebase
+  } catch { /* usuario sin permiso de leer bloqueado = no está bloqueado */ }
+
+  try {
     const nickSnap = await get(ref(db, `usuarios/${cred.user.uid}/nickname`));
     const nick = nickSnap.val() || localStorage.getItem('chatNickname') || email.split('@')[0];
     localStorage.setItem('chatNickname', nick);
     chatNickname = nick;
     document.getElementById('nameInput').value = nick;
-    cerrarModalChat();
-  } catch(e) {
-    console.error('login error:', e.code, e.message);
-    if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
-      mostrarAuthError('Correo o contraseña incorrectos.');
-    } else {
-      mostrarAuthError('Error al iniciar sesión: ' + e.message);
-    }
+  } catch {
+    // Si no puede leer Firebase, usar localStorage o email
+    const nick = localStorage.getItem('chatNickname') || email.split('@')[0];
+    chatNickname = nick;
+    document.getElementById('nameInput').value = nick;
   }
+
+  cerrarModalChat();
 };
 
 window.recuperarContrasena = async () => {
