@@ -26,17 +26,15 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <div class="logo">
-      <a href="#inicio" title="Inicio">
+      <a href="#inicio" title="Inicio" class="logo-inicio-link">
         <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo"/>
       </a>
+      <button class="nav-hamburger" id="navHamburger" onclick="toggleNavMenu()" title="Menú" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
     </div>
     <ul class="nav-links">
-      <li>
-        <a href="#inicio" class="nav-icon-link" title="Inicio">
-          <span>Inicio</span>
-          <img src="casa.png" class="nav-icon" alt="Inicio"/>
-        </a>
-      </li>
+
       <li>
         <a href="#imagenes" class="nav-icon-link" title="Imágenes">
           <span>Imágenes</span>
@@ -110,7 +108,7 @@
         <button class="tab-btn active" onclick="switchTab('tab-img')">🖼 Imagen</button>
         <button class="tab-btn" onclick="switchTab('tab-libro')">📚 Libro</button>
         <button class="tab-btn" onclick="switchTab('tab-video')">🎬 Prédica</button>
-        <button class="tab-btn" onclick="switchTab('tab-inspiracion')">✨ Inspiración</button>
+
         <button class="tab-btn" onclick="switchTab('tab-evento')">📅 Evento</button>
         <button class="tab-btn" onclick="switchTab('tab-chat')">💬 Mensaje</button>
         <button class="tab-btn" onclick="switchTab('tab-usuarios')">👥 Usuarios</button>
@@ -154,18 +152,7 @@
         <button onclick="publicarVideo()">Publicar Prédica</button>
         <p class="admin-msg" id="msgVideo"></p>
       </div>
-      <div class="tab-content" id="tab-inspiracion">
-        <label>Video de inspiración (máx. 100MB):</label>
-        <input type="file" id="inspFile" accept="video/*"/>
-        <input type="text" id="inspTitulo" placeholder="Título del mensaje"/>
-        <input type="text" id="inspDesc" placeholder="Descripción (opcional)"/>
-        <div class="upload-progress hidden" id="inspProgress">
-          <div class="progress-bar"><div class="progress-fill" id="inspProgressFill"></div></div>
-          <span id="inspProgressTxt">0%</span>
-        </div>
-        <button onclick="publicarInspiracion()">Publicar Inspiración</button>
-        <p class="admin-msg" id="msgInsp"></p>
-      </div>
+
       <div class="tab-content" id="tab-evento">
         <input type="text" id="eventoTitulo" placeholder="Título del evento"/>
         <textarea id="eventoDesc" placeholder="Descripción del evento..."></textarea>
@@ -283,19 +270,7 @@
     </div>
   </section>
 
-  <!-- SECCIÓN MENSAJES DE INSPIRACIÓN (videos cortos) -->
-  <section id="inspiracion-videos" class="section section-alt">
-    <div class="section-header-icon">
-      <img src="predicas.png" alt="Inspiración" class="section-icon"/>
-      <div>
-        <h2 class="section-title">Mensajes de Inspiración</h2>
-        <p class="section-sub">Momentos breves que renuevan el espíritu.</p>
-      </div>
-    </div>
-    <div class="videos-grid" id="inspiracionGrid">
-      <p class="loading-txt">Aún no hay mensajes publicados.</p>
-    </div>
-  </section>
+
 
   <!-- SECCIÓN CALENDARIO -->
   <section id="calendario" class="section">
@@ -433,8 +408,8 @@
           <img src="direccion.png" alt="ubicación" class="footer-contact-icon"/>
           Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
         </p>
-        <p><a href="mailto:derestauracionc@gmail.com" class="footer-email-link">
-          <img src="direccion.png" alt="email" class="footer-contact-icon"/> derestauracionc@gmail.com
+        <p><a href="/cdn-cgi/l/email-protection#ea8e8f988f999e8b9f988b8983858489aa8d878b8386c4898587" class="footer-email-link">
+          <img src="direccion.png" alt="email" class="footer-contact-icon"/> <span class="__cf_email__" data-cfemail="caaeafb8afb9beabbfb8aba9a3a5a4a98aada7aba3a6e4a9a5a7">[email&#160;protected]</span>
         </a></p>
       </div>
       <div class="footer-redes">
@@ -448,7 +423,6 @@
         </a>
       </div>
     </div>
-    <p class="footer-copy">✦ Centro Cristiano de Restauración Los Ríos</p>
   </footer>
 
   <!-- PANEL "YO" — INFO + MINISTERIOS -->
@@ -465,8 +439,8 @@
           <img src="direccion.png" alt="ubicación" class="yo-contact-icon"/>
           Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
         </p>
-        <p><a href="mailto:derestauracionc@gmail.com" class="yo-email-link">
-          <img src="direccion.png" alt="email" class="yo-contact-icon"/> derestauracionc@gmail.com
+        <p><a href="/cdn-cgi/l/email-protection#82e6e7f0e7f1f6e3f7f0e3e1ebedece1c2e5efe3ebeeace1edef" class="yo-email-link">
+          <img src="direccion.png" alt="email" class="yo-contact-icon"/> <span class="__cf_email__" data-cfemail="7317160116000712060112101a1c1d1033141e121a1f5d101c1e">[email&#160;protected]</span>
         </a></p>
         <div class="yo-redes">
           <a href="https://www.facebook.com/people/Centro-Cristiano-de-Restauraci%C3%B3n-Los-R%C3%ADos/61557973191098/" target="_blank" class="yo-red fb">
@@ -536,20 +510,4 @@
       <div class="ministerio-sticky-header">
         <div class="ministerio-header">
           <img id="minIcon" src="" alt="" class="min-logo"/>
-          <div>
-            <h2 id="minNombre"></h2>
-            <p id="minCategoria"></p>
-          </div>
-        </div>
-        <button class="ministerio-close" onclick="cerrarMinisterio()" title="Cerrar">✕</button>
-      </div>
-      <div id="minGallery">
-        <p class="loading-txt">Cargando contenido...</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SERVICE WORKER & SCRIPTS -->
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+          <div
