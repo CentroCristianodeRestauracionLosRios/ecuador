@@ -521,58 +521,14 @@ body {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .navbar {
-    padding: 8px 12px;
-    flex-wrap: nowrap;
-    gap: 6px;
-  }
-  .nav-logo { height: 36px; }
-  .nav-links {
-    gap: 10px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    flex: 1;
-    padding: 2px 0;
-  }
-  .nav-links::-webkit-scrollbar { display: none; }
-  .nav-links a {
-    font-size: 0.68rem;
-    white-space: nowrap;
-  }
-  .nav-icon {
-    width: 16px;
-    height: 16px;
-  }
-  .nav-admin {
-    gap: 4px;
-    flex-shrink: 0;
-  }
-  .btn-admin {
-    padding: 5px 8px;
-    font-size: 0.72rem;
-  }
-  .btn-tema {
-    padding: 5px 8px;
-    font-size: 0.72rem;
-    min-width: unset;
-  }
-  .btn-tema span:last-child { display: none; }
-  .yo-icon { width: 28px; height: 28px; }
+  /* Ajustes generales de sección en móvil */
   .section { padding: 70px 16px; }
   .hero-banner { height: 22vh; min-height: 130px; }
   .banner-overlay { padding: 0 16px; }
   .chat-row { flex-direction: column; }
   .chat-send { width: 100%; }
-  /* ocultar etiqueta de usuario en móvil, dejar solo icono */
   #userEmailLabel { display: none; }
   .btn-user-menu { padding: 5px 8px; font-size: 0.72rem; }
-}
-
-@media (max-width: 480px) {
-  .nav-links { gap: 8px; }
-  .nav-links a { font-size: 0.62rem; }
-  .nav-icon { width: 14px; height: 14px; }
 }
 
 /* ===== ADMIN NAVBAR BUTTON ===== */
@@ -2876,6 +2832,7 @@ body.tema-claro .yo-contact-icon {
   cursor: pointer;
   padding: 6px;
   margin-left: 6px;
+  flex-shrink: 0;
 }
 .nav-hamburger span {
   display: block;
@@ -2889,40 +2846,49 @@ body.tema-claro .yo-contact-icon {
 .nav-hamburger.open span:nth-child(2) { opacity: 0; }
 .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-@media (max-width: 768px) {
-  /* Mostrar hamburguesa, ocultar nav-links por defecto */
-  .nav-hamburger { display: flex; }
+/* Desktop: nav-links siempre visible en fila */
+.nav-links {
+  display: flex !important;
+}
 
-  /* El logo hace de botón inicio */
+@media (max-width: 768px) {
+  /* Ajustes navbar móvil */
+  .navbar { padding: 8px 12px; gap: 6px; }
+  .nav-logo { height: 36px; }
+  .nav-admin { gap: 4px; flex-shrink: 0; }
+  .btn-admin { padding: 5px 8px; font-size: 0.72rem; }
+  .btn-tema { padding: 5px 8px; font-size: 0.72rem; min-width: unset; }
+  #temaLabel { display: none; }
+  .yo-icon { width: 28px; height: 28px; }
   .logo { display: flex; align-items: center; }
 
-  /* Nav-links: menú desplegable vertical en móvil */
+  /* Mostrar hamburguesa */
+  .nav-hamburger { display: flex; }
+
+  /* Nav-links oculto por defecto en móvil, desplegable */
   .nav-links {
-    display: none;
+    display: none !important;
     position: fixed;
     top: 57px;
     left: 0;
     right: 0;
     background: var(--navbar-bg);
     backdrop-filter: blur(12px);
-    flex-direction: column;
+    flex-direction: column !important;
     align-items: stretch;
     gap: 0;
     padding: 8px 0;
     border-bottom: 1px solid var(--navbar-border);
     z-index: 99;
-    overflow-x: unset;
     overflow-y: auto;
     max-height: calc(100vh - 57px);
   }
   .nav-links.menu-open {
-    display: flex;
+    display: flex !important;
   }
-  .nav-links li {
-    width: 100%;
-  }
+  .nav-links li { width: 100%; }
   .nav-links a {
-    flex-direction: row;
+    flex-direction: row !important;
     justify-content: flex-start;
     align-items: center;
     gap: 12px;
@@ -2932,11 +2898,12 @@ body.tema-claro .yo-contact-icon {
     text-align: left;
     width: 100%;
     box-sizing: border-box;
+    white-space: nowrap;
   }
   .nav-links a .nav-icon {
     width: 20px;
     height: 20px;
-    order: -1; /* icono a la izquierda del texto */
+    order: -1;
   }
 }
 

@@ -451,6 +451,7 @@ window.borrarInspiracion = async (key) => {
 // ── CARGAR INSPIRACIÓN ────────────────────────
 onValue(ref(db,'inspiracion'), (snap) => {
   const grid = document.getElementById('inspiracionGrid');
+  if (!grid) return; // sección eliminada, no hacer nada
   grid.innerHTML='';
   const data = snap.val();
   if (!data) { grid.innerHTML='<p class="loading-txt">Aún no hay mensajes publicados.</p>'; return; }
