@@ -1793,6 +1793,61 @@ input[readonly] {
 .nav-icon-link:hover .nav-icon { opacity: 1; }
 .nav-icon-link:hover span { color: var(--accent); }
 
+/* Ícono Juegos: blanco como los demás, 40px */
+.nav-icon.nav-icon-juegos {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+.nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
+body.tema-claro .nav-icon.nav-icon-juegos { filter: none; opacity: 0.75; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-juegos { filter: none; opacity: 1; }
+
+/* Ícono Juegos: blanco como los demás, 40px */
+.nav-icon.nav-icon-juegos {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+.nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
+body.tema-claro .nav-icon.nav-icon-juegos { filter: none; opacity: 0.75; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-juegos { filter: none; opacity: 1; }
+
+/* Ícono Juegos: blanco como los demás, 40px */
+.nav-icon.nav-icon-juegos {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+.nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
+body.tema-claro .nav-icon.nav-icon-juegos { filter: none; opacity: 0.75; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-juegos { filter: none; opacity: 1; }
+
+/* Ícono Juegos: blanco como los demás, 40px */
+.nav-icon.nav-icon-juegos {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+.nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
+body.tema-claro .nav-icon.nav-icon-juegos { filter: none; opacity: 0.75; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-juegos { filter: none; opacity: 1; }
+
+/* Ícono Juegos: blanco como los demás, 40px */
+.nav-icon.nav-icon-juegos {
+  width: 40px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+.nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
+body.tema-claro .nav-icon.nav-icon-juegos { filter: none; opacity: 0.75; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-juegos { filter: none; opacity: 1; }
+
 /* ===== SECTION HEADER CON ICONO ===== */
 .section-header-icon {
   display: flex;
@@ -2072,136 +2127,60 @@ input[readonly] {
 }
 
 /* ===== BANNER INSTALAR PWA ===== */
-/* ===== PWA INSTALL OVERLAY ===== */
-#pwa-install-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2100;
-  background: rgba(0,0,0,0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
 #pwa-install-banner {
-  position: relative;
-  background: linear-gradient(160deg, #0d1b38 0%, #1a2a50 60%, #0d1b38 100%);
-  border: 2px solid var(--accent);
-  border-radius: 24px;
-  padding: 36px 28px 28px;
-  max-width: 380px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 8px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,168,76,0.15);
-  animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes popIn {
-  from { transform: scale(0.85); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
-}
-.pwa-close-x {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  background: rgba(255,255,255,0.08);
-  border: none;
-  color: var(--muted);
-  font-size: 1rem;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2100;
+  background: linear-gradient(135deg, #0d1b38 0%, #1a2a50 100%);
+  border-top: 2px solid var(--accent);
+  padding: 14px 20px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
+  gap: 14px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+  animation: slideUp 0.4s ease;
 }
-.pwa-close-x:hover { background: rgba(255,255,255,0.18); }
-.pwa-banner-logo {
-  width: 80px;
-  height: 80px;
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(201,168,76,0.35);
-  margin-bottom: 4px;
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
-.pwa-banner-titulo {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--accent);
-  margin: 0;
-  text-align: center;
-  letter-spacing: 0.01em;
-}
-.pwa-banner-sub {
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin: 0;
-  text-align: center;
-}
-.pwa-beneficios {
-  list-style: none;
-  padding: 0;
-  margin: 4px 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pwa-beneficios li {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+#pwa-install-banner img {
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
-  padding: 9px 14px;
-  font-size: 0.9rem;
-  color: var(--text);
+  flex-shrink: 0;
 }
+.pwa-banner-text { flex: 1; }
+.pwa-banner-text strong { display: block; color: var(--accent); font-size: 0.9rem; }
+.pwa-banner-text span { font-size: 0.78rem; color: var(--muted); }
+.pwa-banner-btns { display: flex; gap: 8px; flex-shrink: 0; }
 .btn-pwa-install {
-  width: 100%;
   background: var(--accent);
   color: #0a0f1e;
   border: none;
-  border-radius: 14px;
-  padding: 15px 18px;
-  font-size: 1.05rem;
-  font-weight: 800;
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.15s;
-  letter-spacing: 0.02em;
-  margin-top: 4px;
 }
-.btn-pwa-install:hover { opacity: 0.9; transform: scale(1.02); }
-.btn-pwa-install:active { transform: scale(0.98); }
+.btn-pwa-install:hover { opacity: 0.88; transform: scale(1.04); }
 .btn-pwa-dismiss {
   background: transparent;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.2);
   color: var(--muted);
+  border-radius: 20px;
+  padding: 8px 14px;
   font-size: 0.82rem;
   cursor: pointer;
-  padding: 4px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
-.btn-pwa-dismiss:hover { color: var(--text); }
-.pwa-ios-txt {
-  font-size: 0.85rem;
-  color: var(--muted);
-  text-align: center;
-  background: rgba(255,255,255,0.05);
-  border-radius: 10px;
-  padding: 10px 14px;
-  line-height: 1.6;
-  margin: 0;
-  border: 1px dashed rgba(255,255,255,0.15);
+@media (max-width: 480px) {
+  #pwa-install-banner { flex-wrap: wrap; }
+  .pwa-banner-btns { width: 100%; justify-content: flex-end; }
 }
-.pwa-ios-txt strong { color: var(--accent); }
 
 /* ===== BOTÓN YO EN NAVBAR ===== */
 .btn-yo {
