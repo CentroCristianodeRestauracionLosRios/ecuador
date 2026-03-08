@@ -17,48 +17,49 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <!-- Fix global: loader + bfcache + proxies funciones navbar -->
   <script>
-    // 1) Ocultar loader si el módulo JS falla
+    // 1) Ocultar loader si el módulo JS tarda o falla
     setTimeout(function() {
       var el = document.getElementById('loaderScreen');
       if (el) { el.style.display = 'none'; }
     }, 3500);
 
     // 2) Fix bfcache: al volver con "Atrás" desde juego.html los módulos
-    //    no se re-ejecutan. Forzar recarga limpia.
+    //    ES6 no se re-ejecutan y Firebase queda roto. Forzar recarga limpia.
     window.addEventListener('pageshow', function(e) {
       if (e.persisted) { window.location.reload(); }
     });
 
-    // 3) Proxies de funciones críticas del navbar.
-    //    Los módulos ES6 cargan async; si el usuario hace clic antes de que
-    //    terminen, onclick="fn()" lanza ReferenceError. Estos proxies
-    //    encolan la llamada y la ejecutan cuando el módulo esté listo.
-    var _pendingCalls = {};
-    function _makeProxy(name) {
+    // 3) Proxies tempranos para funciones del navbar.
+    //    script.js es type="module" (async). Si el usuario hace clic ANTES
+    //    de que el módulo termine de cargar, onclick="fn()" lanza ReferenceError.
+    //    Solución: registrar proxies aquí (síncronos) que encolan la llamada
+    //    y la ejecutan cuando script.js llame a window._reg(name, fn).
+    var _q = {};
+    function _proxy(name) {
       return function() {
-        var args = arguments;
-        if (typeof window['_real_' + name] === 'function') {
-          window['_real_' + name].apply(this, args);
-        } else {
-          _pendingCalls[name] = { args: args };
+        var a = arguments;
+        if (typeof window['__' + name] === 'function') {
+          return window['__' + name].apply(this, a);
         }
+        _q[name] = a;
       };
     }
-    window.toggleNavMenu    = _makeProxy('toggleNavMenu');
-    window.togglePanelYo    = _makeProxy('togglePanelYo');
-    window.cerrarPanelYo    = _makeProxy('cerrarPanelYo');
-    window.abrirChat        = _makeProxy('abrirChat');
-    window.toggleLoginPanel = _makeProxy('toggleLoginPanel');
-    window.toggleTema       = _makeProxy('toggleTema');
-    window.toggleUserMenu   = _makeProxy('toggleUserMenu');
+    window.toggleNavMenu    = _proxy('toggleNavMenu');
+    window.togglePanelYo    = _proxy('togglePanelYo');
+    window.cerrarPanelYo    = _proxy('cerrarPanelYo');
+    window.abrirChat        = _proxy('abrirChat');
+    window.toggleLoginPanel = _proxy('toggleLoginPanel');
+    window.toggleTema       = _proxy('toggleTema');
+    window.toggleUserMenu   = _proxy('toggleUserMenu');
+    window.adminLogin       = _proxy('adminLogin');
+    window.adminLogout      = _proxy('adminLogout');
 
-    // script.js llamará window._registerNavFn(name, fn) para activar cada proxy
-    window._registerNavFn = function(name, fn) {
-      window['_real_' + name] = fn;
-      if (_pendingCalls[name]) {
-        fn.apply(null, _pendingCalls[name].args);
-        delete _pendingCalls[name];
-      }
+    // script.js llama esto al definir cada función
+    window._reg = function(name, fn) {
+      window['__' + name] = fn;
+      // sobreescribir el proxy con la función real para llamadas futuras
+      window[name] = fn;
+      if (_q[name]) { fn.apply(null, _q[name]); delete _q[name]; }
     };
   </script>
 </head>
@@ -114,7 +115,7 @@
         </a>
       </li>
       <li>
-        <a href="#" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
+        <a href="javascript:void(0)" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>
           <img src="CHAT.png" class="nav-icon" alt="Chat"/>
         </a>

@@ -131,7 +131,7 @@ function actualizarMenuUsuario(user) {
 
 // ── MENÚ USUARIO ─────────────────────────────
 window.toggleUserMenu = () => {
-  window._registerNavFn && window._registerNavFn('toggleUserMenu', window.toggleUserMenu);
+  window._reg && window._reg('toggleUserMenu', window.toggleUserMenu);
   document.getElementById('userDropdown').classList.toggle('hidden');
 };
 
@@ -142,13 +142,15 @@ window.chatUserLogout = () => {
 };
 
 // ── LOGIN ADMIN ───────────────────────────────
-window.toggleLoginPanel = () => { window._registerNavFn && window._registerNavFn("toggleLoginPanel", window.toggleLoginPanel);
-  document.getElementById('loginPanel').classList.toggle('hidden');
+window.toggleLoginPanel = () => {
+  window._reg && window._reg('toggleLoginPanel', window.toggleLoginPanel);
+    document.getElementById('loginPanel').classList.toggle('hidden');
   document.getElementById('loginError').classList.add('hidden');
 };
 
 window.adminLogin = async () => {
-  const email = document.getElementById('loginEmail').value.trim();
+  window._reg && window._reg('adminLogin', window.adminLogin);
+    const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
   errEl.classList.add('hidden');
@@ -156,7 +158,7 @@ window.adminLogin = async () => {
   catch { errEl.classList.remove('hidden'); }
 };
 
-window.adminLogout = () => signOut(auth);
+window.adminLogout = () => { window._reg && window._reg('adminLogout', window.adminLogout); signOut(auth); };
 
 // ── MODAL AUTH CHAT ───────────────────────────
 window.abrirModalChat = () => {
@@ -1262,7 +1264,8 @@ document.getElementById('imgModal')?.addEventListener('touchend', e => {
 let chatMaximizado = false;
 let chatAbierto    = false;
 
-window.abrirChat = (e) => { window._registerNavFn && window._registerNavFn("abrirChat", window.abrirChat);
+window.abrirChat = (e) => {
+  window._reg && window._reg('abrirChat', window.abrirChat);
   if (e && e.preventDefault) e.preventDefault(); // evitar scroll al anchor
   chatAbierto = true;
   const floatEl   = document.getElementById('chatFloat');
@@ -1349,7 +1352,8 @@ function formatTime(ts) {
 }
 
 // ── PANEL "YO" ────────────────────────────────
-window.togglePanelYo = () => { window._registerNavFn && window._registerNavFn("togglePanelYo", window.togglePanelYo);
+window.togglePanelYo = () => {
+  window._reg && window._reg('togglePanelYo', window.togglePanelYo);
   const panel   = document.getElementById('yoPanel');
   const overlay = document.getElementById('yoOverlay');
   const abierto = !panel.classList.contains('hidden');
@@ -1358,7 +1362,8 @@ window.togglePanelYo = () => { window._registerNavFn && window._registerNavFn("t
   document.body.style.overflow = abierto ? '' : 'hidden';
 };
 
-window.cerrarPanelYo = () => { window._registerNavFn && window._registerNavFn("cerrarPanelYo", window.cerrarPanelYo);
+window.cerrarPanelYo = () => {
+  window._reg && window._reg('cerrarPanelYo', window.cerrarPanelYo);
   document.getElementById('yoPanel').classList.add('hidden');
   document.getElementById('yoOverlay').classList.add('hidden');
   document.body.style.overflow = '';
@@ -1625,13 +1630,15 @@ function aplicarTema(tema) {
   localStorage.setItem('tema', tema);
 }
 
-window.toggleTema = () => { window._registerNavFn && window._registerNavFn('toggleTema', window.toggleTema);
+window.toggleTema = () => {
+  window._reg && window._reg('toggleTema', window.toggleTema);
   const actual = localStorage.getItem('tema') || 'oscuro';
   aplicarTema(actual === 'oscuro' ? 'claro' : 'oscuro');
 };
 
 // ── MENÚ HAMBURGUESA MÓVIL ────────────────────
-window.toggleNavMenu = () => { window._registerNavFn && window._registerNavFn("toggleNavMenu", window.toggleNavMenu);
+window.toggleNavMenu = () => {
+  window._reg && window._reg('toggleNavMenu', window.toggleNavMenu);
   const links = document.querySelector('.nav-links');
   const btn   = document.getElementById('navHamburger');
   links.classList.toggle('menu-open');
