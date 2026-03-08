@@ -130,10 +130,8 @@ function actualizarMenuUsuario(user) {
 }
 
 // ── MENÚ USUARIO ─────────────────────────────
-window.toggleUserMenu = () => {
-  window._reg && window._reg('toggleUserMenu', window.toggleUserMenu);
+window.toggleUserMenu = () =>
   document.getElementById('userDropdown').classList.toggle('hidden');
-};
 
 window.chatUserLogout = () => {
   signOut(auth);
@@ -143,14 +141,12 @@ window.chatUserLogout = () => {
 
 // ── LOGIN ADMIN ───────────────────────────────
 window.toggleLoginPanel = () => {
-  window._reg && window._reg('toggleLoginPanel', window.toggleLoginPanel);
-    document.getElementById('loginPanel').classList.toggle('hidden');
+  document.getElementById('loginPanel').classList.toggle('hidden');
   document.getElementById('loginError').classList.add('hidden');
 };
 
 window.adminLogin = async () => {
-  window._reg && window._reg('adminLogin', window.adminLogin);
-    const email = document.getElementById('loginEmail').value.trim();
+  const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
   errEl.classList.add('hidden');
@@ -158,7 +154,7 @@ window.adminLogin = async () => {
   catch { errEl.classList.remove('hidden'); }
 };
 
-window.adminLogout = () => { window._reg && window._reg('adminLogout', window.adminLogout); signOut(auth); };
+window.adminLogout = () => signOut(auth);
 
 // ── MODAL AUTH CHAT ───────────────────────────
 window.abrirModalChat = () => {
@@ -1265,7 +1261,6 @@ let chatMaximizado = false;
 let chatAbierto    = false;
 
 window.abrirChat = (e) => {
-  window._reg && window._reg('abrirChat', window.abrirChat);
   if (e && e.preventDefault) e.preventDefault(); // evitar scroll al anchor
   chatAbierto = true;
   const floatEl   = document.getElementById('chatFloat');
@@ -1353,7 +1348,6 @@ function formatTime(ts) {
 
 // ── PANEL "YO" ────────────────────────────────
 window.togglePanelYo = () => {
-  window._reg && window._reg('togglePanelYo', window.togglePanelYo);
   const panel   = document.getElementById('yoPanel');
   const overlay = document.getElementById('yoOverlay');
   const abierto = !panel.classList.contains('hidden');
@@ -1363,7 +1357,6 @@ window.togglePanelYo = () => {
 };
 
 window.cerrarPanelYo = () => {
-  window._reg && window._reg('cerrarPanelYo', window.cerrarPanelYo);
   document.getElementById('yoPanel').classList.add('hidden');
   document.getElementById('yoOverlay').classList.add('hidden');
   document.body.style.overflow = '';
@@ -1631,14 +1624,12 @@ function aplicarTema(tema) {
 }
 
 window.toggleTema = () => {
-  window._reg && window._reg('toggleTema', window.toggleTema);
   const actual = localStorage.getItem('tema') || 'oscuro';
   aplicarTema(actual === 'oscuro' ? 'claro' : 'oscuro');
 };
 
 // ── MENÚ HAMBURGUESA MÓVIL ────────────────────
 window.toggleNavMenu = () => {
-  window._reg && window._reg('toggleNavMenu', window.toggleNavMenu);
   const links = document.querySelector('.nav-links');
   const btn   = document.getElementById('navHamburger');
   links.classList.toggle('menu-open');
@@ -1714,3 +1705,5 @@ window.addEventListener('appinstalled', () => {
 // eventos: { ".read": true, ".write": "auth != null && auth.token.email === 'haroldolmedoanchundia@gmail.com'",
 //   "$id": { "rsvp": { "$uid": { ".write": "auth != null && auth.uid === $uid" } } } }
 // usuarios: agregar "fcmToken" en cada nodo $uid
+// Activar cola de llamadas tempranas al navbar
+window._flush && window._flush();

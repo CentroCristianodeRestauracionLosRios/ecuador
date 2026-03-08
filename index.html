@@ -15,51 +15,42 @@
   <link rel="icon" type="image/png" href="ICONO.png" />
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <!-- Fix global: loader + bfcache + proxies funciones navbar -->
+  <!-- Fix: loader + bfcache + cola de llamadas tempranas al navbar -->
   <script>
-    // 1) Ocultar loader si el módulo JS tarda o falla
+    // Ocultar loader si script.js tarda o falla
     setTimeout(function() {
       var el = document.getElementById('loaderScreen');
       if (el) { el.style.display = 'none'; }
     }, 3500);
 
-    // 2) Fix bfcache: al volver con "Atrás" desde juego.html los módulos
-    //    ES6 no se re-ejecutan y Firebase queda roto. Forzar recarga limpia.
+    // Fix bfcache: al volver con Atrás desde juego.html, los módulos ES6
+    // no se re-ejecutan. Forzar recarga limpia.
     window.addEventListener('pageshow', function(e) {
       if (e.persisted) { window.location.reload(); }
     });
 
-    // 3) Proxies tempranos para funciones del navbar.
-    //    script.js es type="module" (async). Si el usuario hace clic ANTES
-    //    de que el módulo termine de cargar, onclick="fn()" lanza ReferenceError.
-    //    Solución: registrar proxies aquí (síncronos) que encolan la llamada
-    //    y la ejecutan cuando script.js llame a window._reg(name, fn).
-    var _q = {};
-    function _proxy(name) {
-      return function() {
-        var a = arguments;
-        if (typeof window['__' + name] === 'function') {
-          return window['__' + name].apply(this, a);
-        }
-        _q[name] = a;
-      };
-    }
-    window.toggleNavMenu    = _proxy('toggleNavMenu');
-    window.togglePanelYo    = _proxy('togglePanelYo');
-    window.cerrarPanelYo    = _proxy('cerrarPanelYo');
-    window.abrirChat        = _proxy('abrirChat');
-    window.toggleLoginPanel = _proxy('toggleLoginPanel');
-    window.toggleTema       = _proxy('toggleTema');
-    window.toggleUserMenu   = _proxy('toggleUserMenu');
-    window.adminLogin       = _proxy('adminLogin');
-    window.adminLogout      = _proxy('adminLogout');
+    // Cola para llamadas que lleguen antes de que script.js cargue.
+    // Cada función del navbar hace: _call('nombre', args)
+    // Cuando script.js termina de cargar, llama _flush() y ejecuta la cola.
+    window._navQueue = [];
+    window._navReady = false;
 
-    // script.js llama esto al definir cada función
-    window._reg = function(name, fn) {
-      window['__' + name] = fn;
-      // sobreescribir el proxy con la función real para llamadas futuras
-      window[name] = fn;
-      if (_q[name]) { fn.apply(null, _q[name]); delete _q[name]; }
+    window._call = function(name, args) {
+      if (window._navReady && typeof window[name] === 'function') {
+        window[name].apply(null, args || []);
+      } else {
+        window._navQueue.push({ name: name, args: args || [] });
+      }
+    };
+
+    window._flush = function() {
+      window._navReady = true;
+      window._navQueue.forEach(function(item) {
+        if (typeof window[item.name] === 'function') {
+          window[item.name].apply(null, item.args);
+        }
+      });
+      window._navQueue = [];
     };
   </script>
 </head>
@@ -78,7 +69,7 @@
         <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo nav-logo-desktop"/>
         <img src="casa.png" alt="Inicio" class="nav-logo nav-logo-mobile nav-icon-home"/>
       </a>
-      <button class="nav-hamburger" id="navHamburger" onclick="toggleNavMenu()" title="Menú" aria-label="Abrir menú">
+      <button class="nav-hamburger" id="navHamburger" onclick="_call('toggleNavMenu')" title="Menú" aria-label="Abrir menú">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -115,7 +106,7 @@
         </a>
       </li>
       <li>
-        <a href="javascript:void(0)" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
+        <a href="javascript:void(0)" class="nav-icon-link" onclick="_call('abrirChat',[event])" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>
           <img src="CHAT.png" class="nav-icon" alt="Chat"/>
         </a>
@@ -123,21 +114,21 @@
     </ul>
     <div class="nav-admin">
       <div class="user-menu-wrap hidden" id="btnUsuarioMenu">
-        <button class="btn-user-menu" onclick="toggleUserMenu()">
+        <button class="btn-user-menu" onclick="_call('toggleUserMenu')">
           👤 <span id="userEmailLabel"></span> ▾
         </button>
         <div class="user-dropdown hidden" id="userDropdown">
           <button onclick="abrirCambiarContrasena()">🔑 Cambiar contraseña</button>
-          <button onclick="chatUserLogout()">🚪 Cerrar sesión</button>
+          <button onclick="_call('chatUserLogout')">🚪 Cerrar sesión</button>
         </div>
       </div>
-      <button class="btn-admin" id="btnAdminLogin" onclick="toggleLoginPanel()">Admin</button>
-      <button class="btn-admin btn-logout hidden" id="btnLogout" onclick="adminLogout()">Salir</button>
-      <button class="btn-tema" id="btnTema" onclick="toggleTema()" title="Cambiar tema">
+      <button class="btn-admin" id="btnAdminLogin" onclick="_call('toggleLoginPanel')">Admin</button>
+      <button class="btn-admin btn-logout hidden" id="btnLogout" onclick="_call('adminLogout')">Salir</button>
+      <button class="btn-tema" id="btnTema" onclick="_call('toggleTema')" title="Cambiar tema">
         <span id="temaIcono">🌙</span>
         <span id="temaLabel">Claro</span>
       </button>
-      <button class="btn-yo" onclick="togglePanelYo()" title="Sobre nosotros">
+      <button class="btn-yo" onclick="_call('togglePanelYo')" title="Sobre nosotros">
         <img src="Yo.png" alt="Nosotros" class="yo-icon"/>
       </button>
     </div>
@@ -149,9 +140,9 @@
       <h3>Acceso Administrador</h3>
       <input type="email" id="loginEmail" placeholder="Correo electrónico"/>
       <input type="password" id="loginPassword" placeholder="Contraseña"/>
-      <button onclick="adminLogin()">Ingresar</button>
+      <button onclick="_call('adminLogin')">Ingresar</button>
       <p class="login-error hidden" id="loginError">Correo o contraseña incorrectos</p>
-      <button class="btn-cancel" onclick="toggleLoginPanel()">Cancelar</button>
+      <button class="btn-cancel" onclick="_call('toggleLoginPanel')">Cancelar</button>
     </div>
   </div>
 
@@ -528,9 +519,9 @@
   </footer>
 
   <!-- PANEL "YO" — INFO + MINISTERIOS -->
-  <div class="yo-overlay hidden" id="yoOverlay" onclick="cerrarPanelYo()"></div>
+  <div class="yo-overlay hidden" id="yoOverlay" onclick="_call('cerrarPanelYo')"></div>
   <div class="yo-panel hidden" id="yoPanel">
-    <button class="yo-close" onclick="cerrarPanelYo()">✕</button>
+    <button class="yo-close" onclick="_call('cerrarPanelYo')">✕</button>
 
     <!-- INFO IGLESIA -->
     <div class="yo-iglesia">
