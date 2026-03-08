@@ -1793,14 +1793,16 @@ input[readonly] {
 .nav-icon-link:hover .nav-icon { opacity: 1; }
 .nav-icon-link:hover span { color: var(--accent); }
 
-/* Iconos con color propio — no aplicar filtro blanco */
-.nav-icon.nav-icon-color {
-  filter: none;
-  opacity: 0.85;
+/* Icono juegos: mismo filtro blanco que los demás pero más grande */
+.nav-icon.nav-icon-juegos {
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
 }
-.nav-icon-link:hover .nav-icon.nav-icon-color { filter: none; opacity: 1; }
-body.tema-claro .nav-icon.nav-icon-color { filter: none; opacity: 0.85; }
-body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-color { filter: none; opacity: 1; }
+.nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
+body.tema-claro .nav-icon.nav-icon-juegos { filter: none; opacity: 0.75; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-juegos { opacity: 1; }
 
 /* ===== SECTION HEADER CON ICONO ===== */
 .section-header-icon {

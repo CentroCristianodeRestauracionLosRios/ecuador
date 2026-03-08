@@ -130,8 +130,10 @@ function actualizarMenuUsuario(user) {
 }
 
 // ── MENÚ USUARIO ─────────────────────────────
-window.toggleUserMenu = () =>
+window.toggleUserMenu = () => {
+  window._registerNavFn && window._registerNavFn('toggleUserMenu', window.toggleUserMenu);
   document.getElementById('userDropdown').classList.toggle('hidden');
+};
 
 window.chatUserLogout = () => {
   signOut(auth);
@@ -140,7 +142,7 @@ window.chatUserLogout = () => {
 };
 
 // ── LOGIN ADMIN ───────────────────────────────
-window.toggleLoginPanel = () => {
+window.toggleLoginPanel = () => { window._registerNavFn && window._registerNavFn("toggleLoginPanel", window.toggleLoginPanel);
   document.getElementById('loginPanel').classList.toggle('hidden');
   document.getElementById('loginError').classList.add('hidden');
 };
@@ -1260,7 +1262,7 @@ document.getElementById('imgModal')?.addEventListener('touchend', e => {
 let chatMaximizado = false;
 let chatAbierto    = false;
 
-window.abrirChat = (e) => {
+window.abrirChat = (e) => { window._registerNavFn && window._registerNavFn("abrirChat", window.abrirChat);
   if (e && e.preventDefault) e.preventDefault(); // evitar scroll al anchor
   chatAbierto = true;
   const floatEl   = document.getElementById('chatFloat');
@@ -1347,7 +1349,7 @@ function formatTime(ts) {
 }
 
 // ── PANEL "YO" ────────────────────────────────
-window.togglePanelYo = () => {
+window.togglePanelYo = () => { window._registerNavFn && window._registerNavFn("togglePanelYo", window.togglePanelYo);
   const panel   = document.getElementById('yoPanel');
   const overlay = document.getElementById('yoOverlay');
   const abierto = !panel.classList.contains('hidden');
@@ -1356,7 +1358,7 @@ window.togglePanelYo = () => {
   document.body.style.overflow = abierto ? '' : 'hidden';
 };
 
-window.cerrarPanelYo = () => {
+window.cerrarPanelYo = () => { window._registerNavFn && window._registerNavFn("cerrarPanelYo", window.cerrarPanelYo);
   document.getElementById('yoPanel').classList.add('hidden');
   document.getElementById('yoOverlay').classList.add('hidden');
   document.body.style.overflow = '';
@@ -1623,13 +1625,13 @@ function aplicarTema(tema) {
   localStorage.setItem('tema', tema);
 }
 
-window.toggleTema = () => {
+window.toggleTema = () => { window._registerNavFn && window._registerNavFn('toggleTema', window.toggleTema);
   const actual = localStorage.getItem('tema') || 'oscuro';
   aplicarTema(actual === 'oscuro' ? 'claro' : 'oscuro');
 };
 
 // ── MENÚ HAMBURGUESA MÓVIL ────────────────────
-window.toggleNavMenu = () => {
+window.toggleNavMenu = () => { window._registerNavFn && window._registerNavFn("toggleNavMenu", window.toggleNavMenu);
   const links = document.querySelector('.nav-links');
   const btn   = document.getElementById('navHamburger');
   links.classList.toggle('menu-open');

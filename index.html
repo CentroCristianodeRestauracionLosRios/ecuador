@@ -15,17 +15,51 @@
   <link rel="icon" type="image/png" href="ICONO.png" />
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <!-- Fallback: oculta el loader aunque el módulo JS falle -->
-  <!-- Fix bfcache: al volver con Atrás desde juego.html, los módulos ES6/Firebase
-       no se re-ejecutan → botones muertos. Detectar y forzar recarga limpia. -->
+  <!-- Fix global: loader + bfcache + proxies funciones navbar -->
   <script>
+    // 1) Ocultar loader si el módulo JS falla
     setTimeout(function() {
       var el = document.getElementById('loaderScreen');
       if (el) { el.style.display = 'none'; }
     }, 3500);
+
+    // 2) Fix bfcache: al volver con "Atrás" desde juego.html los módulos
+    //    no se re-ejecutan. Forzar recarga limpia.
     window.addEventListener('pageshow', function(e) {
       if (e.persisted) { window.location.reload(); }
     });
+
+    // 3) Proxies de funciones críticas del navbar.
+    //    Los módulos ES6 cargan async; si el usuario hace clic antes de que
+    //    terminen, onclick="fn()" lanza ReferenceError. Estos proxies
+    //    encolan la llamada y la ejecutan cuando el módulo esté listo.
+    var _pendingCalls = {};
+    function _makeProxy(name) {
+      return function() {
+        var args = arguments;
+        if (typeof window['_real_' + name] === 'function') {
+          window['_real_' + name].apply(this, args);
+        } else {
+          _pendingCalls[name] = { args: args };
+        }
+      };
+    }
+    window.toggleNavMenu    = _makeProxy('toggleNavMenu');
+    window.togglePanelYo    = _makeProxy('togglePanelYo');
+    window.cerrarPanelYo    = _makeProxy('cerrarPanelYo');
+    window.abrirChat        = _makeProxy('abrirChat');
+    window.toggleLoginPanel = _makeProxy('toggleLoginPanel');
+    window.toggleTema       = _makeProxy('toggleTema');
+    window.toggleUserMenu   = _makeProxy('toggleUserMenu');
+
+    // script.js llamará window._registerNavFn(name, fn) para activar cada proxy
+    window._registerNavFn = function(name, fn) {
+      window['_real_' + name] = fn;
+      if (_pendingCalls[name]) {
+        fn.apply(null, _pendingCalls[name].args);
+        delete _pendingCalls[name];
+      }
+    };
   </script>
 </head>
 <body>
@@ -76,7 +110,7 @@
       <li>
         <a href="juego.html" class="nav-icon-link" title="Juegos">
           <span>Juegos</span>
-          <img src="juegos.png" class="nav-icon nav-icon-color" alt="Juegos"/>
+          <img src="juegos.png" class="nav-icon nav-icon-juegos" alt="Juegos"/>
         </a>
       </li>
       <li>
