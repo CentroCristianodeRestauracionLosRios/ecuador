@@ -16,11 +16,15 @@
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <!-- Fallback: oculta el loader aunque el módulo JS falle -->
+  <!-- Fix bfcache: al volver con el botón Atrás desde juego.html, forzar recarga -->
   <script>
     setTimeout(function() {
       var el = document.getElementById('loaderScreen');
       if (el) { el.style.display = 'none'; }
     }, 3500);
+    window.addEventListener('pageshow', function(e) {
+      if (e.persisted) { window.location.reload(); }
+    });
   </script>
 </head>
 <body>
@@ -71,7 +75,7 @@
       <li>
         <a href="juego.html" class="nav-icon-link" title="Juegos">
           <span>Juegos</span>
-          <img src="ICONO.png" class="nav-icon" alt="Juegos" style="filter:hue-rotate(200deg) brightness(1.2)"/>
+          <img src="juegos.png" class="nav-icon nav-icon-color" alt="Juegos"/>
         </a>
         <a href="#" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>

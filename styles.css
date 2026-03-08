@@ -1793,6 +1793,15 @@ input[readonly] {
 .nav-icon-link:hover .nav-icon { opacity: 1; }
 .nav-icon-link:hover span { color: var(--accent); }
 
+/* Iconos con color propio — no aplicar filtro blanco */
+.nav-icon.nav-icon-color {
+  filter: none;
+  opacity: 0.85;
+}
+.nav-icon-link:hover .nav-icon.nav-icon-color { opacity: 1; filter: none; }
+body.tema-claro .nav-icon.nav-icon-color { filter: none; opacity: 0.85; }
+body.tema-claro .nav-icon-link:hover .nav-icon.nav-icon-color { filter: none; opacity: 1; }
+
 /* ===== SECTION HEADER CON ICONO ===== */
 .section-header-icon {
   display: flex;
