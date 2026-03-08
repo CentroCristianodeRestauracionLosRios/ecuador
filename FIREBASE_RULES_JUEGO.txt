@@ -1,0 +1,14 @@
+Agregar estas reglas en Firebase → Realtime Database → Reglas:
+
+"game_progress": {
+  "$uid": {
+    ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'haroldolmedoanchundia@gmail.com')",
+    ".write": "auth != null && auth.uid === $uid"
+  }
+},
+"game_ranking": {
+  ".read": true,
+  "$uid": {
+    ".write": "auth != null && auth.uid === $uid"
+  }
+}

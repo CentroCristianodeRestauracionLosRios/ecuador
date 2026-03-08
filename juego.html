@@ -1,0 +1,2417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>El Arca de Noé — CCRLR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #f0d080;
+      --gold-dark: #8a6a1a;
+      --sky-top: #0a0520;
+      --sky-mid: #1a0a3a;
+      --sky-low: #2a1a4a;
+      --water: #0a1a3a;
+      --water-light: #1a3a6a;
+      --ark-brown: #6b3a1f;
+      --ark-dark: #3a1a08;
+      --text: #f0e8d0;
+      --muted: #9a8a6a;
+      --danger: #c0392b;
+      --success: #27ae60;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body {
+      width:100%; height:100%;
+      overflow:hidden;
+      font-family:'Crimson Text', Georgia, serif;
+      background:#000;
+      color: var(--text);
+      user-select: none;
+    }
+
+    /* ══════════════════════════════════
+       CANVAS DE FONDO
+    ══════════════════════════════════ */
+    #bgCanvas {
+      position:fixed; inset:0;
+      width:100%; height:100%;
+      z-index:0;
+    }
+
+    /* ══════════════════════════════════
+       PANTALLAS
+    ══════════════════════════════════ */
+    .screen {
+      position:fixed; inset:0;
+      display:none;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      z-index:10;
+    }
+    .screen.active { display:flex; }
+
+    /* ══════════════════════════════════
+       MENÚ PRINCIPAL
+    ══════════════════════════════════ */
+    #screen-menu {
+      background: transparent;
+    }
+    .menu-ark-container {
+      position:absolute;
+      bottom: 0;
+      left:50%;
+      transform:translateX(-50%);
+      width:min(700px, 100vw);
+      pointer-events:none;
+      z-index:1;
+    }
+    .menu-content {
+      position:relative;
+      z-index:2;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:0;
+      padding-bottom: 40px;
+    }
+    .game-logo {
+      text-align:center;
+      margin-bottom:8px;
+      animation: floatLogo 3s ease-in-out infinite;
+    }
+    @keyframes floatLogo {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .game-logo-sub {
+      font-family:'Cinzel', serif;
+      font-size:clamp(0.65rem, 2vw, 0.85rem);
+      letter-spacing:0.35em;
+      color: var(--gold);
+      text-transform:uppercase;
+      opacity:0.8;
+      margin-bottom:6px;
+    }
+    .game-logo-title {
+      font-family:'Cinzel', serif;
+      font-size:clamp(2.2rem, 8vw, 5rem);
+      font-weight:900;
+      color: var(--gold-light);
+      text-shadow:
+        0 0 40px rgba(201,168,76,0.8),
+        0 0 80px rgba(201,168,76,0.4),
+        2px 4px 8px rgba(0,0,0,0.9);
+      line-height:1;
+      letter-spacing:0.05em;
+    }
+    .game-logo-title span {
+      color: #fff;
+      text-shadow:
+        0 0 30px rgba(255,255,255,0.6),
+        2px 4px 8px rgba(0,0,0,0.9);
+    }
+    .game-logo-verse {
+      font-style:italic;
+      color: var(--muted);
+      font-size:clamp(0.75rem, 2vw, 0.9rem);
+      margin-top:6px;
+      letter-spacing:0.05em;
+    }
+
+    /* Arca SVG animada */
+    .ark-svg-wrap {
+      width:min(500px, 90vw);
+      animation: arkFloat 4s ease-in-out infinite;
+      filter: drop-shadow(0 8px 32px rgba(0,0,0,0.8));
+      margin-top:-20px;
+    }
+    @keyframes arkFloat {
+      0%,100% { transform: translateY(0) rotate(-0.5deg); }
+      50% { transform: translateY(-14px) rotate(0.5deg); }
+    }
+
+    /* Botones del menú */
+    .menu-btns {
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      width:min(280px, 80vw);
+      margin-top:24px;
+    }
+    .btn-menu {
+      position:relative;
+      background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+      border: 1.5px solid rgba(201,168,76,0.5);
+      border-radius:4px;
+      color: var(--gold-light);
+      font-family:'Cinzel', serif;
+      font-size:clamp(0.85rem, 2.5vw, 1rem);
+      font-weight:700;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      padding:14px 24px;
+      cursor:pointer;
+      transition: all 0.2s;
+      text-align:center;
+      overflow:hidden;
+    }
+    .btn-menu::before {
+      content:'';
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, transparent, rgba(201,168,76,0.15), transparent);
+      transform:translateX(-100%);
+      transition:transform 0.4s;
+    }
+    .btn-menu:hover::before { transform:translateX(100%); }
+    .btn-menu:hover {
+      border-color: var(--gold);
+      color:#fff;
+      box-shadow: 0 0 20px rgba(201,168,76,0.3), inset 0 0 20px rgba(201,168,76,0.05);
+      transform:translateY(-2px);
+    }
+    .btn-menu:active { transform:translateY(0) scale(0.98); }
+    .btn-menu.primary {
+      background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+      color: #1a0a00;
+      border-color: var(--gold-light);
+      font-size:clamp(1rem, 3vw, 1.15rem);
+      box-shadow: 0 4px 24px rgba(201,168,76,0.4);
+    }
+    .btn-menu.primary:hover {
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      box-shadow: 0 6px 32px rgba(201,168,76,0.6);
+      color:#000;
+    }
+    .btn-menu:disabled {
+      opacity:0.4;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    /* Usuario logueado */
+    .menu-user-badge {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      background: rgba(201,168,76,0.1);
+      border:1px solid rgba(201,168,76,0.3);
+      border-radius:20px;
+      padding:6px 14px;
+      font-size:0.85rem;
+      color: var(--gold);
+      margin-bottom:4px;
+    }
+    .menu-user-badge .dot {
+      width:8px; height:8px;
+      background:#27ae60;
+      border-radius:50%;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100%{ box-shadow:0 0 0 0 rgba(39,174,96,0.6); }
+      50%{ box-shadow:0 0 0 5px rgba(39,174,96,0); }
+    }
+
+    /* ══════════════════════════════════
+       PANTALLA LOGIN
+    ══════════════════════════════════ */
+    #screen-login {
+      background: rgba(0,0,0,0.6);
+      backdrop-filter:blur(8px);
+    }
+    .login-box {
+      background: linear-gradient(160deg, #0d1530, #1a0d30);
+      border:1.5px solid rgba(201,168,76,0.4);
+      border-radius:16px;
+      padding:40px 36px;
+      width:min(380px, 90vw);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(201,168,76,0.1);
+      animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn {
+      from{transform:scale(0.85);opacity:0}
+      to{transform:scale(1);opacity:1}
+    }
+    .login-icon {
+      font-size:3rem;
+      filter:drop-shadow(0 0 12px rgba(201,168,76,0.5));
+    }
+    .login-title {
+      font-family:'Cinzel', serif;
+      font-size:1.3rem;
+      color: var(--gold-light);
+      text-align:center;
+    }
+    .login-sub {
+      font-size:0.85rem;
+      color: var(--muted);
+      text-align:center;
+      line-height:1.5;
+    }
+    .login-input {
+      width:100%;
+      background: rgba(255,255,255,0.05);
+      border:1px solid rgba(201,168,76,0.3);
+      border-radius:8px;
+      padding:12px 16px;
+      color: var(--text);
+      font-size:0.95rem;
+      font-family:'Crimson Text', serif;
+      outline:none;
+      transition:border-color 0.2s;
+    }
+    .login-input:focus { border-color: var(--gold); }
+    .login-input::placeholder { color: var(--muted); }
+    .login-error {
+      color:#e74c3c;
+      font-size:0.82rem;
+      text-align:center;
+      min-height:20px;
+    }
+    .login-back {
+      background:transparent;
+      border:none;
+      color: var(--muted);
+      font-size:0.82rem;
+      cursor:pointer;
+      text-decoration:underline;
+      text-underline-offset:3px;
+    }
+    .login-back:hover { color: var(--text); }
+
+    /* ══════════════════════════════════
+       PANTALLA SELECCIÓN DE NIVEL
+    ══════════════════════════════════ */
+    #screen-levels {
+      background: rgba(0,0,0,0.55);
+      backdrop-filter:blur(6px);
+    }
+    .levels-title {
+      font-family:'Cinzel', serif;
+      font-size:clamp(1.4rem, 4vw, 2rem);
+      color: var(--gold-light);
+      text-align:center;
+      margin-bottom:8px;
+      text-shadow: 0 0 20px rgba(201,168,76,0.5);
+    }
+    .levels-sub {
+      color: var(--muted);
+      font-size:0.9rem;
+      text-align:center;
+      margin-bottom:32px;
+    }
+    .levels-grid {
+      display:flex;
+      flex-wrap:wrap;
+      gap:20px;
+      justify-content:center;
+      max-width:800px;
+      padding:0 20px;
+    }
+    .level-card {
+      background: linear-gradient(160deg, rgba(201,168,76,0.08), rgba(0,0,0,0.3));
+      border:1.5px solid rgba(201,168,76,0.25);
+      border-radius:16px;
+      padding:28px 24px;
+      width:min(220px, 80vw);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      cursor:pointer;
+      transition: all 0.25s;
+      position:relative;
+      overflow:hidden;
+    }
+    .level-card::after {
+      content:'';
+      position:absolute;
+      inset:0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.08), transparent);
+      opacity:0;
+      transition:opacity 0.25s;
+    }
+    .level-card:hover::after { opacity:1; }
+    .level-card:hover {
+      border-color: var(--gold);
+      transform:translateY(-6px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(201,168,76,0.2);
+    }
+    .level-card.locked {
+      opacity:0.45;
+      cursor:not-allowed;
+    }
+    .level-card.locked:hover { transform:none; box-shadow:none; }
+    .level-emoji { font-size:3rem; line-height:1; }
+    .level-num {
+      font-family:'Cinzel', serif;
+      font-size:0.7rem;
+      letter-spacing:0.2em;
+      color: var(--gold);
+      text-transform:uppercase;
+    }
+    .level-name {
+      font-family:'Cinzel', serif;
+      font-size:1rem;
+      font-weight:700;
+      color: var(--text);
+      text-align:center;
+    }
+    .level-desc {
+      font-size:0.78rem;
+      color: var(--muted);
+      text-align:center;
+      line-height:1.5;
+    }
+    .level-lock {
+      font-size:1.5rem;
+      position:absolute;
+      top:10px; right:12px;
+    }
+    .level-stars {
+      display:flex; gap:4px;
+    }
+    .star { color: var(--gold); font-size:1rem; }
+    .star.empty { color: rgba(201,168,76,0.25); }
+    .levels-back {
+      margin-top:28px;
+      background:transparent;
+      border:1px solid rgba(201,168,76,0.3);
+      border-radius:20px;
+      color: var(--muted);
+      padding:8px 20px;
+      font-size:0.85rem;
+      cursor:pointer;
+      transition:all 0.2s;
+    }
+    .levels-back:hover { color:var(--text); border-color:var(--gold); }
+
+    /* ══════════════════════════════════
+       PANTALLA RANKING
+    ══════════════════════════════════ */
+    #screen-ranking {
+      background: rgba(0,0,0,0.6);
+      backdrop-filter:blur(8px);
+    }
+    .ranking-box {
+      background: linear-gradient(160deg, #0d1530, #1a0d30);
+      border:1.5px solid rgba(201,168,76,0.4);
+      border-radius:16px;
+      padding:32px 28px;
+      width:min(440px, 92vw);
+      max-height:85vh;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .ranking-title {
+      font-family:'Cinzel', serif;
+      font-size:1.4rem;
+      color: var(--gold-light);
+      text-align:center;
+    }
+    .ranking-list {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .ranking-row {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      background: rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:10px;
+      padding:10px 14px;
+      transition:background 0.2s;
+    }
+    .ranking-row.me { border-color:rgba(201,168,76,0.4); background:rgba(201,168,76,0.06); }
+    .ranking-pos {
+      font-family:'Cinzel', serif;
+      font-size:1.1rem;
+      font-weight:700;
+      color: var(--muted);
+      width:28px;
+      text-align:center;
+    }
+    .ranking-pos.top1 { color:#ffd700; }
+    .ranking-pos.top2 { color:#c0c0c0; }
+    .ranking-pos.top3 { color:#cd7f32; }
+    .ranking-nick {
+      flex:1;
+      font-size:0.95rem;
+      color: var(--text);
+    }
+    .ranking-score {
+      font-family:'Cinzel', serif;
+      font-size:0.9rem;
+      color: var(--gold);
+      font-weight:700;
+    }
+    .ranking-level {
+      font-size:0.75rem;
+      color: var(--muted);
+      background:rgba(255,255,255,0.05);
+      border-radius:8px;
+      padding:2px 8px;
+    }
+    .ranking-empty {
+      text-align:center;
+      color: var(--muted);
+      font-style:italic;
+      padding:20px;
+    }
+
+    /* ══════════════════════════════════
+       PANTALLA INSTRUCCIONES
+    ══════════════════════════════════ */
+    #screen-instructions {
+      background: rgba(0,0,0,0.6);
+      backdrop-filter:blur(8px);
+    }
+    .instr-box {
+      background: linear-gradient(160deg, #0d1530, #1a0d30);
+      border:1.5px solid rgba(201,168,76,0.4);
+      border-radius:16px;
+      padding:32px 28px;
+      width:min(480px, 92vw);
+      max-height:88vh;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .instr-title {
+      font-family:'Cinzel', serif;
+      font-size:1.4rem;
+      color: var(--gold-light);
+      text-align:center;
+    }
+    .instr-level {
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      background:rgba(255,255,255,0.03);
+      border-radius:12px;
+      padding:14px;
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    .instr-level-icon { font-size:2rem; flex-shrink:0; }
+    .instr-level-info h3 {
+      font-family:'Cinzel', serif;
+      font-size:0.95rem;
+      color: var(--gold);
+      margin-bottom:6px;
+    }
+    .instr-level-info p {
+      font-size:0.85rem;
+      color: var(--muted);
+      line-height:1.6;
+    }
+    .instr-controls {
+      background:rgba(255,255,255,0.03);
+      border-radius:12px;
+      padding:14px;
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    .instr-controls h3 {
+      font-family:'Cinzel', serif;
+      font-size:0.95rem;
+      color: var(--gold);
+      margin-bottom:10px;
+    }
+    .ctrl-row {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:6px;
+      font-size:0.85rem;
+      color: var(--muted);
+    }
+    .ctrl-key {
+      background:rgba(255,255,255,0.1);
+      border:1px solid rgba(255,255,255,0.2);
+      border-radius:6px;
+      padding:2px 8px;
+      font-size:0.78rem;
+      color:var(--text);
+      min-width:36px;
+      text-align:center;
+      font-family:monospace;
+    }
+
+    /* ══════════════════════════════════
+       PANTALLA DE JUEGO
+    ══════════════════════════════════ */
+    #screen-game {
+      background:#000;
+      padding:0;
+    }
+    #gameCanvas {
+      display:block;
+      width:100%;
+      height:100%;
+      image-rendering:pixelated;
+    }
+    /* HUD */
+    #game-hud {
+      position:fixed;
+      top:0; left:0; right:0;
+      z-index:20;
+      pointer-events:none;
+      padding:12px 16px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    }
+    .hud-lives {
+      display:flex; gap:4px; align-items:center;
+    }
+    .hud-heart { font-size:1.2rem; }
+    .hud-score {
+      font-family:'Cinzel', serif;
+      font-size:0.9rem;
+      color: var(--gold);
+      margin-left:auto;
+    }
+    .hud-level-name {
+      font-family:'Cinzel', serif;
+      font-size:0.75rem;
+      color: var(--muted);
+      letter-spacing:0.1em;
+    }
+    .hud-animals {
+      display:flex; align-items:center; gap:6px;
+      font-size:0.85rem; color: var(--text);
+    }
+    #btn-pause {
+      pointer-events:all;
+      background:rgba(0,0,0,0.4);
+      border:1px solid rgba(255,255,255,0.15);
+      border-radius:8px;
+      color:var(--text);
+      font-size:1rem;
+      padding:4px 10px;
+      cursor:pointer;
+      margin-left:8px;
+    }
+
+    /* Controles móviles */
+    #mobile-controls {
+      position:fixed;
+      bottom:0; left:0; right:0;
+      z-index:20;
+      padding:16px 20px 24px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      pointer-events:none;
+      background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+    }
+    .ctrl-group { display:flex; gap:8px; }
+    .ctrl-btn {
+      pointer-events:all;
+      width:56px; height:56px;
+      background:rgba(0,0,0,0.5);
+      border:2px solid rgba(255,255,255,0.2);
+      border-radius:50%;
+      color:#fff;
+      font-size:1.4rem;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+      touch-action:manipulation;
+      user-select:none;
+      transition:background 0.1s, transform 0.1s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .ctrl-btn:active {
+      background:rgba(201,168,76,0.3);
+      transform:scale(0.92);
+    }
+    .ctrl-btn.action {
+      width:68px; height:68px;
+      background:rgba(201,168,76,0.2);
+      border-color:rgba(201,168,76,0.6);
+      font-size:1.6rem;
+    }
+
+    /* ══════════════════════════════════
+       PANTALLA PAUSA
+    ══════════════════════════════════ */
+    #screen-pause {
+      background:rgba(0,0,0,0.7);
+      backdrop-filter:blur(6px);
+      z-index:30;
+    }
+    .pause-box {
+      background: linear-gradient(160deg, #0d1530, #1a0d30);
+      border:1.5px solid rgba(201,168,76,0.4);
+      border-radius:16px;
+      padding:40px 32px;
+      width:min(300px, 88vw);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+    }
+    .pause-title {
+      font-family:'Cinzel', serif;
+      font-size:1.8rem;
+      color: var(--gold-light);
+      letter-spacing:0.1em;
+    }
+
+    /* ══════════════════════════════════
+       PANTALLA GAME OVER
+    ══════════════════════════════════ */
+    #screen-gameover {
+      background:rgba(0,0,0,0.85);
+      backdrop-filter:blur(8px);
+      z-index:30;
+    }
+    .gameover-box {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      animation: popIn 0.4s ease;
+    }
+    .gameover-title {
+      font-family:'Cinzel', serif;
+      font-size:clamp(2rem, 8vw, 3.5rem);
+      font-weight:900;
+      color:#e74c3c;
+      text-shadow: 0 0 30px rgba(231,76,60,0.7);
+      letter-spacing:0.05em;
+    }
+    .gameover-verse {
+      font-style:italic;
+      color: var(--muted);
+      font-size:0.9rem;
+      text-align:center;
+      max-width:300px;
+      line-height:1.6;
+    }
+    .gameover-score {
+      font-family:'Cinzel', serif;
+      font-size:1.2rem;
+      color: var(--gold);
+    }
+
+    /* ══════════════════════════════════
+       PANTALLA VICTORIA
+    ══════════════════════════════════ */
+    #screen-victory {
+      background:rgba(0,0,20,0.88);
+      backdrop-filter:blur(8px);
+      z-index:30;
+    }
+    .victory-box {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      animation: popIn 0.4s ease;
+    }
+    .victory-emoji { font-size:4rem; animation:floatLogo 2s ease-in-out infinite; }
+    .victory-title {
+      font-family:'Cinzel', serif;
+      font-size:clamp(1.8rem, 6vw, 3rem);
+      font-weight:900;
+      color: var(--gold-light);
+      text-shadow: 0 0 30px rgba(201,168,76,0.7);
+      text-align:center;
+    }
+    .victory-stars {
+      display:flex; gap:8px; font-size:2rem;
+    }
+    .victory-verse {
+      font-style:italic;
+      color: var(--muted);
+      font-size:0.9rem;
+      text-align:center;
+      max-width:320px;
+      line-height:1.6;
+      border-left:2px solid var(--gold-dark);
+      padding-left:12px;
+    }
+
+    /* ══════════════════════════════════
+       LOADING
+    ══════════════════════════════════ */
+    #screen-loading {
+      background: #000510;
+      z-index:50;
+    }
+    .loading-content {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:20px;
+    }
+    .loading-ark { font-size:4rem; animation:arkFloat 2s ease-in-out infinite; }
+    .loading-title {
+      font-family:'Cinzel', serif;
+      font-size:1.2rem;
+      color: var(--gold);
+      letter-spacing:0.2em;
+    }
+    .loading-bar-wrap {
+      width:200px; height:4px;
+      background:rgba(255,255,255,0.1);
+      border-radius:2px;
+      overflow:hidden;
+    }
+    .loading-bar {
+      height:100%;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+      border-radius:2px;
+      animation:loadingBar 1.8s ease-in-out infinite;
+    }
+    @keyframes loadingBar {
+      0%{ width:0; margin-left:0; }
+      50%{ width:80%; margin-left:0; }
+      100%{ width:0; margin-left:100%; }
+    }
+    .loading-tip {
+      font-size:0.8rem;
+      color: var(--muted);
+      font-style:italic;
+      text-align:center;
+      max-width:280px;
+      line-height:1.6;
+    }
+
+    /* ══════════════════════════════════
+       BOTÓN VOLVER AL INICIO
+    ══════════════════════════════════ */
+    #btn-back-to-site {
+      position:fixed;
+      top:12px; left:12px;
+      z-index:100;
+      background:rgba(0,0,0,0.5);
+      border:1px solid rgba(255,255,255,0.15);
+      border-radius:20px;
+      color: var(--muted);
+      font-size:0.78rem;
+      padding:6px 12px;
+      cursor:pointer;
+      display:flex; align-items:center; gap:6px;
+      transition:all 0.2s;
+      font-family:'Crimson Text', serif;
+    }
+    #btn-back-to-site:hover {
+      color:var(--text);
+      border-color:rgba(255,255,255,0.3);
+      background:rgba(0,0,0,0.7);
+    }
+
+    /* ══════════════════════════════════
+       UTILIDADES
+    ══════════════════════════════════ */
+    .hidden { display:none !important; }
+    .divider {
+      width:100%; height:1px;
+      background:rgba(201,168,76,0.2);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(201,168,76,0.3); border-radius:2px; }
+  </style>
+</head>
+<body>
+
+<!-- Canvas de fondo animado -->
+<canvas id="bgCanvas"></canvas>
+
+<!-- Botón volver al sitio -->
+<button id="btn-back-to-site" onclick="window.location.href='index.html'">
+  ← Volver al inicio
+</button>
+
+<!-- ══════════════════════════════════
+     PANTALLA: LOADING
+══════════════════════════════════ -->
+<div class="screen active" id="screen-loading">
+  <div class="loading-content">
+    <div class="loading-ark">⛵</div>
+    <div class="loading-title">Cargando...</div>
+    <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+    <p class="loading-tip">"Pero Noé halló gracia ante los ojos de Dios."<br>— Génesis 6:8</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: MENÚ PRINCIPAL
+══════════════════════════════════ -->
+<div class="screen" id="screen-menu">
+  <div class="menu-content">
+    <div class="game-logo">
+      <div class="game-logo-sub">Centro Cristiano de Restauración Los Ríos</div>
+      <div class="game-logo-title">El <span>Arca</span></div>
+      <div class="game-logo-title" style="margin-top:-8px">de <span style="color:var(--gold-light);text-shadow:0 0 30px rgba(201,168,76,0.8),2px 4px 8px rgba(0,0,0,0.9)">Noé</span></div>
+      <div class="game-logo-verse">"Génesis 6 — 9"</div>
+    </div>
+
+    <!-- Arca SVG -->
+    <div class="ark-svg-wrap">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- Agua -->
+        <ellipse cx="250" cy="165" rx="220" ry="18" fill="rgba(10,26,58,0.6)"/>
+        <!-- Casco del arca -->
+        <path d="M60 140 Q80 160 250 162 Q420 160 440 140 L420 110 L80 110 Z" fill="#4a2008"/>
+        <path d="M80 110 L420 110 L410 100 L90 100 Z" fill="#6b3a1f"/>
+        <!-- Cubierta -->
+        <rect x="90" y="70" width="320" height="32" rx="3" fill="#8b4a25"/>
+        <!-- Techo -->
+        <path d="M120 70 L250 30 L380 70 Z" fill="#6b3a1f"/>
+        <path d="M130 70 L250 35 L370 70 Z" fill="#7a4020"/>
+        <!-- Ventana cumbrera -->
+        <rect x="235" y="48" width="30" height="16" rx="3" fill="rgba(255,220,100,0.3)" stroke="#c9a84c" stroke-width="1.5"/>
+        <!-- Tablones cubierta -->
+        <line x1="150" y1="70" x2="150" y2="102" stroke="#5a2a10" stroke-width="1.5"/>
+        <line x1="210" y1="70" x2="210" y2="102" stroke="#5a2a10" stroke-width="1.5"/>
+        <line x1="270" y1="70" x2="270" y2="102" stroke="#5a2a10" stroke-width="1.5"/>
+        <line x1="330" y1="70" x2="330" y2="102" stroke="#5a2a10" stroke-width="1.5"/>
+        <!-- Ventanas laterales -->
+        <rect x="110" y="78" width="24" height="16" rx="3" fill="rgba(255,220,100,0.2)" stroke="#c9a84c" stroke-width="1.2"/>
+        <rect x="185" y="78" width="24" height="16" rx="3" fill="rgba(255,220,100,0.25)" stroke="#c9a84c" stroke-width="1.2"/>
+        <rect x="290" y="78" width="24" height="16" rx="3" fill="rgba(255,220,100,0.2)" stroke="#c9a84c" stroke-width="1.2"/>
+        <rect x="365" y="78" width="24" height="16" rx="3" fill="rgba(255,220,100,0.15)" stroke="#c9a84c" stroke-width="1.2"/>
+        <!-- Paloma con rama de olivo -->
+        <g transform="translate(248,22) rotate(-10)">
+          <ellipse cx="0" cy="0" rx="8" ry="5" fill="#f0f0f0"/>
+          <polygon points="-8,0 -14,-6 -4,-2" fill="#f0f0f0"/>
+          <circle cx="6" cy="-3" r="2.5" fill="#f0f0f0"/>
+          <circle cx="7.5" cy="-4" r="0.8" fill="#1a1a1a"/>
+          <path d="M4,-5 Q8,-10 14,-8" stroke="#3a7a30" stroke-width="1.5" fill="none"/>
+          <ellipse cx="11" cy="-9" rx="3" ry="2" fill="#4a9a40" transform="rotate(-20,11,-9)"/>
+        </g>
+        <!-- Reflejo en agua -->
+        <path d="M120 162 Q250 172 380 162" stroke="rgba(201,168,76,0.3)" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+
+    <!-- Badge usuario -->
+    <div class="menu-user-badge hidden" id="menu-user-badge">
+      <div class="dot"></div>
+      <span id="menu-user-name">Jugador</span>
+    </div>
+
+    <!-- Botones -->
+    <div class="menu-btns">
+      <button class="btn-menu primary" id="btn-jugar" onclick="accionJugar()">⚔️ &nbsp;Jugar</button>
+      <button class="btn-menu" id="btn-continuar" onclick="continuarJuego()" style="display:none">📜 &nbsp;Continuar</button>
+      <button class="btn-menu" onclick="mostrarRanking()">🏆 &nbsp;Ranking</button>
+      <button class="btn-menu" onclick="mostrarInstrucciones()">📖 &nbsp;Instrucciones</button>
+      <button class="btn-menu" onclick="mostrarLogin()" id="btn-login-menu" style="font-size:0.82rem;opacity:0.7">🔑 &nbsp;Iniciar sesión</button>
+      <button class="btn-menu" onclick="cerrarSesionJuego()" id="btn-logout-menu" style="display:none;font-size:0.78rem;opacity:0.5">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: LOGIN
+══════════════════════════════════ -->
+<div class="screen" id="screen-login">
+  <div class="login-box">
+    <div class="login-icon">⛵</div>
+    <div class="login-title">Accede a tu cuenta</div>
+    <p class="login-sub">Usa la misma cuenta del chat de la iglesia para guardar tu progreso</p>
+    <input class="login-input" type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email"/>
+    <input class="login-input" type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password"/>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-menu primary" style="width:100%" onclick="loginJuego()">Entrar →</button>
+    <div class="divider"></div>
+    <button class="login-back" onclick="mostrarMenu()">← Volver al menú</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: SELECCIÓN DE NIVEL
+══════════════════════════════════ -->
+<div class="screen" id="screen-levels">
+  <div class="levels-title">Selecciona tu misión</div>
+  <p class="levels-sub" id="levels-sub-text">Completa cada nivel para desbloquear el siguiente</p>
+
+  <div class="levels-grid">
+    <!-- Nivel 1 -->
+    <div class="level-card" id="card-nivel1" onclick="iniciarNivel(1)">
+      <div class="level-emoji">🌿</div>
+      <div class="level-num">Nivel 1</div>
+      <div class="level-name">La Gran Misión</div>
+      <div class="level-desc">Recolecta las parejas de animales antes de que el diluvio comience</div>
+      <div class="level-stars" id="stars-1">
+        <span class="star empty">★</span>
+        <span class="star empty">★</span>
+        <span class="star empty">★</span>
+      </div>
+    </div>
+
+    <!-- Nivel 2 -->
+    <div class="level-card locked" id="card-nivel2" onclick="iniciarNivel(2)">
+      <div class="level-emoji">⚔️</div>
+      <div class="level-num">Nivel 2</div>
+      <div class="level-name">Los Nefilim</div>
+      <div class="level-desc">Los gigantes bloquean el camino. Usa tu fe para enfrentarlos</div>
+      <div class="level-lock" id="lock-2">🔒</div>
+      <div class="level-stars" id="stars-2">
+        <span class="star empty">★</span>
+        <span class="star empty">★</span>
+        <span class="star empty">★</span>
+      </div>
+    </div>
+
+    <!-- Nivel 3 -->
+    <div class="level-card locked" id="card-nivel3" onclick="iniciarNivel(3)">
+      <div class="level-emoji">🌊</div>
+      <div class="level-num">Nivel 3</div>
+      <div class="level-name">El Diluvio</div>
+      <div class="level-desc">Ya en el arca, mantén todo en orden mientras las aguas crecen</div>
+      <div class="level-lock" id="lock-3">🔒</div>
+      <div class="level-stars" id="stars-3">
+        <span class="star empty">★</span>
+        <span class="star empty">★</span>
+        <span class="star empty">★</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="levels-back" onclick="mostrarMenu()">← Menú principal</button>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: RANKING
+══════════════════════════════════ -->
+<div class="screen" id="screen-ranking">
+  <div class="ranking-box">
+    <div class="ranking-title">🏆 Tabla de Honor</div>
+    <div class="ranking-list" id="rankingList">
+      <div class="ranking-empty">Cargando...</div>
+    </div>
+    <div class="divider"></div>
+    <button class="levels-back" onclick="mostrarMenu()">← Menú principal</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: INSTRUCCIONES
+══════════════════════════════════ -->
+<div class="screen" id="screen-instructions">
+  <div class="instr-box">
+    <div class="instr-title">📖 Cómo jugar</div>
+
+    <div class="instr-level">
+      <div class="instr-level-icon">🌿</div>
+      <div class="instr-level-info">
+        <h3>Nivel 1 — La Gran Misión</h3>
+        <p>Camina por la tierra y recoge 7 parejas de animales. Acércate a ellos para recogerlos. ¡Cuida que no escapen! Tienes un tiempo limitado antes de que llegue el diluvio.</p>
+      </div>
+    </div>
+
+    <div class="instr-level">
+      <div class="instr-level-icon">⚔️</div>
+      <div class="instr-level-info">
+        <h3>Nivel 2 — Los Nefilim</h3>
+        <p>Los gigantes Nefilim intentan detenerte. Salta sobre ellos para vencerlos o esquívalos. Cada golpe tuyo te resta una vida. ¡Mantén la fe!</p>
+      </div>
+    </div>
+
+    <div class="instr-level">
+      <div class="instr-level-icon">🌊</div>
+      <div class="instr-level-info">
+        <h3>Nivel 3 — El Diluvio</h3>
+        <p>Dentro del arca, el agua se filtra y la carga cae. Muévete para tapar los agujeros y evitar que los objetos caigan al agua. Sobrevive 40 días.</p>
+      </div>
+    </div>
+
+    <div class="instr-controls">
+      <h3>Controles</h3>
+      <div class="ctrl-row"><span class="ctrl-key">←→</span> Moverse</div>
+      <div class="ctrl-row"><span class="ctrl-key">↑</span> Saltar</div>
+      <div class="ctrl-row"><span class="ctrl-key">Space</span> Acción / Atacar</div>
+      <div class="ctrl-row"><span class="ctrl-key">P</span> Pausar</div>
+      <div style="margin-top:10px;font-size:0.82rem;color:var(--muted)">📱 En móvil usa los botones en pantalla</div>
+    </div>
+
+    <button class="levels-back" onclick="mostrarMenu()">← Menú principal</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: JUEGO
+══════════════════════════════════ -->
+<div class="screen" id="screen-game">
+  <!-- HUD -->
+  <div id="game-hud">
+    <div class="hud-lives" id="hud-lives">
+      <span class="hud-heart">❤️</span>
+      <span class="hud-heart">❤️</span>
+      <span class="hud-heart">❤️</span>
+    </div>
+    <div class="hud-animals hidden" id="hud-animals">
+      🐾 <span id="hud-animals-count">0</span>/7
+    </div>
+    <div class="hud-level-name" id="hud-level-name">Nivel 1</div>
+    <div class="hud-score">⭐ <span id="hud-score">0</span></div>
+    <button id="btn-pause" onclick="togglePause()">⏸</button>
+  </div>
+
+  <!-- Canvas del juego -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Controles móviles -->
+  <div id="mobile-controls">
+    <div class="ctrl-group">
+      <button class="ctrl-btn" id="ctrl-left" ontouchstart="keys.left=true" ontouchend="keys.left=false">◀</button>
+      <button class="ctrl-btn" id="ctrl-right" ontouchstart="keys.right=true" ontouchend="keys.right=false">▶</button>
+    </div>
+    <div class="ctrl-group">
+      <button class="ctrl-btn action" id="ctrl-action" ontouchstart="keys.action=true" ontouchend="keys.action=false">⚡</button>
+      <button class="ctrl-btn action" id="ctrl-jump" ontouchstart="keys.up=true" ontouchend="keys.up=false">▲</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: PAUSA
+══════════════════════════════════ -->
+<div class="screen" id="screen-pause">
+  <div class="pause-box">
+    <div class="pause-title">⏸ PAUSA</div>
+    <div class="divider"></div>
+    <button class="btn-menu primary" onclick="togglePause()">▶ Continuar</button>
+    <button class="btn-menu" onclick="reiniciarNivel()">🔄 Reiniciar</button>
+    <button class="btn-menu" onclick="salirAlMenu()">🏠 Menú principal</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: GAME OVER
+══════════════════════════════════ -->
+<div class="screen" id="screen-gameover">
+  <div class="gameover-box">
+    <div style="font-size:3.5rem">💧</div>
+    <div class="gameover-title">El Diluvio llegó</div>
+    <p class="gameover-verse">"El justo puede caer siete veces y volver a levantarse."<br>— Proverbios 24:16</p>
+    <div class="gameover-score">Puntuación: <span id="gameover-score">0</span></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px;">
+      <button class="btn-menu primary" onclick="reiniciarNivel()">🔄 Intentar de nuevo</button>
+      <button class="btn-menu" onclick="salirAlMenu()">🏠 Menú</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANTALLA: VICTORIA
+══════════════════════════════════ -->
+<div class="screen" id="screen-victory">
+  <div class="victory-box">
+    <div class="victory-emoji">🕊️</div>
+    <div class="victory-title">¡Misión<br>Cumplida!</div>
+    <div class="victory-stars" id="victory-stars">⭐⭐⭐</div>
+    <div class="gameover-score">Puntuación: <span id="victory-score">0</span></div>
+    <p class="victory-verse" id="victory-verse">"El arco iris aparecerá en las nubes, y yo lo veré para recordar el pacto eterno."<br>— Génesis 9:16</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px;">
+      <button class="btn-menu primary" onclick="siguienteNivel()">▶ Siguiente nivel</button>
+      <button class="btn-menu" onclick="salirAlMenu()">🏠 Menú</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ══════════════════════════════════════════════════════════
+//  juego.js — El Arca de Noé
+//  Motor de juego, Firebase, menú, animaciones
+// ══════════════════════════════════════════════════════════
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getDatabase, ref, set, get, onValue, update, push, query, orderByChild, limitToLast
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── FIREBASE CONFIG ────────────────────────────
+const app = initializeApp({
+  apiKey: "AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",
+  authDomain: "chat-ccrlr.firebaseapp.com",
+  databaseURL: "https://chat-ccrlr-default-rtdb.firebaseio.com",
+  projectId: "chat-ccrlr",
+  storageBucket: "chat-ccrlr.firebasestorage.app",
+  messagingSenderId: "832816032978",
+  appId: "1:832816032978:web:08721a677cff57b0d9110b"
+});
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+// ── ESTADO GLOBAL ──────────────────────────────
+let currentUser  = null;
+let playerNick   = 'Jugador';
+let gameProgress = { nivel1: 0, nivel2: 0, nivel3: 0, maxNivel: 1 };
+let currentNivel = 1;
+let gameScore    = 0;
+let gameLives    = 3;
+let gameRunning  = false;
+let gamePaused   = false;
+let animFrame    = null;
+
+// Teclas
+const keys = { left:false, right:false, up:false, action:false };
+window.keys = keys;
+
+// ── AUTENTICACIÓN ──────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (user) {
+    // Cargar nickname desde Firebase
+    try {
+      const snap = await get(ref(db, `usuarios/${user.uid}/nickname`));
+      playerNick = snap.val() || user.email.split('@')[0];
+    } catch(e) {
+      playerNick = user.email.split('@')[0];
+    }
+    // Cargar progreso
+    await cargarProgreso();
+    // Actualizar UI
+    document.getElementById('menu-user-badge').classList.remove('hidden');
+    document.getElementById('menu-user-name').textContent = playerNick;
+    document.getElementById('btn-login-menu').style.display = 'none';
+    document.getElementById('btn-logout-menu').style.display = 'block';
+    document.getElementById('btn-jugar').textContent = '⚔️  Jugar';
+    if (gameProgress.maxNivel > 1) {
+      document.getElementById('btn-continuar').style.display = 'block';
+    }
+  } else {
+    document.getElementById('menu-user-badge').classList.add('hidden');
+    document.getElementById('btn-login-menu').style.display = 'block';
+    document.getElementById('btn-logout-menu').style.display = 'none';
+    document.getElementById('btn-continuar').style.display = 'none';
+  }
+});
+
+// ── PROGRESO FIREBASE ──────────────────────────
+async function cargarProgreso() {
+  if (!currentUser) return;
+  try {
+    const snap = await get(ref(db, `game_progress/${currentUser.uid}`));
+    if (snap.val()) {
+      gameProgress = { ...gameProgress, ...snap.val() };
+      actualizarEstrellas();
+      actualizarNivelesDesbloqueados();
+    }
+  } catch(e) { console.warn('Error cargando progreso:', e); }
+}
+
+async function guardarProgreso(nivel, estrellas, score) {
+  if (!currentUser) return;
+  const update_data = {
+    [`nivel${nivel}`]: Math.max(gameProgress[`nivel${nivel}`] || 0, estrellas),
+    maxNivel: Math.max(gameProgress.maxNivel || 1, nivel + 1),
+    lastScore: score,
+    lastPlayed: Date.now()
+  };
+  gameProgress = { ...gameProgress, ...update_data };
+  try {
+    await update(ref(db, `game_progress/${currentUser.uid}`), update_data);
+    // Guardar en ranking global
+    const rankSnap = await get(ref(db, `game_ranking/${currentUser.uid}`));
+    const rankData = rankSnap.val() || {};
+    if (score > (rankData.score || 0)) {
+      await update(ref(db, `game_ranking/${currentUser.uid}`), {
+        nick: playerNick,
+        score,
+        nivel,
+        ts: Date.now()
+      });
+    }
+  } catch(e) { console.warn('Error guardando progreso:', e); }
+}
+
+// ── LOGIN ──────────────────────────────────────
+window.loginJuego = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Completa todos los campos.'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    mostrarMenu();
+  } catch(e) {
+    errEl.textContent = 'Correo o contraseña incorrectos.';
+  }
+};
+
+window.cerrarSesionJuego = async () => {
+  await signOut(auth);
+  gameProgress = { nivel1:0, nivel2:0, nivel3:0, maxNivel:1 };
+};
+
+// ── NAVEGACIÓN ENTRE PANTALLAS ─────────────────
+function mostrarScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+window.mostrarMenu = () => mostrarScreen('screen-menu');
+window.mostrarLogin = () => mostrarScreen('screen-login');
+window.mostrarInstrucciones = () => mostrarScreen('screen-instructions');
+
+window.accionJugar = () => {
+  if (!currentUser) { mostrarLogin(); return; }
+  mostrarNiveles();
+};
+
+window.continuarJuego = () => {
+  if (!currentUser) { mostrarLogin(); return; }
+  mostrarNiveles();
+};
+
+function mostrarNiveles() {
+  actualizarEstrellas();
+  actualizarNivelesDesbloqueados();
+  mostrarScreen('screen-levels');
+}
+
+window.mostrarRanking = async () => {
+  mostrarScreen('screen-ranking');
+  cargarRanking();
+};
+
+// ── RANKING ────────────────────────────────────
+async function cargarRanking() {
+  const lista = document.getElementById('rankingList');
+  lista.innerHTML = '<div class="ranking-empty">Cargando...</div>';
+  try {
+    const snap = await get(query(ref(db,'game_ranking'), orderByChild('score'), limitToLast(10)));
+    const data = snap.val();
+    if (!data) { lista.innerHTML = '<div class="ranking-empty">Aún no hay puntuaciones. ¡Sé el primero!</div>'; return; }
+    const entries = Object.entries(data).sort((a,b) => b[1].score - a[1].score);
+    lista.innerHTML = '';
+    entries.forEach(([uid, d], i) => {
+      const row = document.createElement('div');
+      const isMe = currentUser && uid === currentUser.uid;
+      row.className = `ranking-row${isMe?' me':''}`;
+      const posClass = i===0?'top1':i===1?'top2':i===2?'top3':'';
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      row.innerHTML = `
+        <span class="ranking-pos ${posClass}">${medal||`#${i+1}`}</span>
+        <span class="ranking-nick">${escapeHTML(d.nick||'?')}${isMe?' (tú)':''}</span>
+        <span class="ranking-level">Nv.${d.nivel||1}</span>
+        <span class="ranking-score">${d.score||0} ⭐</span>`;
+      lista.appendChild(row);
+    });
+  } catch(e) {
+    lista.innerHTML = '<div class="ranking-empty">Error al cargar el ranking.</div>';
+  }
+}
+
+// ── ESTRELLAS Y NIVELES ────────────────────────
+function actualizarEstrellas() {
+  [1,2,3].forEach(n => {
+    const stars = document.querySelectorAll(`#stars-${n} .star`);
+    const got = gameProgress[`nivel${n}`] || 0;
+    stars.forEach((s,i) => {
+      s.classList.toggle('empty', i >= got);
+      s.style.color = i < got ? 'var(--gold)' : '';
+    });
+  });
+}
+
+function actualizarNivelesDesbloqueados() {
+  const max = gameProgress.maxNivel || 1;
+  [2,3].forEach(n => {
+    const card = document.getElementById(`card-nivel${n}`);
+    const lock = document.getElementById(`lock-${n}`);
+    if (n <= max) {
+      card.classList.remove('locked');
+      if(lock) lock.style.display='none';
+    } else {
+      card.classList.add('locked');
+      if(lock) lock.style.display='block';
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  MOTOR DEL JUEGO
+// ══════════════════════════════════════════════════════════
+
+const CANVAS_W = 800;
+const CANVAS_H = 450;
+
+let canvas, ctx;
+let gameState = {};
+
+function inicializarCanvas() {
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  redimensionarCanvas();
+  window.addEventListener('resize', redimensionarCanvas);
+}
+
+function redimensionarCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+// Entrada teclado
+window.addEventListener('keydown', e => {
+  if(e.key==='ArrowLeft'||e.key==='a') keys.left=true;
+  if(e.key==='ArrowRight'||e.key==='d') keys.right=true;
+  if(e.key==='ArrowUp'||e.key==='w'||e.key===' ') { keys.up=true; e.preventDefault(); }
+  if(e.key==='z'||e.key==='x') keys.action=true;
+  if(e.key==='p'||e.key==='P'||e.key==='Escape') togglePause();
+});
+window.addEventListener('keyup', e => {
+  if(e.key==='ArrowLeft'||e.key==='a') keys.left=false;
+  if(e.key==='ArrowRight'||e.key==='d') keys.right=false;
+  if(e.key==='ArrowUp'||e.key==='w'||e.key===' ') keys.up=false;
+  if(e.key==='z'||e.key==='x') keys.action=false;
+});
+
+// ── NIVEL 1: Recolección de animales ──────────
+const ANIMALES = ['🐘','🦒','🦁','🐻','🦊','🐧','🐢','🦅','🐊','🦓','🐆','🦏'];
+
+function crearEstadoNivel1() {
+  const W = canvas.width, H = canvas.height;
+  const sueloY = H * 0.75;
+  return {
+    tipo: 1,
+    jugador: { x: W*0.12, y: sueloY-52, w:36, h:52, vx:0, vy:0, onGround:true, dir:1, animFrame:0, animTimer:0, invincible:0 },
+    camara: { x:0 },
+    mapW: W * 3.5,
+    sueloY,
+    animales: generarAnimales(W, sueloY),
+    recolectados: [],
+    meta: 7,
+    tiempo: 90,
+    timerInterval: null,
+    particulas: [],
+    nubes: generarNubes(W*3.5),
+    score: 0,
+    mensaje: null,
+    mensajeTimer: 0
+  };
+}
+
+function generarAnimales(W, sueloY) {
+  const lista = [];
+  const usados = [];
+  for(let i=0; i<14; i++) {
+    let emoji;
+    do { emoji = ANIMALES[Math.floor(Math.random()*ANIMALES.length)]; }
+    while(usados.filter(e=>e===emoji).length >= 2);
+    usados.push(emoji);
+    const x = W*0.3 + Math.random() * W * 2.5;
+    const plataforma = Math.random() < 0.3;
+    const y = plataforma ? sueloY - 80 - Math.random()*60 : sueloY - 38;
+    lista.push({ emoji, x, y, w:36, h:36, vx:(Math.random()-0.5)*0.8, vy:0, onGround:!plataforma, recogido:false, animY:0, animDir:1 });
+  }
+  return lista;
+}
+
+function generarNubes(mapW) {
+  const nubes = [];
+  for(let i=0; i<20; i++) {
+    nubes.push({ x: Math.random()*mapW, y: Math.random()*150+20, w:80+Math.random()*120, opacity:0.3+Math.random()*0.4, speed:0.1+Math.random()*0.2 });
+  }
+  return nubes;
+}
+
+function crearEstadoNivel2() {
+  const W = canvas.width, H = canvas.height;
+  const sueloY = H * 0.78;
+  return {
+    tipo: 2,
+    jugador: { x: W*0.1, y: sueloY-52, w:36, h:52, vx:0, vy:0, onGround:true, dir:1, animFrame:0, animTimer:0, invincible:0, atacando:0 },
+    camara: { x:0 },
+    mapW: W * 4,
+    sueloY,
+    gigantes: generarGigantes(W, sueloY),
+    plataformas: generarPlataformas(W*4, sueloY),
+    meta: { x: W*3.8, y: sueloY-80, w:60, h:80 },
+    tiempo: 120,
+    particulas: [],
+    score: 0,
+    mensaje: null,
+    mensajeTimer: 0
+  };
+}
+
+function generarGigantes(W, sueloY) {
+  const lista = [];
+  for(let i=0; i<5; i++) {
+    lista.push({
+      x: W*(0.5 + i*0.6), y: sueloY-90,
+      w:60, h:90, vx:0.6+i*0.2, dir:1,
+      hp:3, maxHp:3, muerto:false,
+      animFrame:0, animTimer:0, invincible:0,
+      patrullaMin: W*(0.4+i*0.6), patrullaMax: W*(0.7+i*0.6)
+    });
+  }
+  return lista;
+}
+
+function generarPlataformas(mapW, sueloY) {
+  const lista = [];
+  for(let i=0; i<12; i++) {
+    lista.push({ x: mapW*0.1+i*mapW*0.07, y: sueloY-90-Math.random()*80, w:90+Math.random()*60, h:16 });
+  }
+  return lista;
+}
+
+function crearEstadoNivel3() {
+  const W = canvas.width, H = canvas.height;
+  return {
+    tipo: 3,
+    jugador: { x: W*0.5, y: H*0.6, w:32, h:48, vx:0, vy:0, onGround:true, dir:1, animFrame:0, animTimer:0 },
+    arcaW: W * 0.85,
+    arcaX: W * 0.075,
+    sueloY: H * 0.85,
+    obstaculos: [],
+    agujeros: [],
+    dias: 0,
+    diasMax: 40,
+    diasTimer: 0,
+    agua: H * 0.9,
+    aguaVel: 0.08,
+    particulas: [],
+    score: 0,
+    spawTimer: 0,
+    mensaje: null,
+    mensajeTimer: 0
+  };
+}
+
+// ── INICIAR NIVEL ──────────────────────────────
+window.iniciarNivel = (n) => {
+  if (!currentUser) { mostrarLogin(); return; }
+  const card = document.getElementById(`card-nivel${n}`);
+  if (card.classList.contains('locked')) return;
+
+  currentNivel = n;
+  gameScore = 0;
+  gameLives = 3;
+
+  inicializarCanvas();
+  mostrarScreen('screen-game');
+  actualizarHUD();
+  document.getElementById('hud-level-name').textContent = `Nivel ${n}`;
+
+  if(n===1) {
+    document.getElementById('hud-animals').classList.remove('hidden');
+    gameState = crearEstadoNivel1();
+    gameState.timerInterval = setInterval(() => {
+      if(!gamePaused && gameRunning) {
+        gameState.tiempo--;
+        if(gameState.tiempo <= 0) finJuego(false);
+      }
+    }, 1000);
+  } else if(n===2) {
+    document.getElementById('hud-animals').classList.add('hidden');
+    gameState = crearEstadoNivel2();
+    gameState.timerInterval = setInterval(() => {
+      if(!gamePaused && gameRunning) {
+        gameState.tiempo--;
+        if(gameState.tiempo <= 0) finJuego(false);
+      }
+    }, 1000);
+  } else if(n===3) {
+    document.getElementById('hud-animals').classList.add('hidden');
+    gameState = crearEstadoNivel3();
+  }
+
+  gameRunning = true;
+  gamePaused = false;
+  if(animFrame) cancelAnimationFrame(animFrame);
+  loop();
+};
+
+// ── LOOP PRINCIPAL ─────────────────────────────
+function loop() {
+  if(!gameRunning) return;
+  animFrame = requestAnimationFrame(loop);
+  if(gamePaused) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if(gameState.tipo===1) updateDibujarNivel1();
+  else if(gameState.tipo===2) updateDibujarNivel2();
+  else if(gameState.tipo===3) updateDibujarNivel3();
+}
+
+// ══════════════════════════════════════════════════════════
+//  NIVEL 1 — RECOLECCIÓN
+// ══════════════════════════════════════════════════════════
+function updateDibujarNivel1() {
+  const s = gameState;
+  const W = canvas.width, H = canvas.height;
+  const cam = s.camara;
+
+  // Física jugador
+  const p = s.jugador;
+  if(keys.left)  p.vx = -3.5;
+  else if(keys.right) p.vx = 3.5;
+  else p.vx *= 0.82;
+
+  if(keys.up && p.onGround) { p.vy = -10; p.onGround = false; }
+  p.vy += 0.45;
+  p.x += p.vx;
+  p.y += p.vy;
+  if(p.vx > 0) p.dir = 1;
+  if(p.vx < 0) p.dir = -1;
+
+  // Límites mapa
+  p.x = Math.max(0, Math.min(p.x, s.mapW - p.w));
+
+  // Suelo
+  if(p.y + p.h >= s.sueloY) { p.y = s.sueloY - p.h; p.vy = 0; p.onGround = true; }
+
+  // Cámara
+  const targetCam = p.x - W*0.35;
+  cam.x += (targetCam - cam.x) * 0.1;
+  cam.x = Math.max(0, Math.min(cam.x, s.mapW - W));
+
+  // Animación jugador
+  p.animTimer++;
+  if(p.animTimer > 8) { p.animFrame = (p.animFrame+1)%4; p.animTimer=0; }
+  if(p.invincible > 0) p.invincible--;
+
+  // Mover animales
+  s.animales.forEach(a => {
+    if(a.recogido) return;
+    a.x += a.vx;
+    a.animY += 0.06 * a.animDir;
+    if(Math.abs(a.animY) > 4) a.animDir *= -1;
+    if(a.x < 0 || a.x > s.mapW - a.w) a.vx *= -1;
+
+    // Colisión recolección
+    if(!a.recogido && colision(p, a)) {
+      a.recogido = true;
+      s.recolectados.push(a.emoji);
+      gameScore += 100;
+      crearParticulas(s.particulas, a.x, a.y, '#ffd700', 8);
+      s.mensaje = `¡${a.emoji} recogido!`;
+      s.mensajeTimer = 60;
+      document.getElementById('hud-animals-count').textContent = s.recolectados.length;
+      if(s.recolectados.length >= s.meta) {
+        setTimeout(() => finNivel(calcularEstrellas(s.tiempo, 90)), 600);
+      }
+    }
+  });
+
+  // Nubes
+  s.nubes.forEach(n => { n.x -= n.speed; if(n.x < -n.w) n.x = s.mapW; });
+
+  // Partículas
+  s.particulas.forEach(p2 => { p2.x+=p2.vx; p2.y+=p2.vy; p2.vy+=0.15; p2.life--; });
+  s.particulas = s.particulas.filter(p2=>p2.life>0);
+
+  // Mensaje
+  if(s.mensajeTimer > 0) s.mensajeTimer--;
+
+  // ── DIBUJAR ──
+  dibujarFondoNivel1(cam, W, H, s);
+  dibujarAnimales(s.animales, cam);
+  dibujarJugador(p, cam);
+  dibujarParticulas(s.particulas, cam);
+  dibujarHUDNivel1(s, W, H);
+}
+
+function dibujarFondoNivel1(cam, W, H, s) {
+  // Cielo gradiente
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, '#0a0520');
+  grad.addColorStop(0.5, '#1a0a3a');
+  grad.addColorStop(1, '#3a1520');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  // Estrellas
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  for(let i=0; i<60; i++) {
+    const sx = ((i*137 + cam.x*0.02) % W);
+    const sy = (i*73) % (H*0.5);
+    ctx.fillRect(sx,sy,1,1);
+  }
+
+  // Nubes
+  s.nubes.forEach(n => {
+    const nx = n.x - cam.x * 0.3;
+    ctx.fillStyle = `rgba(200,180,220,${n.opacity})`;
+    ctx.beginPath();
+    ctx.ellipse(nx, n.y, n.w/2, 20, 0, 0, Math.PI*2);
+    ctx.ellipse(nx-n.w*0.25, n.y+8, n.w*0.35, 16, 0, 0, Math.PI*2);
+    ctx.ellipse(nx+n.w*0.25, n.y+5, n.w*0.3, 14, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Montañas fondo
+  ctx.fillStyle = '#1a0830';
+  for(let i=0; i<8; i++) {
+    const mx = ((i*320 - cam.x*0.15) % (W+200)) - 100;
+    const mh = 120+i*20;
+    ctx.beginPath();
+    ctx.moveTo(mx, H*0.75);
+    ctx.lineTo(mx+160, H*0.75-mh);
+    ctx.lineTo(mx+320, H*0.75);
+    ctx.fill();
+  }
+
+  // Suelo
+  const sGrad = ctx.createLinearGradient(0, s.sueloY, 0, H);
+  sGrad.addColorStop(0, '#2d4a1e');
+  sGrad.addColorStop(0.3, '#1a3010');
+  sGrad.addColorStop(1, '#0a1808');
+  ctx.fillStyle = sGrad;
+  ctx.fillRect(0, s.sueloY, W, H - s.sueloY);
+
+  // Hierba
+  ctx.fillStyle = '#3a6a20';
+  for(let i=0; i<W/8; i++) {
+    const gx = (i*8 - (cam.x%8));
+    const gh = 4+Math.sin(i*0.7)*3;
+    ctx.fillRect(gx, s.sueloY, 4, gh);
+  }
+
+  // Árbol del Arca al fondo (meta visual)
+  const arkScreenX = s.mapW - 200 - cam.x;
+  if(arkScreenX > -100 && arkScreenX < W+100) {
+    dibujarArcaMeta(arkScreenX, s.sueloY);
+  }
+
+  // Timer
+  const tiempoColor = s.tiempo < 20 ? '#e74c3c' : '#c9a84c';
+  ctx.fillStyle = tiempoColor;
+  ctx.font = 'bold 16px "Cinzel", serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`⏳ ${s.tiempo}s`, W/2, 36);
+  ctx.textAlign = 'left';
+
+  // Mensaje flotante
+  if(s.mensajeTimer > 0) {
+    const alpha = Math.min(1, s.mensajeTimer/20);
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 20px "Cinzel", serif';
+    ctx.fillStyle = '#ffd700';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.mensaje, W/2, H*0.35);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+  }
+}
+
+function dibujarArcaMeta(x, sueloY) {
+  // Silueta del Arca como objetivo
+  ctx.fillStyle = 'rgba(201,168,76,0.15)';
+  ctx.fillRect(x-80, sueloY-100, 160, 100);
+  ctx.strokeStyle = 'rgba(201,168,76,0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x-80, sueloY-100, 160, 100);
+  ctx.fillStyle = 'rgba(201,168,76,0.6)';
+  ctx.font = '28px serif';
+  ctx.textAlign='center';
+  ctx.fillText('⛵', x, sueloY-55);
+  ctx.font = '11px "Cinzel", serif';
+  ctx.fillStyle = '#c9a84c';
+  ctx.fillText('EL ARCA', x, sueloY-15);
+  ctx.textAlign='left';
+}
+
+function dibujarAnimales(animales, cam) {
+  animales.forEach(a => {
+    if(a.recogido) return;
+    const ax = a.x - cam.x;
+    const ay = a.y + a.animY;
+    ctx.font = '30px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(a.emoji, ax + a.w/2, ay + a.h);
+    ctx.textAlign = 'left';
+    // Sombra
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(ax+a.w/2, a.y+a.h+4, 12, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function dibujarJugador(p, cam) {
+  const px = p.x - cam.x;
+  const py = p.y;
+  if(p.invincible > 0 && Math.floor(p.invincible/4)%2===0) return;
+
+  // Sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(px+p.w/2, py+p.h+3, 14, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Cuerpo — Noé pixel art
+  ctx.save();
+  if(p.dir < 0) { ctx.translate(px+p.w, py); ctx.scale(-1,1); }
+  else ctx.translate(px, py);
+
+  // Túnica
+  ctx.fillStyle = '#8b6914';
+  ctx.fillRect(6, 18, 24, 28);
+  // Ribete de la túnica
+  ctx.fillStyle = '#c9a84c';
+  ctx.fillRect(6, 18, 24, 3);
+  ctx.fillRect(6, 42, 24, 4);
+  // Cuerpo superior
+  ctx.fillStyle = '#c4a35a';
+  ctx.fillRect(8, 12, 20, 10);
+  // Cabeza
+  ctx.fillStyle = '#d4956a';
+  ctx.beginPath();
+  ctx.arc(18, 10, 9, 0, Math.PI*2);
+  ctx.fill();
+  // Barba (Noé)
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(12, 13, 12, 7);
+  // Ojos
+  ctx.fillStyle = '#2a1a08';
+  ctx.fillRect(14, 7, 3, 3);
+  ctx.fillRect(21, 7, 3, 3);
+  // Turbante
+  ctx.fillStyle = '#5a3a8a';
+  ctx.fillRect(9, 0, 18, 6);
+  ctx.fillRect(7, 2, 22, 4);
+  // Piernas animadas
+  const legOff = Math.sin(p.animFrame*Math.PI/2)*5;
+  ctx.fillStyle = '#6a4810';
+  ctx.fillRect(7, 46, 10, 10 + legOff);
+  ctx.fillRect(19, 46, 10, 10 - legOff);
+  // Bastón
+  ctx.strokeStyle = '#8b5a2b';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(30, 15);
+  ctx.lineTo(34, 52);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function dibujarHUDNivel1(s, W, H) {
+  // Barra de animales recolectados
+  const barW = Math.min(W*0.4, 280);
+  const barX = (W - barW) / 2;
+  const barY = H - 36;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  roundRect(ctx, barX-4, barY-20, barW+8, 28, 6);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(201,168,76,0.2)';
+  roundRect(ctx, barX, barY-16, barW, 20, 4);
+  ctx.fill();
+  ctx.fillStyle = '#c9a84c';
+  const prog = (s.recolectados.length / s.meta) * barW;
+  roundRect(ctx, barX, barY-16, prog, 20, 4);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = '11px "Cinzel", serif';
+  ctx.textAlign='center';
+  ctx.fillText(`${s.recolectados.length}/${s.meta} animales`, W/2, barY-1);
+  ctx.textAlign='left';
+
+  // Emojis recolectados
+  s.recolectados.slice(-6).forEach((e,i) => {
+    ctx.font = '16px serif';
+    ctx.fillText(e, barX + i*20, barY-20);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  NIVEL 2 — GIGANTES
+// ══════════════════════════════════════════════════════════
+function updateDibujarNivel2() {
+  const s = gameState;
+  const W = canvas.width, H = canvas.height;
+  const cam = s.camara;
+  const p = s.jugador;
+
+  // Física jugador
+  if(keys.left)  p.vx = -3.8;
+  else if(keys.right) p.vx = 3.8;
+  else p.vx *= 0.8;
+  if(keys.up && p.onGround) { p.vy = -11; p.onGround = false; }
+  p.vy += 0.48;
+  p.x += p.vx; p.y += p.vy;
+  if(p.vx>0) p.dir=1; if(p.vx<0) p.dir=-1;
+  p.x = Math.max(0, Math.min(p.x, s.mapW-p.w));
+
+  // Plataformas
+  p.onGround = false;
+  s.plataformas.forEach(pl => {
+    if(p.x+p.w > pl.x && p.x < pl.x+pl.w && p.y+p.h > pl.y && p.y+p.h < pl.y+pl.h+p.vy+4 && p.vy >= 0) {
+      p.y = pl.y - p.h; p.vy = 0; p.onGround = true;
+    }
+  });
+  if(p.y+p.h >= s.sueloY) { p.y=s.sueloY-p.h; p.vy=0; p.onGround=true; }
+
+  // Ataque
+  if(keys.action && p.atacando===0) p.atacando = 20;
+  if(p.atacando > 0) p.atacando--;
+
+  // Cámara
+  const tc = p.x - W*0.35;
+  cam.x += (tc - cam.x) * 0.1;
+  cam.x = Math.max(0, Math.min(cam.x, s.mapW-W));
+
+  // Animación
+  p.animTimer++; if(p.animTimer>6){p.animFrame=(p.animFrame+1)%4;p.animTimer=0;}
+  if(p.invincible>0) p.invincible--;
+
+  // Gigantes IA
+  s.gigantes.forEach(g => {
+    if(g.muerto) return;
+    const dist = p.x - g.x;
+    if(Math.abs(dist) < 280) {
+      g.vx = Math.sign(dist) * (1.2 + (3-g.hp)*0.3);
+    } else {
+      if(g.x < g.patrullaMin || g.x > g.patrullaMax) g.vx *= -1;
+    }
+    g.x += g.vx; g.dir = g.vx>0?1:-1;
+    g.x = Math.max(0, Math.min(g.x, s.mapW-g.w));
+    g.animTimer++; if(g.animTimer>8){g.animFrame=(g.animFrame+1)%4;g.animTimer=0;}
+    if(g.invincible>0) g.invincible--;
+
+    // Colisión jugador — gigante
+    if(!g.muerto && g.invincible===0 && p.invincible===0 && colision(p, g)) {
+      // Si cae sobre él → daño al gigante
+      if(p.vy > 2 && p.y+p.h < g.y+g.h*0.5) {
+        g.hp--;
+        g.invincible = 40;
+        p.vy = -8;
+        gameScore += 150;
+        crearParticulas(s.particulas, g.x+g.w/2, g.y, '#e74c3c', 10);
+        if(g.hp <= 0) { g.muerto = true; gameScore += 300; }
+      } else {
+        // Golpe del gigante
+        if(p.invincible===0) {
+          perderVida();
+          p.invincible = 80;
+          p.vy = -7;
+          p.vx = p.dir * -5;
+        }
+      }
+    }
+  });
+
+  // Meta
+  if(colision(p, s.meta)) {
+    const vivos = s.gigantes.filter(g=>!g.muerto).length;
+    if(vivos === 0) setTimeout(()=>finNivel(calcularEstrellas(s.tiempo, 120)), 400);
+  }
+
+  // Partículas
+  s.particulas.forEach(p2=>{p2.x+=p2.vx;p2.y+=p2.vy;p2.vy+=0.2;p2.life--;});
+  s.particulas=s.particulas.filter(p2=>p2.life>0);
+
+  if(s.mensajeTimer>0) s.mensajeTimer--;
+
+  // ── DIBUJAR ──
+  dibujarFondoNivel2(cam, W, H, s);
+  s.plataformas.forEach(pl => dibujarPlataforma(pl, cam));
+  dibujarMeta(s.meta, cam);
+  s.gigantes.forEach(g => { if(!g.muerto) dibujarGigante(g, cam); });
+  dibujarJugador(p, cam);
+  dibujarParticulas(s.particulas, cam);
+
+  // HUD nivel 2
+  ctx.fillStyle = '#c9a84c';
+  ctx.font = 'bold 14px "Cinzel", serif';
+  ctx.textAlign='center';
+  const vivos = s.gigantes.filter(g=>!g.muerto).length;
+  ctx.fillText(`Nefilim: ${vivos} restantes`, W/2, 40);
+  const tiempoColor = s.tiempo<20?'#e74c3c':'#c9a84c';
+  ctx.fillStyle=tiempoColor;
+  ctx.fillText(`⏳ ${s.tiempo}s`, W/2, 58);
+  ctx.textAlign='left';
+}
+
+function dibujarFondoNivel2(cam, W, H, s) {
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#1a0a00'); grad.addColorStop(0.6,'#2a1008'); grad.addColorStop(1,'#1a0800');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  // Rocas de fondo
+  ctx.fillStyle='#2a1508';
+  for(let i=0;i<6;i++){
+    const rx=(i*280-cam.x*0.1)%W;
+    ctx.beginPath(); ctx.arc(rx,H*0.6,60+i*20,0,Math.PI*2); ctx.fill();
+  }
+  // Suelo
+  ctx.fillStyle='#3a1a08'; ctx.fillRect(0,s.sueloY,W,H-s.sueloY);
+  ctx.fillStyle='#5a2a10';
+  for(let i=0;i<W/20;i++){ctx.fillRect(i*20-(cam.x%20),s.sueloY,16,6);}
+  // Advertencia de oscuridad
+  const vigGrad=ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
+  vigGrad.addColorStop(0,'transparent'); vigGrad.addColorStop(1,'rgba(0,0,0,0.5)');
+  ctx.fillStyle=vigGrad; ctx.fillRect(0,0,W,H);
+}
+
+function dibujarGigante(g, cam) {
+  const gx = g.x - cam.x;
+  if(gx < -80 || gx > canvas.width+80) return;
+  if(g.invincible>0 && Math.floor(g.invincible/4)%2===0) return;
+  ctx.save();
+  if(g.dir<0){ctx.translate(gx+g.w,g.y);ctx.scale(-1,1);}
+  else ctx.translate(gx,g.y);
+  // Cuerpo gigante
+  ctx.fillStyle='#5a3a1a';
+  ctx.fillRect(8,20,44,50);
+  // Cabeza grande
+  ctx.fillStyle='#7a4a2a';
+  ctx.beginPath(); ctx.arc(30,14,16,0,Math.PI*2); ctx.fill();
+  // Ojos rojos
+  ctx.fillStyle='#c0392b';
+  ctx.fillRect(21,9,6,5); ctx.fillRect(33,9,6,5);
+  // Cejas furiosas
+  ctx.fillStyle='#2a1a08';
+  ctx.save(); ctx.translate(24,8); ctx.rotate(-0.3);
+  ctx.fillRect(0,0,8,3); ctx.restore();
+  ctx.save(); ctx.translate(36,8); ctx.rotate(0.3);
+  ctx.fillRect(0,0,8,3); ctx.restore();
+  // Brazos
+  const armSwing = Math.sin(g.animFrame*Math.PI/2)*8;
+  ctx.fillStyle='#5a3a1a';
+  ctx.fillRect(-8,22,10,35+armSwing);
+  ctx.fillRect(58,22,10,35-armSwing);
+  // Piernas
+  const legS=Math.sin(g.animFrame*Math.PI/2)*6;
+  ctx.fillStyle='#3a2010';
+  ctx.fillRect(10,68,18,20+legS);
+  ctx.fillRect(32,68,18,20-legS);
+  // HP
+  const hpW=50; const hpFill=(g.hp/g.maxHp)*hpW;
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(5,-12,hpW,6);
+  ctx.fillStyle=g.hp>1?'#27ae60':'#e74c3c'; ctx.fillRect(5,-12,hpFill,6);
+  ctx.restore();
+}
+
+function dibujarPlataforma(pl, cam) {
+  const px=pl.x-cam.x;
+  ctx.fillStyle='#5a2a10';
+  ctx.fillRect(px,pl.y,pl.w,pl.h);
+  ctx.fillStyle='#7a4a20';
+  ctx.fillRect(px,pl.y,pl.w,5);
+  // Patrón madera
+  for(let i=0;i<pl.w;i+=20){ctx.fillStyle='#4a1a08';ctx.fillRect(px+i,pl.y,2,pl.h);}
+}
+
+function dibujarMeta(m, cam) {
+  const mx=m.x-cam.x;
+  ctx.fillStyle='rgba(201,168,76,0.2)'; ctx.fillRect(mx,m.y,m.w,m.h);
+  ctx.strokeStyle='rgba(201,168,76,0.6)'; ctx.lineWidth=2; ctx.strokeRect(mx,m.y,m.w,m.h);
+  ctx.font='32px serif'; ctx.textAlign='center'; ctx.fillText('⛵',mx+m.w/2,m.y+50);
+  ctx.font='10px "Cinzel",serif'; ctx.fillStyle='#c9a84c';
+  ctx.fillText('ARCA',mx+m.w/2,m.y+m.h-8);
+  ctx.textAlign='left';
+}
+
+// ══════════════════════════════════════════════════════════
+//  NIVEL 3 — DILUVIO EN EL ARCA
+// ══════════════════════════════════════════════════════════
+function updateDibujarNivel3() {
+  const s = gameState;
+  const W = canvas.width, H = canvas.height;
+  const p = s.jugador;
+
+  // Física jugador (horizontal solo dentro del arca)
+  if(keys.left)  p.vx=-3;
+  else if(keys.right) p.vx=3;
+  else p.vx*=0.8;
+  if(keys.up && p.onGround){p.vy=-10;p.onGround=false;}
+  p.vy+=0.45; p.x+=p.vx; p.y+=p.vy;
+  if(p.vx>0)p.dir=1; if(p.vx<0)p.dir=-1;
+  p.x=Math.max(s.arcaX+4, Math.min(p.x, s.arcaX+s.arcaW-p.w-4));
+  if(p.y+p.h>=s.sueloY){p.y=s.sueloY-p.h;p.vy=0;p.onGround=true;}
+
+  // Animación
+  p.animTimer++;if(p.animTimer>8){p.animFrame=(p.animFrame+1)%4;p.animTimer=0;}
+
+  // Días
+  s.diasTimer++;
+  if(s.diasTimer>=180){s.diasTimer=0;s.dias++;gameScore+=50;
+    if(s.dias>=s.diasMax) setTimeout(()=>finNivel(3),500);
+  }
+
+  // Agua sube
+  s.agua-=s.aguaVel;
+  if(s.agua < s.sueloY-40) { perderVida(); s.agua=H*0.9; }
+
+  // Spawnar obstáculos
+  s.spawTimer++;
+  if(s.spawTimer>80){
+    s.spawTimer=0;
+    const ox=s.arcaX+20+Math.random()*(s.arcaW-40);
+    s.obstaculos.push({x:ox,y:50,w:24,h:24,vy:2.5+Math.random()*1.5,emoji:['📦','🪵','🪣','⚓'][Math.floor(Math.random()*4)]});
+  }
+
+  // Mover obstáculos
+  s.obstaculos.forEach(o=>{
+    o.y+=o.vy;
+    if(colision(p,o)&&o.y+o.h>0){
+      perderVida();
+      crearParticulas(s.particulas,o.x,o.y,'#e74c3c',6);
+      o.y=-100;
+    }
+  });
+  s.obstaculos=s.obstaculos.filter(o=>o.y<H);
+
+  // Partículas
+  s.particulas.forEach(p2=>{p2.x+=p2.vx;p2.y+=p2.vy;p2.vy+=0.2;p2.life--;});
+  s.particulas=s.particulas.filter(p2=>p2.life>0);
+
+  // ── DIBUJAR ──
+  dibujarFondoNivel3(W,H,s,p);
+  dibujarParticulas(s.particulas,{x:0});
+}
+
+function dibujarFondoNivel3(W,H,s,p) {
+  // Interior arca
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#2a1008'); grad.addColorStop(1,'#0a0804');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+
+  // Paredes del arca
+  ctx.fillStyle='#4a2808';
+  ctx.fillRect(s.arcaX-20,0,20,H);
+  ctx.fillRect(s.arcaX+s.arcaW,0,20,H);
+  // Tablones
+  for(let i=0;i<H;i+=40){
+    ctx.fillStyle=i%80===0?'#3a1a04':'#4a2808';
+    ctx.fillRect(s.arcaX-20,i,20,36);
+    ctx.fillRect(s.arcaX+s.arcaW,i,20,36);
+  }
+
+  // Suelo del arca
+  ctx.fillStyle='#5a3010'; ctx.fillRect(s.arcaX,s.sueloY,s.arcaW,H-s.sueloY);
+  for(let i=0;i<s.arcaW;i+=32){ctx.fillStyle='#3a1a04';ctx.fillRect(s.arcaX+i,s.sueloY,2,H-s.sueloY);}
+
+  // Tececho del arca
+  ctx.fillStyle='#3a1808'; ctx.fillRect(s.arcaX,0,s.arcaW,50);
+  ctx.fillStyle='#5a2808';
+  for(let i=0;i<s.arcaW;i+=40){ctx.fillRect(s.arcaX+i,0,36,50);}
+
+  // Ventana claraboya
+  ctx.fillStyle='rgba(100,150,255,0.3)';
+  ctx.beginPath(); ctx.arc(W/2,25,18,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#6a4010'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(W/2,25,18,0,Math.PI*2); ctx.stroke();
+
+  // Lluvia en la ventana
+  for(let i=0;i<8;i++){
+    const rx=W/2-14+Math.random()*28;
+    const ry=(Date.now()/100+i*40)%36;
+    ctx.strokeStyle='rgba(150,180,255,0.6)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(rx,8+ry); ctx.lineTo(rx-2,16+ry); ctx.stroke();
+  }
+
+  // Agua en el piso
+  const waterGrad=ctx.createLinearGradient(0,s.agua,0,H);
+  waterGrad.addColorStop(0,'rgba(20,80,180,0.7)'); waterGrad.addColorStop(1,'rgba(10,30,80,0.9)');
+  ctx.fillStyle=waterGrad; ctx.fillRect(s.arcaX,s.agua,s.arcaW,H-s.agua);
+  // Ondas
+  ctx.strokeStyle='rgba(100,160,255,0.5)'; ctx.lineWidth=2;
+  for(let i=0;i<3;i++){
+    const wt=(Date.now()/800+i*0.7)%1;
+    ctx.beginPath(); ctx.moveTo(s.arcaX,s.agua+(i*8));
+    for(let x=s.arcaX;x<s.arcaX+s.arcaW;x+=30){
+      ctx.lineTo(x,s.agua+(i*8)+Math.sin((x/60)+Date.now()/600)*4);
+    }
+    ctx.stroke();
+  }
+
+  // Obstáculos
+  s.obstaculos.forEach(o=>{
+    ctx.font='22px serif'; ctx.textAlign='center';
+    ctx.fillText(o.emoji, o.x+o.w/2, o.y+o.h);
+    ctx.textAlign='left';
+  });
+
+  // Jugador
+  dibujarJugador(p,{x:0});
+
+  // HUD días
+  const progresoY=H-18;
+  const progrW=Math.min(W*0.5,300);
+  const progrX=(W-progrW)/2;
+  ctx.fillStyle='rgba(0,0,0,0.5)'; roundRect(ctx,progrX-4,progresoY-16,progrW+8,22,4); ctx.fill();
+  ctx.fillStyle='rgba(20,80,180,0.3)'; roundRect(ctx,progrX,progresoY-12,progrW,14,3); ctx.fill();
+  ctx.fillStyle='#3a7aff'; roundRect(ctx,progrX,progresoY-12,(s.dias/s.diasMax)*progrW,14,3); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='11px "Cinzel",serif'; ctx.textAlign='center';
+  ctx.fillText(`Día ${s.dias} de ${s.diasMax}`, W/2, progresoY);
+  ctx.textAlign='left';
+
+  // Agua nivel indicador
+  const alertaAgua = s.agua < s.sueloY-20;
+  if(alertaAgua){
+    ctx.fillStyle='rgba(231,76,60,0.8)'; ctx.font='bold 14px "Cinzel",serif'; ctx.textAlign='center';
+    ctx.fillText('⚠️ ¡EL AGUA SUBE!', W/2, H*0.4);
+    ctx.textAlign='left';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  UTILIDADES
+// ══════════════════════════════════════════════════════════
+function colision(a, b) {
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function crearParticulas(lista, x, y, color, n) {
+  for(let i=0;i<n;i++) {
+    lista.push({
+      x, y,
+      vx: (Math.random()-0.5)*5,
+      vy: -(Math.random()*4+1),
+      color,
+      life: 30+Math.floor(Math.random()*20),
+      size: 3+Math.random()*4
+    });
+  }
+}
+
+function dibujarParticulas(lista, cam) {
+  lista.forEach(p => {
+    ctx.globalAlpha = p.life/50;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x-(cam.x||0), p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);
+  ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);
+  ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+function calcularEstrellas(tiempoRestante, tiempoMax) {
+  const pct = tiempoRestante / tiempoMax;
+  if(pct > 0.6) return 3;
+  if(pct > 0.3) return 2;
+  return 1;
+}
+
+function actualizarHUD() {
+  const hearts = document.getElementById('hud-lives');
+  hearts.innerHTML = '';
+  for(let i=0;i<3;i++) {
+    const h = document.createElement('span');
+    h.className='hud-heart';
+    h.textContent = i < gameLives ? '❤️' : '🖤';
+    hearts.appendChild(h);
+  }
+  document.getElementById('hud-score').textContent = gameScore;
+}
+
+function perderVida() {
+  gameLives--;
+  actualizarHUD();
+  if(gameLives <= 0) finJuego(false);
+}
+
+// ── FIN NIVEL / JUEGO ──────────────────────────
+function finNivel(estrellas) {
+  gameRunning = false;
+  if(gameState.timerInterval) clearInterval(gameState.timerInterval);
+  gameScore += estrellas * 200;
+  guardarProgreso(currentNivel, estrellas, gameScore);
+
+  document.getElementById('victory-score').textContent = gameScore;
+  const starsEl = document.getElementById('victory-stars');
+  starsEl.textContent = '★'.repeat(estrellas) + '☆'.repeat(3-estrellas);
+
+  const verses = [
+    '"Bendije a Noé y a sus hijos." — Génesis 9:1',
+    '"Todo lo que Dios había mandado, así lo hizo Noé." — Génesis 6:22',
+    '"El arco iris en las nubes será señal del pacto eterno." — Génesis 9:16'
+  ];
+  document.getElementById('victory-verse').textContent = verses[currentNivel-1] || verses[0];
+
+  // Mostrar/ocultar botón siguiente nivel
+  const btnSig = document.querySelector('#screen-victory .btn-menu.primary');
+  if(currentNivel >= 3) btnSig.textContent = '🏆 Ver ranking';
+
+  mostrarScreen('screen-victory');
+}
+
+function finJuego(victoria) {
+  gameRunning = false;
+  if(gameState.timerInterval) clearInterval(gameState.timerInterval);
+  if(victoria) { finNivel(1); return; }
+  document.getElementById('gameover-score').textContent = gameScore;
+  mostrarScreen('screen-gameover');
+}
+
+window.reiniciarNivel = () => iniciarNivel(currentNivel);
+window.salirAlMenu   = () => {
+  gameRunning = false;
+  if(gameState.timerInterval) clearInterval(gameState.timerInterval);
+  if(animFrame) cancelAnimationFrame(animFrame);
+  mostrarMenu();
+};
+window.siguienteNivel = () => {
+  if(currentNivel >= 3) { mostrarRanking(); return; }
+  iniciarNivel(currentNivel + 1);
+};
+
+window.togglePause = () => {
+  if(!gameRunning) return;
+  gamePaused = !gamePaused;
+  if(gamePaused) mostrarScreen('screen-pause');
+  else mostrarScreen('screen-game');
+};
+
+// ══════════════════════════════════════════════════════════
+//  CANVAS DE FONDO ANIMADO (menú y pantallas)
+// ══════════════════════════════════════════════════════════
+function initBgCanvas() {
+  const bgC = document.getElementById('bgCanvas');
+  const bgCtx = bgC.getContext('2d');
+  bgC.width = window.innerWidth;
+  bgC.height = window.innerHeight;
+  window.addEventListener('resize', () => {
+    bgC.width = window.innerWidth;
+    bgC.height = window.innerHeight;
+  });
+
+  const raindrops = Array.from({length:120}, ()=>({
+    x: Math.random()*bgC.width,
+    y: Math.random()*bgC.height,
+    len: 10+Math.random()*20,
+    speed: 4+Math.random()*6,
+    opacity: 0.1+Math.random()*0.3
+  }));
+
+  const waves = [0.3, 0.5, 0.7].map((y,i)=>({y, amp:8+i*4, freq:0.012-i*0.003, phase:i*2, speed:0.008+i*0.003}));
+
+  const lightning = { active:false, x:0, timer:0, nextAt: 200+Math.random()*300 };
+
+  let t = 0;
+  function drawBg() {
+    const W = bgC.width, H = bgC.height;
+    bgCtx.clearRect(0,0,W,H);
+
+    // Cielo tormentoso
+    const skyGrad = bgCtx.createLinearGradient(0,0,0,H);
+    skyGrad.addColorStop(0,'#050210');
+    skyGrad.addColorStop(0.4,'#0d0828');
+    skyGrad.addColorStop(0.7,'#1a0a3a');
+    skyGrad.addColorStop(1,'#0a0520');
+    bgCtx.fillStyle=skyGrad; bgCtx.fillRect(0,0,W,H);
+
+    // Nubes de tormenta
+    for(let i=0;i<6;i++){
+      const cx=(i*200+t*0.2)%W;
+      const cy=H*0.15+i*30;
+      const cw=160+i*40;
+      bgCtx.fillStyle=`rgba(30,10,60,${0.4+i*0.05})`;
+      bgCtx.beginPath();
+      bgCtx.ellipse(cx,cy,cw,35,0,0,Math.PI*2);
+      bgCtx.ellipse(cx-cw*0.3,cy+10,cw*0.6,28,0,0,Math.PI*2);
+      bgCtx.ellipse(cx+cw*0.3,cy+5,cw*0.5,24,0,0,Math.PI*2);
+      bgCtx.fill();
+    }
+
+    // Relámpagos
+    lightning.nextAt--;
+    if(lightning.nextAt<=0){ lightning.active=true; lightning.x=W*0.2+Math.random()*W*0.6; lightning.timer=8; lightning.nextAt=180+Math.random()*400; }
+    if(lightning.active){
+      bgCtx.globalAlpha=lightning.timer/8*0.4;
+      bgCtx.fillStyle='#fff'; bgCtx.fillRect(0,0,W,H);
+      bgCtx.globalAlpha=1;
+      bgCtx.strokeStyle=`rgba(200,200,255,${lightning.timer/8})`;
+      bgCtx.lineWidth=2;
+      bgCtx.beginPath(); bgCtx.moveTo(lightning.x,0);
+      let lx=lightning.x, ly=0;
+      while(ly<H*0.6){ lx+=(Math.random()-0.5)*30; ly+=40; bgCtx.lineTo(lx,ly); }
+      bgCtx.stroke();
+      lightning.timer--;
+      if(lightning.timer<=0) lightning.active=false;
+    }
+
+    // Lluvia
+    bgCtx.strokeStyle='rgba(150,180,255,0.35)'; bgCtx.lineWidth=1;
+    raindrops.forEach(r=>{
+      bgCtx.globalAlpha=r.opacity;
+      bgCtx.beginPath(); bgCtx.moveTo(r.x,r.y); bgCtx.lineTo(r.x-r.len*0.2,r.y+r.len); bgCtx.stroke();
+      r.y+=r.speed; r.x-=r.speed*0.2;
+      if(r.y>H){ r.y=-r.len; r.x=Math.random()*W; }
+    });
+    bgCtx.globalAlpha=1;
+
+    // Agua / océano
+    const waterBaseY = H*0.68;
+    waves.forEach(w=>{
+      const wGrad=bgCtx.createLinearGradient(0,waterBaseY,0,H);
+      wGrad.addColorStop(0,`rgba(10,40,100,0.7)`);
+      wGrad.addColorStop(1,'rgba(5,15,40,0.9)');
+      bgCtx.fillStyle=wGrad;
+      bgCtx.beginPath(); bgCtx.moveTo(0,H);
+      for(let x=0;x<=W;x+=6){
+        const y=waterBaseY + w.amp*Math.sin(x*w.freq+w.phase);
+        bgCtx.lineTo(x,y);
+      }
+      bgCtx.lineTo(W,H); bgCtx.lineTo(0,H); bgCtx.fill();
+      w.phase+=w.speed;
+    });
+
+    // Arca flotando en el agua — difuminada detrás del menú
+    bgCtx.globalAlpha=0.15;
+    bgCtx.fillStyle='#4a2008';
+    const arkX=W*0.5-120, arkY=waterBaseY-40;
+    bgCtx.fillRect(arkX, arkY, 240, 60);
+    bgCtx.beginPath(); bgCtx.moveTo(arkX+30,arkY); bgCtx.lineTo(arkX+120,arkY-45); bgCtx.lineTo(arkX+210,arkY); bgCtx.fill();
+    bgCtx.globalAlpha=1;
+
+    t++;
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+}
+
+// ══════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════
+function escapeHTML(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  initBgCanvas();
+  // Simular loading
+  setTimeout(() => mostrarMenu(), 1800);
+});
+</script>
+</body>
+</html>

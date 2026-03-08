@@ -1,0 +1,29 @@
+{
+  "name": "Centro Cristiano de Restauración Los Ríos",
+  "short_name": "CCRLR",
+  "description": "Iglesia Centro Cristiano de Restauración Los Ríos — Buena Fe, Ecuador",
+  "start_url": "/ecuador/",
+  "scope": "/ecuador/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0f1e",
+  "theme_color": "#c9a84c",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "ICONO.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "ICONO.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "social"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
