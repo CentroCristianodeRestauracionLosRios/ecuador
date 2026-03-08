@@ -1664,46 +1664,76 @@ window.togglePass = (inputId, btn) => {
 // ── PWA INSTALL BANNER ────────────────────────
 let deferredInstallPrompt = null;
 
+function esIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+function esPWAInstalada() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+
+function mostrarBannerPWA() {
+  if (esPWAInstalada()) return; // ya está instalada
+  if (localStorage.getItem('pwa_banner_dismissed')) return;
+  const overlay = document.getElementById('pwa-install-overlay');
+  if (!overlay) return;
+  // En iOS mostrar instrucciones manuales
+  if (esIOS()) {
+    const iosHint = document.getElementById('pwa-ios-hint');
+    const btnInstalar = overlay.querySelector('.btn-pwa-install');
+    if (iosHint) iosHint.style.display = 'block';
+    if (btnInstalar) btnInstalar.style.display = 'none';
+  }
+  overlay.style.display = 'flex';
+}
+
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  // Mostrar banner solo si no fue descartado antes
-  if (!localStorage.getItem('pwa_banner_dismissed')) {
-    setTimeout(() => {
-      const banner = document.getElementById('pwa-install-banner');
-      if (banner) banner.style.display = 'flex';
-    }, 4000);
+  setTimeout(mostrarBannerPWA, 3000);
+});
+
+// En iOS no hay beforeinstallprompt — mostrar igual con instrucciones
+window.addEventListener('DOMContentLoaded', () => {
+  if (esIOS() && !esPWAInstalada()) {
+    setTimeout(mostrarBannerPWA, 3000);
   }
 });
 
 window.instalarPWA = async () => {
-  const banner = document.getElementById('pwa-install-banner');
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   const { outcome } = await deferredInstallPrompt.userChoice;
   if (outcome === 'accepted') {
-    if (banner) banner.style.display = 'none';
-    // Pedir permiso de notificaciones justo después de instalar
-    setTimeout(() => pedirPermisoNotificaciones(), 1500);
+    cerrarBannerPWA();
+    setTimeout(() => pedirPermisoNotificaciones(), 2000);
   }
   deferredInstallPrompt = null;
 };
 
 window.cerrarBannerPWA = () => {
-  const banner = document.getElementById('pwa-install-banner');
-  if (banner) banner.style.display = 'none';
+  const overlay = document.getElementById('pwa-install-overlay');
+  if (overlay) overlay.style.display = 'none';
   localStorage.setItem('pwa_banner_dismissed', '1');
 };
 
+// Cerrar tocando el fondo oscuro
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('pwa-install-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) cerrarBannerPWA();
+    });
+  }
+});
+
 // Una vez instalada como PWA, ocultar banner
 window.addEventListener('appinstalled', () => {
-  const banner = document.getElementById('pwa-install-banner');
-  if (banner) banner.style.display = 'none';
+  cerrarBannerPWA();
+  setTimeout(() => pedirPermisoNotificaciones(), 2000);
 });
 
 // ── REGLAS FIREBASE RECOMENDADAS (recordatorio) ──
 // eventos: { ".read": true, ".write": "auth != null && auth.token.email === 'haroldolmedoanchundia@gmail.com'",
 //   "$id": { "rsvp": { "$uid": { ".write": "auth != null && auth.uid === $uid" } } } }
 // usuarios: agregar "fcmToken" en cada nodo $uid
-// Activar cola de llamadas tempranas al navbar
-window._flush && window._flush();
