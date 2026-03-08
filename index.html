@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <!-- Fallback: oculta el loader aunque el módulo JS falle -->
-  <!-- Fix bfcache: al volver con el botón Atrás desde juego.html, forzar recarga -->
+  <!-- Fix bfcache: al volver con Atrás desde juego.html, los módulos ES6/Firebase
+       no se re-ejecutan → botones muertos. Detectar y forzar recarga limpia. -->
   <script>
     setTimeout(function() {
       var el = document.getElementById('loaderScreen');
@@ -77,6 +78,8 @@
           <span>Juegos</span>
           <img src="juegos.png" class="nav-icon nav-icon-color" alt="Juegos"/>
         </a>
+      </li>
+      <li>
         <a href="#" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>
           <img src="CHAT.png" class="nav-icon" alt="Chat"/>
