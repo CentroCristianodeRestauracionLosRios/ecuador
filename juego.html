@@ -299,7 +299,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getDatabase,ref,set,get,update}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getDatabase,ref,set,get,update as fbUpdate}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
 const auth=getAuth(app),db=getDatabase(app);
@@ -1136,7 +1136,7 @@ window.doLogin=async function(){
 async function saveGame(){
   if(!cu)return;
   try{
-    await update(ref(db,`rpg2/${cu.uid}`),{
+    await fbUpdate(ref(db,`rpg2/${cu.uid}`),{
       day:wDay,lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,
       skills:SKILLS.filter(s=>s.u).map(s=>s.id),
       inventory:inv.filter(Boolean),structs:structs,
