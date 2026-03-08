@@ -15,43 +15,12 @@
   <link rel="icon" type="image/png" href="ICONO.png" />
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <!-- Fix: loader + bfcache + cola de llamadas tempranas al navbar -->
+  <!-- Fallback: oculta el loader aunque el módulo JS falle -->
   <script>
-    // Ocultar loader si script.js tarda o falla
     setTimeout(function() {
       var el = document.getElementById('loaderScreen');
       if (el) { el.style.display = 'none'; }
     }, 3500);
-
-    // Fix bfcache: al volver con Atrás desde juego.html, los módulos ES6
-    // no se re-ejecutan. Forzar recarga limpia.
-    window.addEventListener('pageshow', function(e) {
-      if (e.persisted) { window.location.reload(); }
-    });
-
-    // Cola para llamadas que lleguen antes de que script.js cargue.
-    // Cada función del navbar hace: _call('nombre', args)
-    // Cuando script.js termina de cargar, llama _flush() y ejecuta la cola.
-    window._navQueue = [];
-    window._navReady = false;
-
-    window._call = function(name, args) {
-      if (window._navReady && typeof window[name] === 'function') {
-        window[name].apply(null, args || []);
-      } else {
-        window._navQueue.push({ name: name, args: args || [] });
-      }
-    };
-
-    window._flush = function() {
-      window._navReady = true;
-      window._navQueue.forEach(function(item) {
-        if (typeof window[item.name] === 'function') {
-          window[item.name].apply(null, item.args);
-        }
-      });
-      window._navQueue = [];
-    };
   </script>
 </head>
 <body>
@@ -69,7 +38,7 @@
         <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo nav-logo-desktop"/>
         <img src="casa.png" alt="Inicio" class="nav-logo nav-logo-mobile nav-icon-home"/>
       </a>
-      <button class="nav-hamburger" id="navHamburger" onclick="_call('toggleNavMenu')" title="Menú" aria-label="Abrir menú">
+      <button class="nav-hamburger" id="navHamburger" onclick="toggleNavMenu()" title="Menú" aria-label="Abrir menú">
         <span></span><span></span><span></span>
       </button>
     </div>
@@ -102,11 +71,9 @@
       <li>
         <a href="juego.html" class="nav-icon-link" title="Juegos">
           <span>Juegos</span>
-          <img src="juegos.png" class="nav-icon nav-icon-juegos" alt="Juegos"/>
+          <img src="ICONO.png" class="nav-icon" alt="Juegos" style="filter:hue-rotate(200deg) brightness(1.2)"/>
         </a>
-      </li>
-      <li>
-        <a href="javascript:void(0)" class="nav-icon-link" onclick="_call('abrirChat',[event])" title="Punto de Encuentro">
+        <a href="#" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>
           <img src="CHAT.png" class="nav-icon" alt="Chat"/>
         </a>
@@ -114,21 +81,21 @@
     </ul>
     <div class="nav-admin">
       <div class="user-menu-wrap hidden" id="btnUsuarioMenu">
-        <button class="btn-user-menu" onclick="_call('toggleUserMenu')">
+        <button class="btn-user-menu" onclick="toggleUserMenu()">
           👤 <span id="userEmailLabel"></span> ▾
         </button>
         <div class="user-dropdown hidden" id="userDropdown">
           <button onclick="abrirCambiarContrasena()">🔑 Cambiar contraseña</button>
-          <button onclick="_call('chatUserLogout')">🚪 Cerrar sesión</button>
+          <button onclick="chatUserLogout()">🚪 Cerrar sesión</button>
         </div>
       </div>
-      <button class="btn-admin" id="btnAdminLogin" onclick="_call('toggleLoginPanel')">Admin</button>
-      <button class="btn-admin btn-logout hidden" id="btnLogout" onclick="_call('adminLogout')">Salir</button>
-      <button class="btn-tema" id="btnTema" onclick="_call('toggleTema')" title="Cambiar tema">
+      <button class="btn-admin" id="btnAdminLogin" onclick="toggleLoginPanel()">Admin</button>
+      <button class="btn-admin btn-logout hidden" id="btnLogout" onclick="adminLogout()">Salir</button>
+      <button class="btn-tema" id="btnTema" onclick="toggleTema()" title="Cambiar tema">
         <span id="temaIcono">🌙</span>
         <span id="temaLabel">Claro</span>
       </button>
-      <button class="btn-yo" onclick="_call('togglePanelYo')" title="Sobre nosotros">
+      <button class="btn-yo" onclick="togglePanelYo()" title="Sobre nosotros">
         <img src="Yo.png" alt="Nosotros" class="yo-icon"/>
       </button>
     </div>
@@ -140,9 +107,9 @@
       <h3>Acceso Administrador</h3>
       <input type="email" id="loginEmail" placeholder="Correo electrónico"/>
       <input type="password" id="loginPassword" placeholder="Contraseña"/>
-      <button onclick="_call('adminLogin')">Ingresar</button>
+      <button onclick="adminLogin()">Ingresar</button>
       <p class="login-error hidden" id="loginError">Correo o contraseña incorrectos</p>
-      <button class="btn-cancel" onclick="_call('toggleLoginPanel')">Cancelar</button>
+      <button class="btn-cancel" onclick="toggleLoginPanel()">Cancelar</button>
     </div>
   </div>
 
@@ -519,9 +486,9 @@
   </footer>
 
   <!-- PANEL "YO" — INFO + MINISTERIOS -->
-  <div class="yo-overlay hidden" id="yoOverlay" onclick="_call('cerrarPanelYo')"></div>
+  <div class="yo-overlay hidden" id="yoOverlay" onclick="cerrarPanelYo()"></div>
   <div class="yo-panel hidden" id="yoPanel">
-    <button class="yo-close" onclick="_call('cerrarPanelYo')">✕</button>
+    <button class="yo-close" onclick="cerrarPanelYo()">✕</button>
 
     <!-- INFO IGLESIA -->
     <div class="yo-iglesia">
