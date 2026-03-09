@@ -390,7 +390,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <p class="overse">"El justo puede caer siete veces<br>y volver a levantarse."<br>— Proverbios 24:16</p>
     <div class="divider"></div>
     <button class="mbtn pri" onclick="doRestart()">🔄 Volver a intentar</button>
-    <button class="mbtn" onclick="doSaveQuit()">🏠 Ir al menú</button>
+    <button class="mbtn" onclick="doSaveQuit()">🏠 Menú del juego</button>
+    <button class="mbtn" onclick="window.location.href='index.html'">🌐 Página web</button>
   </div>
 </div>
 
@@ -400,12 +401,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <!-- VOZ DE DIOS -->
 <div id="god-voice" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;flex-direction:column;">
   <div style="max-width:500px;width:90vw;background:linear-gradient(160deg,#1a1000,#2a1800);border:2px solid #c9a84c;border-radius:16px;padding:32px 28px;text-align:center;box-shadow:0 0 60px rgba(201,168,76,0.4),0 0 120px rgba(201,168,76,0.15);animation:godAppear 0.8s ease;">
-    <div style="font-size:2.8rem;margin-bottom:8px;filter:drop-shadow(0 0 20px gold)">✝️</div>
+    <div style="width:72px;height:72px;margin:0 auto 8px;filter:drop-shadow(0 0 20px gold)"><img src="Dios1.png" style="width:100%;height:100%;object-fit:contain" onerror="this.parentNode.innerHTML='✝️'" alt="Dios"></div>
     <div style="font-family:Cinzel,serif;font-size:1.1rem;color:#f0d080;letter-spacing:0.1em;margin-bottom:16px;text-shadow:0 0 20px rgba(255,215,0,0.6)" id="gv-title">El Llamado</div>
     <div style="border-top:1px solid rgba(201,168,76,0.3);margin:12px 0"></div>
     <p style="font-family:Crimson Text,serif;font-size:1rem;color:#f0e8d0;line-height:1.8;font-style:italic;white-space:pre-line" id="gv-text"></p>
     <div style="border-top:1px solid rgba(201,168,76,0.3);margin:16px 0"></div>
-    <button class="mbtn pri" style="min-width:160px" onclick="closeGodVoice()">✝️ Así se hará</button>
+    <button class="mbtn pri" style="min-width:160px;display:flex;align-items:center;gap:8px;margin:0 auto" onclick="closeGodVoice()"><img src="Dios1.png" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'"> Así se hará</button>
   </div>
 </div>
 
@@ -1715,8 +1716,9 @@ function loop(){
   if(gPause){drawPortrait();return;}
   const W=canvas.width,H=canvas.height;
   const cx=P.x-W/2,cy=P.y-H/2;
-  // Limpiar canvas completo antes de cada frame — evita acumulación de tiles
-  ctx.clearRect(0,0,W,H);
+  // Fondo de hierba sólida — evita cuadros negros donde faltan tiles
+  ctx.fillStyle='#3a4a2a';
+  ctx.fillRect(0,0,W,H);
   drawSky();
   drawWorld(cx,cy);
   drawObjs(cx,cy);
@@ -1770,12 +1772,12 @@ function update(){
   const nx=P.x+dx*spd,ny=P.y+dy*spd;
   const bl=colCheck(nx,ny);
   if(!bl.x)P.x=nx;if(!bl.y)P.y=ny;
-  // Wrap suave — el mapa es circular
+  // Wrap robusto — mapa infinito circular
   const mapW=MW*TILE, mapH=MH*TILE;
-  if(P.x<TILE)       P.x=mapW-TILE*2;
-  if(P.x>mapW-TILE)  P.x=TILE*2;
-  if(P.y<TILE)       P.y=mapH-TILE*2;
-  if(P.y>mapH-TILE)  P.y=TILE*2;
+  if(P.x < 0)     P.x += mapW;
+  if(P.x >= mapW) P.x -= mapW;
+  if(P.y < 0)     P.y += mapH;
+  if(P.y >= mapH) P.y -= mapH;
   if(P.moving){P.animT++;if(P.animT>7){P.animF=(P.animF+1)%4;P.animT=0;}}else P.animF=0;
   if(P.moving){P.eT++;if(P.eT>110){P.eT=0;P.energy=Math.max(0,P.energy-1);}}
   if(P.inv>0)P.inv--;
@@ -2314,19 +2316,22 @@ window.notif=notif;
 window.toggleP=function(w){
   const m={inv:'p-inv',craft:'p-craft',skills:'p-skills',shop:'p-shop'};
   const el=document.getElementById(m[w]);
-  if(!el) return;
+  if(!el){ console.error('Panel no encontrado:',w); return; }
   const was=el.classList.contains('open');
-  // Cerrar todos
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   if(!was){
     el.classList.add('open');
-    gPause=true; // Pausa automática al abrir menú
-    if(w==='inv')renderInv();
-    if(w==='craft')renderCraft();
-    if(w==='skills')renderSkills();
-    if(w==='shop')renderShop();
+    el.style.display='flex'; // forzar display por si CSS falla
+    gPause=true;
+    try{
+      if(w==='inv')   renderInv();
+      if(w==='craft') renderCraft();
+      if(w==='skills')renderSkills();
+      if(w==='shop')  renderShop();
+    }catch(e){ console.error('Error al renderizar panel',w,e); }
   } else {
-    gPause=false; // Reanuda el juego al cerrar
+    el.style.display='';
+    gPause=false;
   }
 };
 window.closeAllPanels=function(){
@@ -2561,9 +2566,16 @@ function beginLoop(){
   setTimeout(()=>notif('🍎 Abre tu bolsa y toca una fruta para comerla',''),13000);
 }
 function gameOver(){
-  // Mostrar animación de muerte antes de ir a pantalla de game over
+  if(P._dying) return; // evitar doble llamada
+  P._dying = true;
   triggerNoahAction('death');
-  setTimeout(()=>{ gRun=false; sndGameOver(); showS('s-over'); }, 1200);
+  gPause = false; // asegurar que el loop siga corriendo para ver animación
+  setTimeout(()=>{
+    gRun=false;
+    P._dying=false;
+    sndGameOver();
+    showS('s-over');
+  }, 1500);
 }
 
 // ─── FIREBASE AUTH ────────────────────────────
