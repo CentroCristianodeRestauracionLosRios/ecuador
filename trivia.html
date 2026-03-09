@@ -88,11 +88,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 .lv-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.06),transparent);opacity:0;transition:opacity 0.2s;}
 .lv-card:hover::before{opacity:1;}
 .lv-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 20px rgba(201,168,76,0.12);}
-.lv-card.fácil{border-color:rgba(26,90,42,0.5);}
-.lv-card.fácil:hover{border-color:#27ae60;}
+.lv-card.facil{border-color:rgba(26,90,42,0.5);}
+.lv-card.facil:hover{border-color:#27ae60;}
 .lv-card.medio{border-color:rgba(201,168,76,0.4);}
-.lv-card.difícil{border-color:rgba(139,26,26,0.5);}
-.lv-card.difícil:hover{border-color:var(--red2);}
+.lv-card.dificil{border-color:rgba(139,26,26,0.5);}
+.lv-card.dificil:hover{border-color:var(--red2);}
 .lv-icon{font-size:1.5rem;margin-bottom:4px;}
 .lv-name{font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;color:var(--parch);}
 .lv-desc{font-size:0.62rem;color:rgba(245,237,216,0.45);margin-top:2px;}
@@ -236,6 +236,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
   <button class="game-topnav-btn" onclick="irMenuJuegos()">🎮 Juegos</button>
 </nav>
 
+<!-- Mini-modal selector de juegos (embebido) -->
+<div id="mini-juegos" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:linear-gradient(160deg,#0d1020,#180d28);border:1.5px solid rgba(201,168,76,0.35);border-radius:16px;width:min(420px,100%);padding:20px;position:relative;animation:panel-up 0.25s ease;">
+    <button onclick="document.getElementById('mini-juegos').style.display='none'" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:50%;width:30px;height:30px;color:rgba(255,255,255,0.5);font-size:0.85rem;cursor:pointer;">✕</button>
+    <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:#f0d080;margin-bottom:4px;">🎮 Juegos Bíblicos</div>
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);font-style:italic;margin-bottom:16px;">Elige otro juego</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="background:rgba(201,168,76,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:10px;padding:2px;opacity:0.6;">
+        <div style="padding:10px 14px;font-family:'Cinzel',serif;font-size:0.8rem;color:#f0d080;">🎯 Trivia Bíblica <span style="font-size:0.65rem;color:rgba(201,168,76,0.6)">(jugando ahora)</span></div>
+      </div>
+      <a href="juego.html" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;text-decoration:none;color:inherit;transition:all 0.18s;" onmouseover="this.style.borderColor='rgba(201,168,76,0.5)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <span style="font-size:1.5rem">⛵</span>
+        <div><div style="font-family:'Cinzel',serif;font-size:0.8rem;color:#f0e8d0;font-weight:700;">El Arca de Noé</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.35);margin-top:2px;">RPG Survival · Crafteo · Exploración</div></div>
+      </a>
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;opacity:0.45;">
+        <span style="font-size:1.5rem">🧩</span>
+        <div><div style="font-family:'Cinzel',serif;font-size:0.8rem;color:#f0e8d0;font-weight:700;">Sopa de Letras</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.35);margin-top:2px;">Próximamente</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;opacity:0.45;">
+        <span style="font-size:1.5rem">🃏</span>
+        <div><div style="font-family:'Cinzel',serif;font-size:0.8rem;color:#f0e8d0;font-weight:700;">Memory de Versículos</div><div style="font-size:0.68rem;color:rgba(255,255,255,0.35);margin-top:2px;">Próximamente</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="screen on" id="s-menu">
   <div class="menu-wrap">
     <div class="menu-crown">
@@ -247,7 +273,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
     <div class="menu-sub">Pondera el conocimiento de las Escrituras</div>
     <div class="menu-verse">"Lámpara es a mis pies tu palabra, y lumbrera a mi camino." — Salmos 119:105</div>
     <div class="level-grid">
-      <div class="lv-card fácil" onclick="iniciarJuego('fácil')">
+      <div class="lv-card facil" onclick="iniciarJuego('facil')">
         <div class="lv-icon">🕊️</div>
         <div class="lv-name" style="color:#5dbb6e">Fácil</div>
         <div class="lv-desc">10 preguntas · 30s c/u</div>
@@ -257,7 +283,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
         <div class="lv-name" style="color:var(--gold)">Medio</div>
         <div class="lv-desc">10 preguntas · 20s c/u</div>
       </div>
-      <div class="lv-card difícil" onclick="iniciarJuego('difícil')">
+      <div class="lv-card dificil" onclick="iniciarJuego('dificil')">
         <div class="lv-icon">⚔️</div>
         <div class="lv-name" style="color:#e74c3c">Difícil</div>
         <div class="lv-desc">10 preguntas · 15s c/u</div>
@@ -322,9 +348,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
       <button class="rank-back" onclick="showS('s-menu')">← Volver</button>
     </div>
     <div class="rank-tabs" id="rank-tabs">
-      <div class="rtab on" data-lv="fácil" onclick="setRankTab('fácil',this)">🕊️ Fácil</div>
+      <div class="rtab on" data-lv="facil" onclick="setRankTab('facil',this)">🕊️ Fácil</div>
       <div class="rtab" data-lv="medio" onclick="setRankTab('medio',this)">📖 Medio</div>
-      <div class="rtab" data-lv="difícil" onclick="setRankTab('difícil',this)">⚔️ Difícil</div>
+      <div class="rtab" data-lv="dificil" onclick="setRankTab('dificil',this)">⚔️ Difícil</div>
     </div>
     <div class="rank-list" id="rank-list"><div class="rank-loading">Cargando...</div></div>
   </div>
@@ -353,7 +379,7 @@ onAuthStateChanged(auth,async u=>{
 //  BANCO DE PREGUNTAS
 // ══════════════════════════════════════
 const PREGUNTAS={
-fácil:[
+facil:[
   {q:"¿Cuántos días duró el diluvio descrito en Génesis?",ops:["40 días","10 días","7 días","100 días"],a:0,exp:"Llovió 40 días y 40 noches (Génesis 7:12). Noé esperó en el arca hasta que las aguas se retiraron.",ref:"Génesis 7:12"},
   {q:"¿Cómo se llamaba el jardín donde vivían Adán y Eva?",ops:["Edén","Canaán","Galilea","Nazaret"],a:0,exp:"El jardín del Edén fue el primer hogar del ser humano, creado por Dios (Génesis 2:8).",ref:"Génesis 2:8"},
   {q:"¿Cuántos apóstoles eligió Jesús?",ops:["12","7","10","14"],a:0,exp:"Jesús escogió a doce apóstoles para que estuvieran con Él y enviarlos a predicar (Marcos 3:14).",ref:"Marcos 3:14"},
@@ -387,7 +413,7 @@ medio:[
   {q:"¿Cuántas versiones del Padrenuestro hay en los Evangelios?",ops:["2","1","3","4"],a:0,exp:"El Padrenuestro aparece en dos versiones: la más larga en Mateo 6:9-13 y una más corta en Lucas 11:2-4.",ref:"Mateo 6:9 / Lucas 11:2"},
   {q:"¿En qué día de la creación hizo Dios los luminares?",ops:["4°","1°","3°","6°"],a:0,exp:"En el cuarto día Dios creó el sol, la luna y las estrellas como señales para las estaciones y los días (Génesis 1:14-19).",ref:"Génesis 1:14-19"},
 ],
-difícil:[
+dificil:[
   {q:"¿Cuántos años estuvo el pueblo de Israel en el desierto?",ops:["40 años","20 años","100 años","12 años"],a:0,exp:"Israel vagó 40 años en el desierto debido a su incredulidad, hasta que murió la generación que salió de Egipto (Números 14:33-34).",ref:"Números 14:33-34"},
   {q:"¿Cuál fue el nombre hebreo del apóstol Pablo?",ops:["Saulo","Simón","Santiago","Nicodemo"],a:0,exp:"Pablo era su nombre romano; su nombre hebreo era Saulo, de la tribu de Benjamín (Hechos 13:9).",ref:"Hechos 13:9"},
   {q:"¿En qué ciudad vivía Lot cuando fue destruida?",ops:["Sodoma","Gomorra","Zoar","Hebrón"],a:0,exp:"Lot habitaba en Sodoma cuando Dios destruyó la ciudad por su gran maldad. Su familia escapó hacia Zoar (Génesis 19:1).",ref:"Génesis 19:1"},
@@ -417,14 +443,14 @@ const VERSOS_FINAL=[
 // ══════════════════════════════════════
 //  ESTADO DEL JUEGO
 // ══════════════════════════════════════
-window.nivelActual='fácil';
+window.nivelActual='facil';
 let pregs=[],qIdx=0,score=0,streak=0,maxStreak=0,correct=0,wrong=0;
 let timerInterval=null,timeLeft=30,timePct=100,locked=false;
 
-const LV_TIME={fácil:30,medio:20,difícil:15};
-const LV_PTS ={fácil:100,medio:150,difícil:200};
-const LV_ICONS={fácil:'🕊️',medio:'📖',difícil:'⚔️'};
-const LV_COL  ={fácil:'#5dbb6e',medio:getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),difícil:'#e74c3c'};
+const LV_TIME={facil:30,medio:20,dificil:15};
+const LV_PTS ={facil:100,medio:150,dificil:200};
+const LV_ICONS={facil:'🕊️',medio:'📖',dificil:'⚔️'};
+const LV_COL  ={facil:'#5dbb6e',medio:getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),dificil:'#e74c3c'};
 
 // ══════════════════════════════════════
 //  PANTALLAS
@@ -447,8 +473,8 @@ window.iniciarJuego=function(nivel){
   pregs=pool.slice(0,10);
   qIdx=0;score=0;streak=0;maxStreak=0;correct=0;wrong=0;
   // UI nivel
-  const icons={fácil:'🕊️ Fácil',medio:'📖 Medio',difícil:'⚔️ Difícil'};
-  const cls={fácil:'nivel-facil',medio:'nivel-medio',difícil:'nivel-dificil'};
+  const icons={facil:'🕊️ Fácil',medio:'📖 Medio',dificil:'⚔️ Difícil'};
+  const cls={facil:'nivel-facil',medio:'nivel-medio',dificil:'nivel-dificil'};
   const gn=document.getElementById('g-nivel');
   gn.textContent=icons[nivel];
   gn.className='game-nivel '+cls[nivel];
@@ -610,7 +636,7 @@ async function finJuego(){
 // ══════════════════════════════════════
 //  RANKING
 // ══════════════════════════════════════
-let rankTab='fácil';
+let rankTab='facil';
 
 window.showRanking=async function(){
   showS('s-ranking');
@@ -943,15 +969,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.irMenuJuegos=function(){
-  stopMenuMusic();stopTick();clearInterval(timerInterval);
-  // Intentar abrir el modal de juegos en index.html
-  if(window.opener&&!window.opener.closed){
-    window.opener.focus();
-    if(typeof window.opener.abrirMenuJuegos==='function')window.opener.abrirMenuJuegos(new Event('click'));
-    window.close();
-  }else{
-    window.location.href='index.html#juegos';
-  }
+  document.getElementById('mini-juegos').style.display='flex';
 };
 </script>
 </body>
