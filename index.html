@@ -2,15 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <meta name="theme-color" content="#c9a84c"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="CCRLR"/>
-  <meta name="description" content="Centro Cristiano de Restauración Los Ríos — Buena Fe, Ecuador"/>
-  <link rel="manifest" href="manifest.json"/>
-  <link rel="apple-touch-icon" href="ICONO.png"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Centro Cristiano de Restauración Los Ríos</title>
   <link rel="icon" type="image/png" href="ICONO.png" />
   <link rel="stylesheet" href="styles.css" />
@@ -35,8 +27,7 @@
   <nav class="navbar">
     <div class="logo">
       <a href="#inicio" title="Inicio" class="logo-inicio-link">
-        <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo nav-logo-desktop"/>
-        <img src="casa.png" alt="Inicio" class="nav-logo nav-logo-mobile nav-icon-home"/>
+        <img src="LOGO_SIN_FONDO.png" alt="Logo" class="nav-logo"/>
       </a>
       <button class="nav-hamburger" id="navHamburger" onclick="toggleNavMenu()" title="Menú" aria-label="Abrir menú">
         <span></span><span></span><span></span>
@@ -69,13 +60,13 @@
         </a>
       </li>
       <li>
-        <a href="juego.html" class="nav-icon-link" title="Juegos">
+        <a href="#" class="nav-icon-link" onclick="abrirMenuJuegos(event)" title="Juegos">
           <span>Juegos</span>
-          <img src="juegos.png" class="nav-icon" alt="Juegos"/>
+          <img src="juegos.png" class="nav-icon" alt="Juegos" style="width:40px;height:40px;"/>
         </a>
       </li>
       <li>
-        <a href="#" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
+        <a href="#chat-anchor" class="nav-icon-link" onclick="abrirChat()" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>
           <img src="CHAT.png" class="nav-icon" alt="Chat"/>
         </a>
@@ -207,13 +198,8 @@
 
   <!-- SECCIÓN IMÁGENES -->
   <section id="imagenes" class="section">
-    <div class="section-header-icon">
-      <img src="imagenes.png" alt="Galería" class="section-icon"/>
-      <div>
-        <h2 class="section-title">Galería de Imágenes</h2>
-        <p class="section-sub">Haz clic en una imagen para verla ampliada.</p>
-      </div>
-    </div>
+    <h2 class="section-title">Galería de Imágenes</h2>
+    <p class="section-sub">Haz clic en una imagen para verla ampliada.</p>
     <div class="gallery-grid" id="galleryGrid">
       <!-- Imágenes locales — el admin puede subirlas a Firebase con 📤 -->
       <div class="gallery-item local-img" data-caption="Lo veremos regresar">
@@ -333,33 +319,6 @@
     </div>
   </div>
 
-  <!-- BANNER INSTALAR PWA -->
-  <!-- BANNER INSTALAR PWA — visible e intuitivo -->
-  <div id="pwa-install-overlay" style="display:none;">
-    <div id="pwa-install-banner">
-      <button class="pwa-close-x" onclick="cerrarBannerPWA()" title="Cerrar">✕</button>
-      <img src="ICONO.png" alt="CCRLR" class="pwa-banner-logo"/>
-      <h2 class="pwa-banner-titulo">¡Instala nuestra App!</h2>
-      <p class="pwa-banner-sub">Centro Cristiano de Restauración Los Ríos</p>
-      <ul class="pwa-beneficios">
-        <li>🔔 Recibe avisos de nuevos eventos</li>
-        <li>📅 Recordatorios automáticos</li>
-        <li>💬 Accede al chat de la iglesia</li>
-        <li>⚡ Abre rápido desde tu pantalla de inicio</li>
-      </ul>
-      <button class="btn-pwa-install" onclick="instalarPWA()">
-        📲 Instalar ahora
-      </button>
-      <button class="btn-pwa-dismiss" onclick="cerrarBannerPWA()">
-        Ahora no
-      </button>
-      <!-- Instrucciones para iOS (Safari) -->
-      <div id="pwa-ios-hint" style="display:none;">
-        <p class="pwa-ios-txt">En iPhone: toca <strong>□↑</strong> y luego<br><strong>"Añadir a pantalla de inicio"</strong></p>
-      </div>
-    </div>
-  </div>
-
   <!-- CHAT FLOTANTE -->
   <div class="chat-bubble hidden" id="chatBubble" onclick="restaurarChat()">
     <img src="CHAT.png" alt="Punto de Encuentro" class="bubble-icon-img"/>
@@ -415,10 +374,7 @@
       <div id="tab-registro">
         <input type="text" id="regNickname" placeholder="Nombre de usuario" maxlength="20"/>
         <input type="email" id="regEmail" placeholder="Correo electrónico"/>
-        <div class="pass-wrap">
-          <input type="password" id="regPass" placeholder="Contraseña (mínimo 6 caracteres)"/>
-          <button type="button" class="btn-eye" onclick="togglePass('regPass',this)" tabindex="-1">👁</button>
-        </div>
+        <input type="password" id="regPass" placeholder="Contraseña (mínimo 6 caracteres)"/>
         <label class="check-label"><input type="checkbox" id="regRecordar"/> Mantener sesión iniciada</label>
         <button onclick="registrarChatUser()">Crear cuenta y entrar</button>
       </div>
@@ -427,10 +383,7 @@
           Tu nombre de usuario se recupera automáticamente de tu cuenta.
         </p>
         <input type="email" id="loginChatEmail" placeholder="Correo electrónico"/>
-        <div class="pass-wrap">
-          <input type="password" id="loginChatPass" placeholder="Contraseña"/>
-          <button type="button" class="btn-eye" onclick="togglePass('loginChatPass',this)" tabindex="-1">👁</button>
-        </div>
+        <input type="password" id="loginChatPass" placeholder="Contraseña"/>
         <label class="check-label"><input type="checkbox" id="loginRecordar"/> Mantener sesión iniciada</label>
         <button onclick="loginChatUser()">Ingresar</button>
       </div>
@@ -441,18 +394,9 @@
       </div>
       <div id="tab-cambiar" class="hidden">
         <p class="auth-info">Ingresa tu contraseña actual y la nueva.</p>
-        <div class="pass-wrap">
-          <input type="password" id="passActual" placeholder="Contraseña actual"/>
-          <button type="button" class="btn-eye" onclick="togglePass('passActual',this)" tabindex="-1">👁</button>
-        </div>
-        <div class="pass-wrap">
-          <input type="password" id="passNueva" placeholder="Nueva contraseña"/>
-          <button type="button" class="btn-eye" onclick="togglePass('passNueva',this)" tabindex="-1">👁</button>
-        </div>
-        <div class="pass-wrap">
-          <input type="password" id="passConfirm" placeholder="Confirmar nueva contraseña"/>
-          <button type="button" class="btn-eye" onclick="togglePass('passConfirm',this)" tabindex="-1">👁</button>
-        </div>
+        <input type="password" id="passActual" placeholder="Contraseña actual"/>
+        <input type="password" id="passNueva" placeholder="Nueva contraseña"/>
+        <input type="password" id="passConfirm" placeholder="Confirmar nueva contraseña"/>
         <button onclick="cambiarContrasena()">Actualizar contraseña</button>
       </div>
       <p class="chat-auth-error hidden" id="chatAuthError"></p>
@@ -470,8 +414,8 @@
           <img src="direccion.png" alt="ubicación" class="footer-contact-icon"/>
           Av. 7 de Agosto entre el 1ro y 2do Redondel, Sec. 19 de Octubre, Buena Fe, Ecuador
         </p>
-        <p><a href="/cdn-cgi/l/email-protection#c7a3a2b5a2b4b3a6b2b5a6a4aea8a9a487a0aaa6aeabe9a4a8aa" class="footer-email-link">
-          <img src="direccion.png" alt="email" class="footer-contact-icon"/> <span class="__cf_email__" data-cfemail="f99d9c8b9c8a8d988c8b989a9096979ab99e94989095d79a9694">[email&#160;protected]</span>
+        <p><a href="/cdn-cgi/l/email-protection#ea8e8f988f999e8b9f988b8983858489aa8d878b8386c4898587" class="footer-email-link">
+          <img src="direccion.png" alt="email" class="footer-contact-icon"/> <span class="__cf_email__" data-cfemail="caaeafb8afb9beabbfb8aba9a3a5a4a98aada7aba3a6e4a9a5a7">[email&#160;protected]</span>
         </a></p>
       </div>
       <div class="footer-redes">
@@ -566,67 +510,12 @@
     </div>
   </div>
 
-  <!-- MODAL MINISTERIO -->
-  <div class="ministerio-modal hidden" id="ministerioModal">
-    <div class="ministerio-modal-inner">
-      <div class="ministerio-sticky-header">
-        <div class="ministerio-header">
-          <img id="minIcon" src="" alt="" class="min-logo"/>
-          <div><h2 id="minNombre"></h2><p id="minCategoria"></p></div>
-        </div>
-        <button class="ministerio-close" onclick="cerrarMinisterio()">✕</button>
-      </div>
-      <div id="minGallery"></div>
-    </div>
-  </div>
-
-  <!-- MODAL IMAGEN -->
-  <div class="modal" id="imgModal">
-    <button class="modal-nav modal-prev" onclick="prevImg()">&#8592;</button>
-    <div class="modal-content">
-      <button class="close-btn" onclick="cerrarModal()">✕</button>
-      <img id="modalImg" src="" alt=""/>
-      <div class="modal-footer">
-        <span class="modal-caption" id="modalCaption"></span>
-        <span class="modal-counter" id="modalCounter"></span>
-      </div>
-    </div>
-    <button class="modal-nav modal-next" onclick="nextImg()">&#8594;</button>
-  </div>
-
-  <!-- MODAL EDITAR EVENTO -->
-  <div class="modal-overlay hidden" id="editEventoModal">
-    <div class="modal-box">
-      <h3>Editar Evento</h3>
-      <input type="text" id="eeT" placeholder="Título"/>
-      <textarea id="eeD" placeholder="Descripción"></textarea>
-      <label style="color:var(--muted);font-size:0.85rem;">Fecha y hora:</label>
-      <input type="datetime-local" id="eeF"/>
-      <input type="text" id="eeL" placeholder="Lugar o enlace Meet/Zoom"/>
-      <input type="text" id="eeE" placeholder="Enlace adicional (opcional)"/>
-      <select id="eeM">
-        <option value="">— Sin ministerio —</option>
-        <option value="jovenes">ECORESTAURACIÓN — Jóvenes</option>
-        <option value="alabanza">HEREDAD — Alabanza</option>
-        <option value="danza">HIJAS DE SION — Danza</option>
-        <option value="mujeres">MUJERES CON PROPÓSITO — Damas</option>
-        <option value="ninos">FORJADORES DEL MAÑANA — Niños</option>
-        <option value="teatro">Ministerio de Teatro</option>
-        <option value="ujieres">Ministerio de Ujieres</option>
-      </select>
-      <p class="admin-msg" id="msgEditEvento"></p>
-      <div style="display:flex;gap:10px;margin-top:8px;">
-        <button onclick="guardarEvento()">💾 Guardar</button>
-        <button class="btn-cancel" onclick="cerrarEditarEvento()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL MOVER MEDIA -->
-  <div class="modal-overlay hidden" id="moverMediaModal">
-    <div class="modal-box">
-      <h3>Asignar a Ministerio</h3>
-      <select id="moverSelect">
+  <!-- MODAL MOVER MEDIA (Admin) -->
+  <div class="admin-modal hidden" id="modalMoverMedia">
+    <div class="admin-modal-inner">
+      <h3>Mover a ministerio</h3>
+      <p id="msgMoverMedia-preview" style="font-size:0.8rem;color:#ccc;margin-bottom:8px;"></p>
+      <select id="selectMinMover">
         <option value="">— Galería general —</option>
         <option value="jovenes">ECORESTAURACIÓN — Jóvenes</option>
         <option value="alabanza">HEREDAD — Alabanza</option>
@@ -643,6 +532,104 @@
       </div>
     </div>
   </div>
+
+  <!-- ══ MENÚ DE JUEGOS ══ -->
+  <div id="modal-juegos" onclick="cerrarMenuJuegos(event)" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.72);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;">
+    <div class="juegos-panel">
+      <button class="juegos-close" onclick="document.getElementById('modal-juegos').style.display='none'">✕</button>
+      <div class="juegos-header">
+        <div class="juegos-title-wrap">
+          <span style="font-size:2rem">🎮</span>
+          <div>
+            <div class="juegos-title">Juegos Bíblicos</div>
+            <div class="juegos-sub">Aprende las Escrituras jugando</div>
+          </div>
+        </div>
+      </div>
+      <div class="juegos-grid">
+        <a href="trivia.html" class="juego-card">
+          <div class="juego-card-img">
+            <img src="trivia1.png" alt="Trivia Bíblica" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+            <div class="juego-card-emoji-fb" style="display:none">🎯</div>
+          </div>
+          <div class="juego-card-body">
+            <div class="juego-card-name">Trivia Bíblica</div>
+            <div class="juego-card-desc">3 niveles · Ranking global · 45 preguntas</div>
+          </div>
+          <div class="juego-card-badge">¡Disponible!</div>
+        </a>
+        <a href="juego.html" class="juego-card">
+          <div class="juego-card-img">
+            <div class="juego-card-emoji-fb" style="display:flex">⛵</div>
+          </div>
+          <div class="juego-card-body">
+            <div class="juego-card-name">El Arca de Noé</div>
+            <div class="juego-card-desc">RPG Survival · Crafteo · Exploración</div>
+          </div>
+          <div class="juego-card-badge">¡Disponible!</div>
+        </a>
+        <div class="juego-card coming">
+          <div class="juego-card-img">
+            <div class="juego-card-emoji-fb" style="display:flex">🧩</div>
+          </div>
+          <div class="juego-card-body">
+            <div class="juego-card-name">Sopa de Letras</div>
+            <div class="juego-card-desc">Palabras bíblicas · Personajes · Virtudes</div>
+          </div>
+          <div class="juego-card-badge soon">Próximamente</div>
+        </div>
+        <div class="juego-card coming">
+          <div class="juego-card-img">
+            <div class="juego-card-emoji-fb" style="display:flex">🃏</div>
+          </div>
+          <div class="juego-card-body">
+            <div class="juego-card-name">Memory de Versículos</div>
+            <div class="juego-card-desc">Versículo + referencia · Memoriza la Biblia</div>
+          </div>
+          <div class="juego-card-badge soon">Próximamente</div>
+        </div>
+        <div class="juego-card coming" style="grid-column:1/-1">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px">
+            <div style="font-size:2rem">🏆</div>
+            <div>
+              <div class="juego-card-name">Trivia VS — Multijugador</div>
+              <div class="juego-card-desc">Compite en tiempo real contra otros miembros</div>
+            </div>
+            <div class="juego-card-badge soon" style="margin:0;flex-shrink:0">Próximamente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+  .juegos-panel{background:linear-gradient(160deg,#0d1020,#180d28);border:1.5px solid rgba(201,168,76,0.3);border-radius:16px;width:min(560px,100%);max-height:88vh;overflow-y:auto;position:relative;padding:22px 20px 24px;box-shadow:0 24px 80px rgba(0,0,0,0.8);animation:panel-up 0.28s cubic-bezier(0.175,0.885,0.32,1.275);}
+  @keyframes panel-up{from{transform:scale(0.92) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+  .juegos-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50%;width:32px;height:32px;color:rgba(255,255,255,0.5);font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+  .juegos-close:hover{background:rgba(255,255,255,0.12);color:#fff;}
+  .juegos-header{margin-bottom:18px;}
+  .juegos-title-wrap{display:flex;align-items:center;gap:12px;}
+  .juegos-title{font-family:"Cinzel",Georgia,serif;font-size:1.2rem;font-weight:700;color:#f0d080;letter-spacing:0.04em;}
+  .juegos-sub{font-size:0.78rem;color:rgba(255,255,255,0.38);margin-top:2px;font-style:italic;}
+  .juegos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  @media(max-width:400px){.juegos-grid{grid-template-columns:1fr;}}
+  .juego-card{display:flex;flex-direction:column;background:rgba(255,255,255,0.03);border:1.5px solid rgba(201,168,76,0.18);border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;transition:all 0.2s;position:relative;cursor:pointer;}
+  .juego-card:not(.coming):hover{border-color:rgba(201,168,76,0.65);transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 18px rgba(201,168,76,0.12);}
+  .juego-card.coming{opacity:0.52;cursor:default;}
+  .juego-card-img{width:100%;aspect-ratio:16/9;background:rgba(0,0,0,0.3);overflow:hidden;position:relative;}
+  .juego-card-img img{width:100%;height:100%;object-fit:cover;display:block;}
+  .juego-card-emoji-fb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.8rem;background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(30,15,50,0.6));}
+  .juego-card-body{padding:10px 12px 6px;}
+  .juego-card-name{font-family:"Cinzel",Georgia,serif;font-size:0.82rem;font-weight:700;color:#f0e8d0;margin-bottom:3px;}
+  .juego-card-desc{font-size:0.7rem;color:rgba(255,255,255,0.38);line-height:1.4;}
+  .juego-card-badge{margin:4px 12px 10px;display:inline-block;align-self:flex-start;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.4);border-radius:20px;padding:2px 10px;font-size:0.65rem;font-family:"Cinzel",Georgia,serif;color:#5dbb6e;letter-spacing:0.06em;}
+  .juego-card-badge.soon{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);color:rgba(201,168,76,0.7);}
+  </style>
+
+  <script>
+  function abrirMenuJuegos(e){e.preventDefault();var m=document.getElementById("modal-juegos");m.style.display="flex";}
+  function cerrarMenuJuegos(e){if(e.target===document.getElementById("modal-juegos"))document.getElementById("modal-juegos").style.display="none";}
+  </script>
 
   <script src="script.js" type="module"></script>
 </body>

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>Trivia Bíblica — CCRLR</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#1a1208;--parch:#f5edd8;--parch2:#ede0c4;--parch3:#e0cfa8;
+  --gold:#c9a84c;--gold2:#f0d080;--gold3:#8a6a1a;
+  --red:#8b1a1a;--red2:#c0392b;--blue:#1a3a6a;--green:#1a5a2a;
+  --shadow:rgba(0,0,0,0.5);
+  --r:6px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-family:'EB Garamond',Georgia,serif;color:var(--ink);}
+
+/* ── FONDO ANIMADO ── */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.bg-grad{position:absolute;inset:0;background:radial-gradient(ellipse 120% 80% at 50% 30%,#2a1a08 0%,#120a02 60%,#050204 100%);}
+.bg-cross{position:absolute;width:100%;height:100%;background-image:
+  repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(201,168,76,0.04) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(201,168,76,0.04) 40px);}
+.bg-glow{position:absolute;border-radius:50%;filter:blur(80px);animation:drift 12s ease-in-out infinite;}
+.g1{width:500px;height:500px;top:-100px;left:-100px;background:rgba(201,168,76,0.06);animation-delay:0s;}
+.g2{width:400px;height:400px;bottom:-80px;right:-80px;background:rgba(139,26,26,0.07);animation-delay:-5s;}
+.g3{width:300px;height:300px;top:40%;left:60%;background:rgba(26,58,106,0.06);animation-delay:-9s;}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(30px,-20px) scale(1.1);}66%{transform:translate(-20px,30px) scale(0.95);}}
+
+/* ── PANTALLAS ── */
+.screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;}
+.screen.on{display:flex;}
+
+/* ── MENÚ ── */
+#s-menu{background:transparent;}
+.menu-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:20px;max-width:440px;width:100%;}
+.menu-crown{display:flex;align-items:center;justify-content:center;animation:halo 3s ease-in-out infinite;line-height:1;}
+@keyframes halo{0%,100%{filter:drop-shadow(0 0 8px rgba(201,168,76,0.6)) drop-shadow(0 0 24px rgba(201,168,76,0.3));}50%{filter:drop-shadow(0 0 16px rgba(201,168,76,0.9)) drop-shadow(0 0 48px rgba(201,168,76,0.5));}}
+.menu-badge{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.5em;color:rgba(201,168,76,0.6);text-transform:uppercase;}
+.menu-title{font-family:'Cinzel Decorative',serif;font-size:clamp(2rem,7vw,3.5rem);font-weight:900;color:var(--gold2);text-align:center;line-height:1.1;text-shadow:0 0 60px rgba(201,168,76,0.5),0 4px 20px rgba(0,0,0,0.8);}
+.menu-sub{font-family:'EB Garamond',serif;font-style:italic;font-size:1rem;color:rgba(245,237,216,0.5);text-align:center;}
+.menu-verse{background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:var(--r);padding:12px 18px;font-style:italic;font-size:0.88rem;color:rgba(245,237,216,0.65);text-align:center;line-height:1.6;max-width:360px;}
+.level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;}
+.lv-card{background:rgba(255,255,255,0.03);border:1.5px solid rgba(201,168,76,0.2);border-radius:10px;padding:16px 10px;text-align:center;cursor:pointer;transition:all 0.22s;position:relative;overflow:hidden;}
+.lv-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,0.06),transparent);opacity:0;transition:opacity 0.2s;}
+.lv-card:hover::before{opacity:1;}
+.lv-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 20px rgba(201,168,76,0.12);}
+.lv-card.fácil{border-color:rgba(26,90,42,0.5);}
+.lv-card.fácil:hover{border-color:#27ae60;}
+.lv-card.medio{border-color:rgba(201,168,76,0.4);}
+.lv-card.difícil{border-color:rgba(139,26,26,0.5);}
+.lv-card.difícil:hover{border-color:var(--red2);}
+.lv-icon{font-size:2rem;margin-bottom:6px;}
+.lv-name{font-family:'Cinzel',serif;font-size:0.78rem;font-weight:700;letter-spacing:0.08em;color:var(--parch);}
+.lv-desc{font-size:0.7rem;color:rgba(245,237,216,0.45);margin-top:3px;}
+.btn-ranking{background:transparent;border:1.5px solid rgba(201,168,76,0.3);border-radius:var(--r);padding:10px 20px;color:var(--gold);font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;width:100%;}
+.btn-ranking:hover{border-color:var(--gold);background:rgba(201,168,76,0.07);color:var(--gold2);}
+
+/* ── JUEGO ── */
+#s-game{background:transparent;}
+.game-wrap{width:100%;max-width:600px;display:flex;flex-direction:column;gap:14px;}
+
+/* Header in-game */
+.game-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px;}
+.game-nivel{font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;}
+.nivel-facil{color:#27ae60;}.nivel-medio{color:var(--gold);}.nivel-dificil{color:var(--red2);}
+.game-stats{display:flex;gap:12px;align-items:center;}
+.stat-pill{background:rgba(0,0,0,0.4);border:1px solid rgba(201,168,76,0.2);border-radius:20px;padding:4px 12px;font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);}
+.streak-pill{background:rgba(231,76,60,0.15);border-color:rgba(231,76,60,0.4);color:#e74c3c;}
+.streak-pill.hot{animation:pulse-red 0.6s ease-in-out infinite alternate;}
+@keyframes pulse-red{to{background:rgba(231,76,60,0.3);border-color:#e74c3c;box-shadow:0 0 10px rgba(231,76,60,0.4);}}
+
+/* Barra de tiempo */
+.timer-track{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
+.timer-bar{height:100%;border-radius:2px;transition:width 0.1s linear,background 0.5s;}
+
+/* Pregunta */
+.q-card{background:linear-gradient(160deg,rgba(30,18,8,0.95),rgba(18,10,2,0.98));border:1.5px solid rgba(201,168,76,0.25);border-radius:12px;padding:24px 22px;position:relative;overflow:hidden;}
+.q-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.4),transparent);}
+.q-num{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.3em;color:rgba(201,168,76,0.4);text-transform:uppercase;margin-bottom:10px;}
+.q-text{font-size:clamp(1rem,3vw,1.2rem);color:var(--parch);line-height:1.6;font-weight:400;}
+
+/* Opciones */
+.opts{display:flex;flex-direction:column;gap:8px;}
+.opt{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,255,255,0.1);border-radius:8px;padding:13px 16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.opt:hover:not(.locked){border-color:rgba(201,168,76,0.5);background:rgba(201,168,76,0.06);transform:translateX(3px);}
+.opt-letter{width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;color:rgba(245,237,216,0.6);flex-shrink:0;transition:all 0.2s;}
+.opt-text{font-size:0.92rem;color:var(--parch2);line-height:1.4;}
+.opt.correct{border-color:#27ae60!important;background:rgba(39,174,96,0.12)!important;animation:correct-flash 0.5s ease;}
+.opt.correct .opt-letter{background:#27ae60;border-color:#27ae60;color:#fff;}
+.opt.wrong{border-color:var(--red2)!important;background:rgba(192,57,43,0.1)!important;animation:wrong-shake 0.4s ease;}
+.opt.wrong .opt-letter{background:var(--red2);border-color:var(--red2);color:#fff;}
+.opt.reveal{border-color:rgba(39,174,96,0.3);background:rgba(39,174,96,0.05);}
+.opt.locked{cursor:not-allowed;}
+@keyframes correct-flash{0%{transform:scale(1);}30%{transform:scale(1.02);}100%{transform:scale(1);}}
+@keyframes wrong-shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+/* Explicación */
+.explain-box{background:rgba(26,58,106,0.15);border:1px solid rgba(26,58,106,0.4);border-radius:8px;padding:12px 16px;font-size:0.85rem;color:rgba(245,237,216,0.75);line-height:1.6;font-style:italic;display:none;}
+.explain-box.show{display:block;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* Btn siguiente */
+.btn-next{background:linear-gradient(135deg,var(--gold3),var(--gold));color:#1a0a00;border:none;border-radius:var(--r);padding:13px 28px;font-family:'Cinzel',serif;font-size:0.85rem;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;align-self:flex-end;display:none;}
+.btn-next.show{display:block;animation:fadeUp 0.3s ease 0.1s both;}
+.btn-next:hover{background:linear-gradient(135deg,var(--gold),var(--gold2));transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+
+/* ── RESULTADO ── */
+#s-result{background:transparent;}
+.result-wrap{width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;}
+.result-medal{font-size:5rem;animation:medal-in 0.6s cubic-bezier(0.175,0.885,0.32,1.275) both;}
+@keyframes medal-in{from{transform:scale(0) rotate(-20deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+.result-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1.6rem,5vw,2.4rem);font-weight:900;color:var(--gold2);text-shadow:0 0 40px rgba(201,168,76,0.5);}
+.result-score-box{background:rgba(201,168,76,0.06);border:2px solid rgba(201,168,76,0.3);border-radius:12px;padding:20px 36px;}
+.result-pts{font-family:'Cinzel',serif;font-size:3rem;font-weight:700;color:var(--gold2);line-height:1;}
+.result-pts-label{font-size:0.8rem;color:rgba(201,168,76,0.5);letter-spacing:0.2em;text-transform:uppercase;font-family:'Cinzel',serif;}
+.result-stats{display:flex;gap:20px;justify-content:center;}
+.rst{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.rst-num{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:700;color:var(--parch);}
+.rst-label{font-size:0.7rem;color:rgba(245,237,216,0.4);letter-spacing:0.1em;}
+.result-verse{font-style:italic;font-size:0.9rem;color:rgba(245,237,216,0.55);line-height:1.7;max-width:340px;}
+.result-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.rbtn{border-radius:var(--r);padding:11px 22px;font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;border:1.5px solid rgba(201,168,76,0.35);background:transparent;color:var(--gold);}
+.rbtn:hover{border-color:var(--gold);background:rgba(201,168,76,0.08);}
+.rbtn.pri{background:linear-gradient(135deg,var(--gold3),var(--gold));color:#1a0a00;border-color:var(--gold2);}
+.rbtn.pri:hover{background:linear-gradient(135deg,var(--gold),var(--gold2));}
+
+/* ── RANKING ── */
+#s-ranking{background:transparent;}
+.rank-wrap{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px;}
+.rank-header{display:flex;align-items:center;justify-content:space-between;}
+.rank-title{font-family:'Cinzel Decorative',serif;font-size:1.4rem;color:var(--gold2);}
+.rank-back{background:transparent;border:1px solid rgba(201,168,76,0.3);border-radius:var(--r);padding:6px 14px;color:var(--gold);font-family:'Cinzel',serif;font-size:0.72rem;cursor:pointer;}
+.rank-back:hover{border-color:var(--gold);background:rgba(201,168,76,0.07);}
+.rank-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border-radius:8px;padding:3px;}
+.rtab{flex:1;padding:7px;text-align:center;font-family:'Cinzel',serif;font-size:0.7rem;border-radius:5px;cursor:pointer;color:rgba(245,237,216,0.45);transition:all 0.18s;letter-spacing:0.06em;}
+.rtab.on{background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+.rank-list{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;}
+.rank-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:11px 14px;animation:fadeUp 0.3s ease both;}
+.rank-item.top1{border-color:rgba(201,168,76,0.5);background:rgba(201,168,76,0.07);}
+.rank-item.top2{border-color:rgba(192,192,192,0.35);}
+.rank-item.top3{border-color:rgba(180,120,60,0.35);}
+.rank-pos{font-family:'Cinzel',serif;font-size:0.82rem;font-weight:700;width:24px;text-align:center;color:rgba(245,237,216,0.4);}
+.rank-pos.p1{color:#ffd700;font-size:1.1rem;}.rank-pos.p2{color:#c0c0c0;}.rank-pos.p3{color:#cd7f32;}
+.rank-name{flex:1;font-size:0.9rem;color:var(--parch);}
+.rank-score{font-family:'Cinzel',serif;font-size:0.85rem;font-weight:700;color:var(--gold);}
+.rank-sub{font-size:0.68rem;color:rgba(245,237,216,0.35);}
+.rank-empty{text-align:center;color:rgba(245,237,216,0.35);font-style:italic;padding:24px;}
+.rank-loading{text-align:center;color:rgba(201,168,76,0.5);font-family:'Cinzel',serif;font-size:0.8rem;padding:20px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:0.5;}50%{opacity:1;}}
+
+/* ── NOTIF TOAST ── */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:100;background:rgba(10,8,4,0.92);border:1.5px solid var(--gold);border-radius:8px;padding:10px 20px;font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold2);white-space:nowrap;transition:transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);box-shadow:0 8px 32px rgba(0,0,0,0.6);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── PUNTOS FLOTANTES ── */
+.float-pts{position:fixed;font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;pointer-events:none;z-index:100;animation:float-up 1.2s ease forwards;}
+@keyframes float-up{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-60px) scale(1.3);}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.25);border-radius:2px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:420px){
+  .q-card{padding:16px 14px;}
+  .opt{padding:10px 12px;}
+  .menu-title{font-size:1.8rem;}
+  .level-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Fondo -->
+<div id="bg">
+  <div class="bg-grad"></div>
+  <div class="bg-cross"></div>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ── MENÚ ── -->
+<div class="screen on" id="s-menu">
+  <div class="menu-wrap">
+    <div class="menu-crown">
+      <img src="trivia1.png" alt="Trivia Bíblica" style="width:min(200px,55vw);height:auto;border-radius:12px;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.7));" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none;font-size:3.5rem">✝️</span>
+    </div>
+    <div class="menu-badge">Centro Cristiano de Restauración Los Ríos</div>
+    <div class="menu-title">Trivia Bíblica</div>
+    <div class="menu-sub">Pondera el conocimiento de las Escrituras</div>
+    <div class="menu-verse">"Lámpara es a mis pies tu palabra, y lumbrera a mi camino." — Salmos 119:105</div>
+    <div class="level-grid">
+      <div class="lv-card fácil" onclick="iniciarJuego('fácil')">
+        <div class="lv-icon">🕊️</div>
+        <div class="lv-name" style="color:#5dbb6e">Fácil</div>
+        <div class="lv-desc">10 preguntas · 30s c/u</div>
+      </div>
+      <div class="lv-card medio" onclick="iniciarJuego('medio')">
+        <div class="lv-icon">📖</div>
+        <div class="lv-name" style="color:var(--gold)">Medio</div>
+        <div class="lv-desc">10 preguntas · 20s c/u</div>
+      </div>
+      <div class="lv-card difícil" onclick="iniciarJuego('difícil')">
+        <div class="lv-icon">⚔️</div>
+        <div class="lv-name" style="color:#e74c3c">Difícil</div>
+        <div class="lv-desc">10 preguntas · 15s c/u</div>
+      </div>
+    </div>
+    <button class="btn-ranking" onclick="showRanking()">🏆 &nbsp;Ver Tabla de Líderes</button>
+    <div id="user-status" style="font-size:0.72rem;color:rgba(201,168,76,0.45);text-align:center;font-family:'Cinzel',serif;"></div>
+  </div>
+</div>
+
+<!-- ── JUEGO ── -->
+<div class="screen" id="s-game">
+  <div class="game-wrap">
+    <div class="game-header">
+      <div id="g-nivel" class="game-nivel nivel-facil">🕊️ Fácil</div>
+      <div class="game-stats">
+        <div class="stat-pill" id="g-qnum">1/10</div>
+        <div class="stat-pill" id="g-score">0 pts</div>
+        <div class="stat-pill streak-pill" id="g-streak" style="display:none">🔥 ×0</div>
+      </div>
+    </div>
+    <div class="timer-track"><div class="timer-bar" id="g-timer" style="width:100%"></div></div>
+    <div class="q-card">
+      <div class="q-num" id="g-qnum2">Pregunta 1 de 10</div>
+      <div class="q-text" id="g-qtext">Cargando pregunta...</div>
+    </div>
+    <div class="opts" id="g-opts"></div>
+    <div class="explain-box" id="g-explain"></div>
+    <button class="btn-next" id="btn-next" onclick="nextQuestion()">Siguiente →</button>
+    <button style="background:transparent;border:none;color:rgba(245,237,216,0.25);font-size:0.72rem;cursor:pointer;text-align:center;font-family:'Cinzel',serif;letter-spacing:0.06em;" onclick="abandonar()">Abandonar partida</button>
+  </div>
+</div>
+
+<!-- ── RESULTADO ── -->
+<div class="screen" id="s-result">
+  <div class="result-wrap">
+    <div class="result-medal" id="r-medal">🥇</div>
+    <div class="result-title" id="r-title">¡Excelente!</div>
+    <div class="result-score-box">
+      <div class="result-pts" id="r-pts">0</div>
+      <div class="result-pts-label">puntos finales</div>
+    </div>
+    <div class="result-stats">
+      <div class="rst"><div class="rst-num" id="r-correct">0</div><div class="rst-label">Correctas</div></div>
+      <div class="rst"><div class="rst-num" id="r-wrong">0</div><div class="rst-label">Incorrectas</div></div>
+      <div class="rst"><div class="rst-num" id="r-maxstreak">0</div><div class="rst-label">Mejor racha</div></div>
+    </div>
+    <div class="result-verse" id="r-verse"></div>
+    <div class="result-btns">
+      <button class="rbtn pri" onclick="iniciarJuego(nivelActual)">🔄 Jugar de nuevo</button>
+      <button class="rbtn" onclick="showS('s-menu')">🏠 Menú</button>
+      <button class="rbtn" onclick="showRanking()">🏆 Ranking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RANKING ── -->
+<div class="screen" id="s-ranking">
+  <div class="rank-wrap">
+    <div class="rank-header">
+      <div class="rank-title">🏆 Líderes</div>
+      <button class="rank-back" onclick="showS('s-menu')">← Volver</button>
+    </div>
+    <div class="rank-tabs" id="rank-tabs">
+      <div class="rtab on" data-lv="fácil" onclick="setRankTab('fácil',this)">🕊️ Fácil</div>
+      <div class="rtab" data-lv="medio" onclick="setRankTab('medio',this)">📖 Medio</div>
+      <div class="rtab" data-lv="difícil" onclick="setRankTab('difícil',this)">⚔️ Difícil</div>
+    </div>
+    <div class="rank-list" id="rank-list"><div class="rank-loading">Cargando...</div></div>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getDatabase,ref,set,get,query,orderByChild,limitToLast}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
+const db=getDatabase(app),auth=getAuth(app);
+let cu=null,userNick='Anónimo';
+
+onAuthStateChanged(auth,async u=>{
+  cu=u;
+  if(u){
+    try{const s=await get(ref(db,`usuarios/${u.uid}/nickname`));userNick=s.val()||u.email.split('@')[0];}catch(e){userNick=u.email.split('@')[0];}
+    document.getElementById('user-status').textContent=`✝ Jugando como ${userNick}`;
+  }else{
+    document.getElementById('user-status').textContent='Inicia sesión para guardar tu puntaje';
+  }
+});
+
+// ══════════════════════════════════════
+//  BANCO DE PREGUNTAS
+// ══════════════════════════════════════
+const PREGUNTAS={
+fácil:[
+  {q:"¿Cuántos días duró el diluvio descrito en Génesis?",ops:["40 días","10 días","7 días","100 días"],a:0,exp:"Llovió 40 días y 40 noches (Génesis 7:12). Noé esperó en el arca hasta que las aguas se retiraron.",ref:"Génesis 7:12"},
+  {q:"¿Cómo se llamaba el jardín donde vivían Adán y Eva?",ops:["Edén","Canaán","Galilea","Nazaret"],a:0,exp:"El jardín del Edén fue el primer hogar del ser humano, creado por Dios (Génesis 2:8).",ref:"Génesis 2:8"},
+  {q:"¿Cuántos apóstoles eligió Jesús?",ops:["12","7","10","14"],a:0,exp:"Jesús escogió a doce apóstoles para que estuvieran con Él y enviarlos a predicar (Marcos 3:14).",ref:"Marcos 3:14"},
+  {q:"¿Quién construyó el arca según la Biblia?",ops:["Noé","Abraham","Moisés","David"],a:0,exp:"Dios le ordenó a Noé que construyera el arca para salvar a su familia y a los animales (Génesis 6:14).",ref:"Génesis 6:14"},
+  {q:"¿Con qué alimentó Dios a Israel en el desierto?",ops:["Maná","Pan","Frutas","Pescado"],a:0,exp:"El maná era un alimento que Dios envió del cielo cada mañana para alimentar al pueblo de Israel (Éxodo 16:15).",ref:"Éxodo 16:15"},
+  {q:"¿En qué ciudad nació Jesús?",ops:["Belén","Nazaret","Jerusalén","Capernaún"],a:0,exp:"Jesús nació en Belén de Judea, cumpliendo la profecía de Miqueas 5:2.",ref:"Lucas 2:4-7"},
+  {q:"¿Cuántos libros tiene el Nuevo Testamento?",ops:["27","39","66","12"],a:0,exp:"El Nuevo Testamento contiene 27 libros, desde Mateo hasta el Apocalipsis.",ref:""},
+  {q:"¿Quién fue el primer rey de Israel?",ops:["Saúl","David","Salomón","Samuel"],a:0,exp:"Saúl fue ungido como el primer rey de Israel por el profeta Samuel (1 Samuel 10:1).",ref:"1 Samuel 10:1"},
+  {q:"¿Cuántos días estuvo Jonás en el vientre del gran pez?",ops:["3 días","7 días","1 día","40 días"],a:0,exp:"Jonás estuvo tres días y tres noches en el vientre del gran pez (Jonás 1:17).",ref:"Jonás 1:17"},
+  {q:"¿Quién fue el padre de Juan el Bautista?",ops:["Zacarías","José","Simón","Herodes"],a:0,exp:"Zacarías era un sacerdote y padre de Juan el Bautista. El ángel Gabriel le anunció el nacimiento (Lucas 1:13).",ref:"Lucas 1:13"},
+  {q:"¿Cuántos hijos tuvo Jacob según la Biblia?",ops:["12","7","10","6"],a:0,exp:"Jacob tuvo 12 hijos, que se convirtieron en los padres de las doce tribus de Israel.",ref:"Génesis 35:22"},
+  {q:"¿Con qué arma venció David a Goliat?",ops:["Una honda y una piedra","Una espada","Una lanza","Sus manos"],a:0,exp:"David usó una honda y una piedra para derribar al gigante filisteo Goliat (1 Samuel 17:50).",ref:"1 Samuel 17:50"},
+  {q:"¿Cuál fue la primera plaga de Egipto?",ops:["El agua se convierte en sangre","Ranas","Piojos","Langostas"],a:0,exp:"La primera plaga fue cuando Dios convirtió las aguas del Nilo en sangre (Éxodo 7:20).",ref:"Éxodo 7:20"},
+  {q:"¿Cómo se llamaba la madre de Jesús?",ops:["María","Marta","Ester","Rut"],a:0,exp:"María fue la joven de Nazaret elegida por Dios para ser la madre de Jesús (Lucas 1:27).",ref:"Lucas 1:27"},
+  {q:"¿Qué significa 'Emmanuel'?",ops:["Dios con nosotros","El Salvador","Hijo de Dios","Príncipe de Paz"],a:0,exp:"Emmanuel significa 'Dios con nosotros', nombre profético dado a Jesús (Isaías 7:14, Mateo 1:23).",ref:"Mateo 1:23"},
+],
+medio:[
+  {q:"¿Cuántos años vivió Matusalén según la Biblia?",ops:["969","700","850","999"],a:0,exp:"Matusalén vivió 969 años, siendo el hombre más longevo mencionado en la Biblia (Génesis 5:27).",ref:"Génesis 5:27"},
+  {q:"¿Quién interpretó los sueños del Faraón?",ops:["José","Daniel","Salomón","Moisés"],a:0,exp:"José interpretó los sueños del Faraón sobre las siete vacas gordas y flacas, prediciendo los años de abundancia y hambruna (Génesis 41).",ref:"Génesis 41:25"},
+  {q:"¿En qué monte recibió Moisés los Diez Mandamientos?",ops:["Sinaí","Carmelo","Sion","Horeb"],a:0,exp:"Dios le entregó a Moisés las tablas de la ley en el monte Sinaí (Éxodo 19:20). Horeb es otro nombre del mismo monte.",ref:"Éxodo 19:20"},
+  {q:"¿Quién vendió su primogenitura por un plato de lentejas?",ops:["Esaú","Jacob","Rubén","Ismael"],a:0,exp:"Esaú, hambriento, vendió su derecho de primogenitura a su hermano Jacob a cambio de guiso de lentejas (Génesis 25:33).",ref:"Génesis 25:33"},
+  {q:"¿Cuánto tiempo pasó Jesús en el desierto antes de ser tentado?",ops:["40 días","3 días","7 días","1 año"],a:0,exp:"Jesús fue llevado por el Espíritu Santo al desierto donde ayunó 40 días y 40 noches antes de ser tentado (Mateo 4:2).",ref:"Mateo 4:2"},
+  {q:"¿Quién traicionó a Jesús por 30 monedas de plata?",ops:["Judas Iscariote","Pedro","Tomás","Barrabás"],a:0,exp:"Judas Iscariote acordó entregar a Jesús a los jefes de los sacerdotes por treinta monedas de plata (Mateo 26:15).",ref:"Mateo 26:15"},
+  {q:"¿Qué profeta fue llevado al cielo en un carro de fuego?",ops:["Elías","Eliseo","Isaías","Ezequiel"],a:0,exp:"Elías fue llevado al cielo en un torbellino, subiendo en un carro de fuego con caballos de fuego (2 Reyes 2:11).",ref:"2 Reyes 2:11"},
+  {q:"¿Cuál es el libro más corto del Antiguo Testamento?",ops:["Abdías","Rut","Jonás","Filemón"],a:0,exp:"Abdías es el libro más corto del Antiguo Testamento con solo 21 versículos.",ref:"Abdías"},
+  {q:"¿Cómo se llamaba el río donde Jesús fue bautizado?",ops:["Jordán","Nilo","Éufrates","Tigris"],a:0,exp:"Juan el Bautista bautizaba en el río Jordán, y allí bautizó a Jesús (Mateo 3:13).",ref:"Mateo 3:13"},
+  {q:"¿Quién escribió la mayoría de las epístolas del Nuevo Testamento?",ops:["Pablo","Pedro","Juan","Santiago"],a:0,exp:"El apóstol Pablo escribió 13 epístolas del Nuevo Testamento, más del doble que cualquier otro autor.",ref:"Romanos, Corintios..."},
+  {q:"¿Cuántas cartas escribió Pablo a los Corintios?",ops:["2","1","3","4"],a:0,exp:"Pablo escribió dos cartas canónicas a la iglesia de Corinto: 1 y 2 Corintios.",ref:"1 y 2 Corintios"},
+  {q:"¿Qué significa el nombre 'Israel'?",ops:["El que lucha con Dios","Pueblo de Dios","Tierra prometida","Hijo de la promesa"],a:0,exp:"Israel significa 'el que lucha con Dios'. Este nombre fue dado a Jacob después de luchar con el ángel (Génesis 32:28).",ref:"Génesis 32:28"},
+  {q:"¿Quién fue el suegro de Moisés?",ops:["Jetro","Aarón","Josué","Caleb"],a:0,exp:"Jetro (también llamado Reuel) era sacerdote de Madián y suegro de Moisés (Éxodo 3:1).",ref:"Éxodo 3:1"},
+  {q:"¿Cuántas versiones del Padrenuestro hay en los Evangelios?",ops:["2","1","3","4"],a:0,exp:"El Padrenuestro aparece en dos versiones: la más larga en Mateo 6:9-13 y una más corta en Lucas 11:2-4.",ref:"Mateo 6:9 / Lucas 11:2"},
+  {q:"¿En qué día de la creación hizo Dios los luminares?",ops:["4°","1°","3°","6°"],a:0,exp:"En el cuarto día Dios creó el sol, la luna y las estrellas como señales para las estaciones y los días (Génesis 1:14-19).",ref:"Génesis 1:14-19"},
+],
+difícil:[
+  {q:"¿Cuántos años estuvo el pueblo de Israel en el desierto?",ops:["40 años","20 años","100 años","12 años"],a:0,exp:"Israel vagó 40 años en el desierto debido a su incredulidad, hasta que murió la generación que salió de Egipto (Números 14:33-34).",ref:"Números 14:33-34"},
+  {q:"¿Cuál fue el nombre hebreo del apóstol Pablo?",ops:["Saulo","Simón","Santiago","Nicodemo"],a:0,exp:"Pablo era su nombre romano; su nombre hebreo era Saulo, de la tribu de Benjamín (Hechos 13:9).",ref:"Hechos 13:9"},
+  {q:"¿En qué ciudad vivía Lot cuando fue destruida?",ops:["Sodoma","Gomorra","Zoar","Hebrón"],a:0,exp:"Lot habitaba en Sodoma cuando Dios destruyó la ciudad por su gran maldad. Su familia escapó hacia Zoar (Génesis 19:1).",ref:"Génesis 19:1"},
+  {q:"¿Qué ángel anunció a María el nacimiento de Jesús?",ops:["Gabriel","Miguel","Rafael","Uriel"],a:0,exp:"El ángel Gabriel fue enviado por Dios a Nazaret para anunciar a María que concebiría al Hijo del Altísimo (Lucas 1:26-27).",ref:"Lucas 1:26"},
+  {q:"¿Cuál es el versículo más corto de la Biblia?",ops:["Juan 11:35","Éxodo 20:13","Job 3:2","1 Tesalonicenses 5:16"],a:0,exp:"'Jesús lloró' (Juan 11:35) es el versículo más corto de la Biblia en español e inglés ('Jesus wept').",ref:"Juan 11:35"},
+  {q:"¿Cuántos libros tiene la Biblia en total?",ops:["66","72","60","73"],a:0,exp:"La Biblia protestante tiene 66 libros: 39 en el Antiguo Testamento y 27 en el Nuevo Testamento.",ref:""},
+  {q:"¿Cómo se llamaba el siervo del sumo sacerdote al que Pedro le cortó la oreja?",ops:["Malco","Barrabás","Anás","Caifás"],a:0,exp:"El siervo se llamaba Malco. Jesús tocó su oreja y lo sanó inmediatamente (Juan 18:10, Lucas 22:51).",ref:"Juan 18:10"},
+  {q:"¿Quién escribió el libro de Apocalipsis?",ops:["Juan el Apóstol","Pablo","Pedro","Santiago"],a:0,exp:"El Apocalipsis fue escrito por el apóstol Juan mientras estaba exiliado en la isla de Patmos (Apocalipsis 1:9).",ref:"Apocalipsis 1:1,9"},
+  {q:"¿Cuántos salmos tiene el libro de los Salmos?",ops:["150","100","120","160"],a:0,exp:"El libro de los Salmos contiene 150 salmos. El salmo 119 es el más largo de la Biblia.",ref:""},
+  {q:"¿Cuál es el nombre del mar que cruzó Moisés con los israelitas?",ops:["Mar Rojo","Mar Mediterráneo","Mar Muerto","Mar de Galilea"],a:0,exp:"Dios abrió el Mar Rojo para que los israelitas cruzaran en seco mientras huían del ejército del Faraón (Éxodo 14:21).",ref:"Éxodo 14:21"},
+  {q:"¿Qué profeta fue tragado por un pez grande?",ops:["Jonás","Ezequiel","Oseas","Amós"],a:0,exp:"Jonás huyó de la presencia del Señor y fue arrojado al mar, donde un gran pez lo tragó por tres días (Jonás 1:17).",ref:"Jonás 1:17"},
+  {q:"¿En qué lenguaje fue escrito originalmente el Antiguo Testamento?",ops:["Hebreo y arameo","Griego","Latín","Arameo solamente"],a:0,exp:"El Antiguo Testamento fue escrito principalmente en hebreo, con algunas secciones en arameo (Daniel 2:4-7:28, Esdras 4:8-6:18).",ref:""},
+  {q:"¿Cuántos años tenía Josué cuando murió?",ops:["110","90","120","100"],a:0,exp:"Josué murió a los 110 años de edad, después de haber guiado a Israel para conquistar la tierra prometida (Josué 24:29).",ref:"Josué 24:29"},
+  {q:"¿Qué significa el nombre 'Jesús' en hebreo?",ops:["Yahveh salva","El ungido","Hijo de Dios","El profeta"],a:0,exp:"Jesús viene del hebreo 'Yeshua' que significa 'Yahveh salva'. Por eso el ángel dijo: 'le pondrás por nombre Jesús, porque él salvará a su pueblo de sus pecados' (Mateo 1:21).",ref:"Mateo 1:21"},
+  {q:"¿Cuántas personas se salvaron en el arca de Noé?",ops:["8","4","10","6"],a:0,exp:"Solo ocho personas se salvaron en el arca: Noé, su esposa, sus tres hijos (Sem, Cam y Jafet) y sus esposas (1 Pedro 3:20).",ref:"1 Pedro 3:20"},
+]
+};
+
+const VERSOS_FINAL=[
+  '"Todo lo puedo en Cristo que me fortalece." — Filipenses 4:13',
+  '"Porque de tal manera amó Dios al mundo..." — Juan 3:16',
+  '"El Señor es mi pastor; nada me faltará." — Salmos 23:1',
+  '"Confía en el Señor con todo tu corazón." — Proverbios 3:5',
+  '"Pedid y se os dará; buscad y hallaréis." — Mateo 7:7',
+];
+
+// ══════════════════════════════════════
+//  ESTADO DEL JUEGO
+// ══════════════════════════════════════
+window.nivelActual='fácil';
+let pregs=[],qIdx=0,score=0,streak=0,maxStreak=0,correct=0,wrong=0;
+let timerInterval=null,timeLeft=30,timePct=100,locked=false;
+
+const LV_TIME={fácil:30,medio:20,difícil:15};
+const LV_PTS ={fácil:100,medio:150,difícil:200};
+const LV_ICONS={fácil:'🕊️',medio:'📖',difícil:'⚔️'};
+const LV_COL  ={fácil:'#5dbb6e',medio:getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),difícil:'#e74c3c'};
+
+// ══════════════════════════════════════
+//  PANTALLAS
+// ══════════════════════════════════════
+window.showS=function(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');};
+
+// ══════════════════════════════════════
+//  INICIAR JUEGO
+// ══════════════════════════════════════
+window.iniciarJuego=function(nivel){
+  nivelActual=nivel;
+  // Mezclar y tomar 10 preguntas
+  const pool=[...PREGUNTAS[nivel]];
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  pregs=pool.slice(0,10);
+  qIdx=0;score=0;streak=0;maxStreak=0;correct=0;wrong=0;
+  // UI nivel
+  const icons={fácil:'🕊️ Fácil',medio:'📖 Medio',difícil:'⚔️ Difícil'};
+  const cls={fácil:'nivel-facil',medio:'nivel-medio',difícil:'nivel-dificil'};
+  const gn=document.getElementById('g-nivel');
+  gn.textContent=icons[nivel];
+  gn.className='game-nivel '+cls[nivel];
+  showS('s-game');
+  renderQ();
+};
+
+function renderQ(){
+  if(qIdx>=pregs.length){finJuego();return;}
+  locked=false;
+  const q=pregs[qIdx];
+  document.getElementById('g-qnum').textContent=`${qIdx+1}/10`;
+  document.getElementById('g-qnum2').textContent=`Pregunta ${qIdx+1} de 10`;
+  document.getElementById('g-qtext').textContent=q.q;
+  document.getElementById('g-score').textContent=score+' pts';
+  document.getElementById('g-explain').className='explain-box';
+  document.getElementById('btn-next').className='btn-next';
+  // Opciones
+  const opts=document.getElementById('g-opts');
+  opts.innerHTML='';
+  const letters=['A','B','C','D'];
+  // Mezclar opciones
+  const idxArr=[0,1,2,3];
+  for(let i=3;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idxArr[i],idxArr[j]]=[idxArr[j],idxArr[i]];}
+  // Guardar cuál índice es la correcta tras mezcla
+  const newCorrectIdx=idxArr.indexOf(q.a);
+  q._shuffledOpts=idxArr.map(i=>q.ops[i]);
+  q._shuffledCorrect=newCorrectIdx;
+  q._shuffledOpts.forEach((txt,i)=>{
+    const div=document.createElement('div');
+    div.className='opt';
+    div.innerHTML=`<div class="opt-letter">${letters[i]}</div><div class="opt-text">${txt}</div>`;
+    div.onclick=()=>responder(i,div);
+    opts.appendChild(div);
+  });
+  // Racha
+  const sp=document.getElementById('g-streak');
+  if(streak>=2){sp.style.display='block';sp.textContent=`🔥 ×${streak}`;sp.className='stat-pill streak-pill'+(streak>=4?' hot':'');}
+  else sp.style.display='none';
+  // Timer
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timeLeft=LV_TIME[nivelActual];
+  const bar=document.getElementById('g-timer');
+  function tick(){
+    timePct=(timeLeft/LV_TIME[nivelActual])*100;
+    bar.style.width=timePct+'%';
+    const r=timePct>60?'27,174,96':timePct>30?'201,168,76':'231,76,60';
+    bar.style.background=`rgba(${r},0.85)`;
+    if(timeLeft<=0){clearInterval(timerInterval);tiempoAgotado();}
+    timeLeft-=0.1;
+  }
+  tick();
+  timerInterval=setInterval(tick,100);
+}
+
+function tiempoAgotado(){
+  if(locked)return;
+  locked=true;clearInterval(timerInterval);
+  streak=0;wrong++;
+  const q=pregs[qIdx];
+  const opts=document.getElementById('g-opts').children;
+  opts[q._shuffledCorrect].classList.add('reveal');
+  Array.from(opts).forEach(o=>o.classList.add('locked'));
+  const ex=document.getElementById('g-explain');
+  ex.innerHTML=`⏱️ Tiempo agotado. La respuesta era: <strong>${q._shuffledOpts[q._shuffledCorrect]}</strong><br><span style="opacity:0.7">${q.exp}</span>`;
+  ex.classList.add('show');
+  document.getElementById('btn-next').classList.add('show');
+  showToast('⏱️ ¡Tiempo agotado!');
+}
+
+window.responder=function(idx,el){
+  if(locked)return;
+  locked=true;clearInterval(timerInterval);
+  const q=pregs[qIdx];
+  const isCorrect=idx===q._shuffledCorrect;
+  if(isCorrect){
+    el.classList.add('correct');
+    streak++;correct++;
+    if(streak>maxStreak)maxStreak=streak;
+    const bonus=streak>=3?Math.floor(LV_PTS[nivelActual]*0.5):streak>=2?Math.floor(LV_PTS[nivelActual]*0.25):0;
+    const timeBonus=Math.floor(timeLeft*2);
+    const pts=LV_PTS[nivelActual]+bonus+timeBonus;
+    score+=pts;
+    floatPts(el,'+'+pts,streak>=2?'#ffd700':'#27ae60');
+    if(streak>=3)showToast(`🔥 ¡Racha de ${streak}! +${bonus} bonus`);
+    else showToast(`✅ ¡Correcto! +${pts} pts`);
+  }else{
+    el.classList.add('wrong');
+    streak=0;wrong++;
+    document.getElementById('g-opts').children[q._shuffledCorrect].classList.add('reveal');
+    showToast('❌ Incorrecto');
+  }
+  Array.from(document.getElementById('g-opts').children).forEach(o=>o.classList.add('locked'));
+  // Explicación
+  const ex=document.getElementById('g-explain');
+  ex.innerHTML=`${isCorrect?'✅':'❌'} <strong>${q._shuffledOpts[q._shuffledCorrect]}</strong>${q.ref?` <span style="color:rgba(201,168,76,0.6);font-size:0.82rem">(${q.ref})</span>`:''}<br><span style="opacity:0.75">${q.exp}</span>`;
+  ex.classList.add('show');
+  document.getElementById('g-score').textContent=score+' pts';
+  // Racha HUD
+  const sp=document.getElementById('g-streak');
+  if(streak>=2){sp.style.display='block';sp.textContent=`🔥 ×${streak}`;sp.className='stat-pill streak-pill'+(streak>=4?' hot':'');}
+  else sp.style.display='none';
+  document.getElementById('btn-next').classList.add('show');
+};
+
+window.nextQuestion=function(){qIdx++;renderQ();};
+
+window.abandonar=function(){
+  clearInterval(timerInterval);
+  showS('s-menu');
+};
+
+// ══════════════════════════════════════
+//  FIN DE JUEGO
+// ══════════════════════════════════════
+async function finJuego(){
+  clearInterval(timerInterval);
+  const pct=correct/10;
+  let medal='🥉',title='Sigue practicando';
+  if(pct>=0.9){medal='🏆';title='¡Maestro Bíblico!';}
+  else if(pct>=0.7){medal='🥇';title='¡Excelente!';}
+  else if(pct>=0.5){medal='🥈';title='¡Bien hecho!';}
+  document.getElementById('r-medal').textContent=medal;
+  document.getElementById('r-title').textContent=title;
+  document.getElementById('r-pts').textContent=score;
+  document.getElementById('r-correct').textContent=correct;
+  document.getElementById('r-wrong').textContent=wrong;
+  document.getElementById('r-maxstreak').textContent=maxStreak;
+  document.getElementById('r-verse').textContent=VERSOS_FINAL[Math.floor(Math.random()*VERSOS_FINAL.length)];
+  showS('s-result');
+  // Guardar ranking
+  if(cu){
+    try{
+      const rk=ref(db,`trivia_ranking/${nivelActual}/${cu.uid}`);
+      const snap=await get(rk);
+      const prev=snap.val()?.score||0;
+      if(score>prev){
+        await set(rk,{score,correct,maxStreak,nick:userNick,nivel:nivelActual,ts:Date.now()});
+        showToast('🏆 ¡Nuevo récord personal guardado!');
+      }
+    }catch(e){}
+  }
+}
+
+// ══════════════════════════════════════
+//  RANKING
+// ══════════════════════════════════════
+let rankTab='fácil';
+
+window.showRanking=async function(){
+  showS('s-ranking');
+  await loadRanking(rankTab);
+};
+
+window.setRankTab=async function(lv,el){
+  rankTab=lv;
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  await loadRanking(lv);
+};
+
+async function loadRanking(lv){
+  const list=document.getElementById('rank-list');
+  list.innerHTML='<div class="rank-loading">Cargando...</div>';
+  try{
+    const q2=query(ref(db,`trivia_ranking/${lv}`),orderByChild('score'),limitToLast(15));
+    const snap=await get(q2);
+    const data=[];
+    snap.forEach(c=>{data.push({uid:c.key,...c.val()});});
+    data.sort((a,b)=>b.score-a.score);
+    if(data.length===0){list.innerHTML='<div class="rank-empty">No hay puntajes aún.<br>¡Sé el primero!</div>';return;}
+    list.innerHTML='';
+    const medals=['🥇','🥈','🥉'];
+    data.forEach((d,i)=>{
+      const div=document.createElement('div');
+      div.className='rank-item'+(i<3?` top${i+1}`:'');
+      div.style.animationDelay=i*0.05+'s';
+      const pos=i<3?`<div class="rank-pos p${i+1}">${medals[i]}</div>`:`<div class="rank-pos">${i+1}</div>`;
+      const isMe=cu&&d.uid===cu.uid;
+      div.innerHTML=`${pos}<div class="rank-name">${isMe?'<span style="color:var(--gold)">★ </span>':''}${d.nick||'Anónimo'}</div><div style="text-align:right"><div class="rank-score">${d.score} pts</div><div class="rank-sub">${d.correct||0}/10 · racha ${d.maxStreak||0}</div></div>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML='<div class="rank-empty">Error al cargar. Verifica tu conexión.</div>';}
+}
+
+// ══════════════════════════════════════
+//  UTILIDADES
+// ══════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function floatPts(anchor,txt,color){
+  const rect=anchor.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='float-pts';
+  el.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top}px;color:${color};`;
+  el.textContent=txt;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1200);
+}
+</script>
+</body>
+</html>
