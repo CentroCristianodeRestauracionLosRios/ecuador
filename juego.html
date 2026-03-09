@@ -51,6 +51,92 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .gt-verse{font-style:italic;color:var(--muted);font-size:0.8rem;margin-top:2px;}
 .ark-icon{font-size:4.5rem;animation:fly 3s ease-in-out infinite;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.8));}
 @keyframes fly{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-10px) rotate(1deg);}}
+
+/* ── Level-Up épico ─────────────────────── */
+@keyframes lvupIn{
+  0%  {transform:scale(0.3) rotate(-8deg);opacity:0}
+  60% {transform:scale(1.08) rotate(1deg);opacity:1}
+  80% {transform:scale(0.96)}
+  100%{transform:scale(1) rotate(0)}
+}
+@keyframes lvupShine{
+  0%,100%{opacity:0.3;transform:scale(1) rotate(0deg)}
+  50%{opacity:0.8;transform:scale(1.15) rotate(180deg)}
+}
+@keyframes lvupStar{
+  0%  {transform:translateY(0) scale(1);opacity:1}
+  100%{transform:translateY(-120px) scale(0.2);opacity:0}
+}
+@keyframes lvupPulse{
+  0%,100%{box-shadow:0 0 30px rgba(201,168,76,0.4),0 0 80px rgba(201,168,76,0.15)}
+  50%    {box-shadow:0 0 60px rgba(201,168,76,0.9),0 0 140px rgba(201,168,76,0.4),inset 0 0 30px rgba(201,168,76,0.1)}
+}
+@keyframes lvupBadge{
+  0%  {transform:scale(0);opacity:0}
+  70% {transform:scale(1.2)}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes lvupFloat{
+  0%,100%{transform:translateY(0)}
+  50%    {transform:translateY(-6px)}
+}
+@keyframes lvupGlow{
+  0%,100%{text-shadow:0 0 10px #f0d080,0 0 20px rgba(201,168,76,0.6)}
+  50%    {text-shadow:0 0 24px #fff,0 0 48px #f0d080,0 0 80px rgba(201,168,76,0.8)}
+}
+@keyframes shimmer{
+  0%{background-position:-200% center}
+  100%{background-position:200% center}
+}
+@keyframes confettiFall{
+  0%  {transform:translateY(-20px) rotate(0deg);opacity:1}
+  100%{transform:translateY(160px) rotate(720deg);opacity:0}
+}
+
+/* ── Botones flotantes HUD ──────────────── */
+#hud-float-btns{
+  position:fixed;
+  bottom:78px;
+  right:10px;
+  z-index:25;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  pointer-events:all;
+}
+.hfloat{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  background:rgba(0,0,0,0.75);
+  border:1.5px solid rgba(201,168,76,0.45);
+  border-radius:22px;
+  padding:7px 14px 7px 10px;
+  color:var(--gold-l);
+  font-family:Cinzel,serif;
+  font-size:0.68rem;
+  font-weight:700;
+  letter-spacing:0.06em;
+  cursor:pointer;
+  transition:all 0.2s;
+  white-space:nowrap;
+  touch-action:manipulation;
+  text-transform:uppercase;
+  box-shadow:0 2px 12px rgba(0,0,0,0.5);
+}
+.hfloat:hover,.hfloat:active{
+  border-color:var(--gold);
+  background:rgba(201,168,76,0.18);
+  transform:translateX(-3px);
+  box-shadow:0 0 16px rgba(201,168,76,0.3);
+}
+.hfloat-icon{font-size:1.1rem;}
+@media(orientation:portrait),(max-width:520px){
+  #hud-float-btns{bottom:100px;right:6px;}
+  .hfloat{font-size:0;padding:8px;border-radius:50%;width:44px;height:44px;justify-content:center;}
+  .hfloat-icon{font-size:1.2rem;}
+  .hfloat-label{display:none;}
+}
 .ubadge{display:flex;align-items:center;gap:7px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:20px;padding:4px 12px;font-size:0.78rem;color:var(--gold);}
 .gdot{width:7px;height:7px;background:#27ae60;border-radius:50%;animation:pd 2s infinite;}
 @keyframes pd{0%,100%{box-shadow:0 0 0 0 rgba(39,174,96,0.6);}50%{box-shadow:0 0 0 5px rgba(39,174,96,0);}}
@@ -356,6 +442,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <div id="nstack"></div>
 <div id="ihint"></div>
 
+<!-- Botones flotantes: guardar y salir -->
+<div id="hud-float-btns" style="display:none">
+  <button class="hfloat" onclick="doManualSave()" title="Guardar progreso">
+    <span class="hfloat-icon">💾</span><span class="hfloat-label">Guardar</span>
+  </button>
+  <button class="hfloat" onclick="doSaveQuit()" title="Guardar y salir al menú" style="border-color:rgba(231,100,60,0.5)">
+    <span class="hfloat-icon">🚪</span><span class="hfloat-label">Salir</span>
+  </button>
+</div>
+
 <!-- Mobile pad -->
 <div id="mpad" style="display:none">
   <div class="dpad">
@@ -560,7 +656,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <!-- VOZ DE DIOS -->
 <div id="god-voice" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;flex-direction:column;">
   <div style="max-width:500px;width:90vw;background:linear-gradient(160deg,#1a1000,#2a1800);border:2px solid #c9a84c;border-radius:16px;padding:32px 28px;text-align:center;box-shadow:0 0 60px rgba(201,168,76,0.4),0 0 120px rgba(201,168,76,0.15);animation:godAppear 0.8s ease;">
-    <div style="width:72px;height:72px;margin:0 auto 8px;filter:drop-shadow(0 0 20px gold)"><img src="Dios1.png" style="width:100%;height:100%;object-fit:contain" onerror="this.parentNode.innerHTML='✝️'" alt="Dios"></div>
+    <div style="width:72px;height:72px;margin:0 auto 8px;filter:drop-shadow(0 0 20px gold)"><img src="Dios1.png" style="width:100%;height:100%;object-fit:contain" onerror="this.parentNode.innerHTML='<img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝">'" alt="Dios"></div>
     <div style="font-family:Cinzel,serif;font-size:1.1rem;color:#f0d080;letter-spacing:0.1em;margin-bottom:16px;text-shadow:0 0 20px rgba(255,215,0,0.6)" id="gv-title">El Llamado</div>
     <div style="border-top:1px solid rgba(201,168,76,0.3);margin:12px 0"></div>
     <p style="font-family:Crimson Text,serif;font-size:1rem;color:#f0e8d0;line-height:1.8;font-style:italic;white-space:pre-line" id="gv-text"></p>
@@ -627,8 +723,8 @@ const P={
   hT:0,tT:0,eT:0
 };
 
-const INV_SZ=24;
-const inv=Array(INV_SZ).fill(null);
+let INV_SZ=24;
+const inv=Array(40).fill(null); // max 40 slots, pero solo INV_SZ activos
 let wMap=[],wObjs=[],structs=[];
 let wTime=0.26,wDay=1;
 let clima='soleado',climaT=0,climaN=900;
@@ -778,7 +874,7 @@ const SKILLS=[
   {id:'pesc',n:'Pescador',e:'🎣',d:'Consigues más peces al pescar',c:1,req:null,u:false},
   {id:'colm',n:'Apicultor',e:'🍯',d:'Encuentras miel en el bosque',c:2,req:'granj',u:false},
   {id:'prof2',n:'Visionario',e:'👁️',d:'Ves los Nefilim en el minimapa',c:3,req:'prof',u:false},
-  {id:'sant',n:'Santo',e:'✝️',d:'Las oraciones en el altar te dan más bendición',c:3,req:'prof',u:false},
+  {id:'sant',n:'Santo',e:'<img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝">',d:'Las oraciones en el altar te dan más bendición',c:3,req:'prof',u:false},
 ];
 
 // ─── TIENDA — Sistema de rareza + niveles 1-60 ───────────────────
@@ -2039,7 +2135,7 @@ function drawNearIndicator(cx,cy){
     const sx=nearObj.tx*TILE-cx+TILE/2,sy=nearObj.ty*TILE-cy-10;
     ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='16px serif';ctx.textAlign='center';
     ctx.fillText('⬆',sx,sy);ctx.textAlign='left';
-    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar ✝️',taller:'[E] Abrir taller 🔨'};
+    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar <img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝">',taller:'[E] Abrir taller 🔨'};
     hint.textContent=labs[nearObj.tipo]||'[E] Interactuar';
     hint.style.display='block';
     hint.style.color='var(--gold)';
@@ -2195,7 +2291,7 @@ function addItem(id,qty){
   if(!qty||qty<=0)return;
   for(let i=0;i<INV_SZ;i++){if(inv[i]&&inv[i].id===id){inv[i].qty+=qty;return;}}
   for(let i=0;i<INV_SZ;i++){if(!inv[i]){inv[i]={id,qty};return;}}
-  notif('🎒 ¡La bolsa está llena!','red');
+  notif('🎒 ¡Bolsa llena! Compra más espacios en la Tienda 🏪','red');
 }
 function removeItem(id,qty){
   for(let i=0;i<INV_SZ;i++){if(inv[i]&&inv[i].id===id){inv[i].qty-=qty;if(inv[i].qty<=0)inv[i]=null;return true;}}
@@ -2216,6 +2312,19 @@ function renderInv(){
     }
     g.appendChild(sl);
   }
+  // Botón comprar más espacio
+  const maxSlots=40;
+  const priceNext = INV_SZ>=maxSlots ? 0 : Math.round(15 + (INV_SZ-24)*4);
+  const addBtnDiv = document.createElement('div');
+  addBtnDiv.style.cssText='grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:8px;margin-top:4px';
+  if(INV_SZ>=maxSlots){
+    addBtnDiv.innerHTML=`<span style="font-size:0.72rem;color:var(--muted)">🎒 Bolsa al máximo (${INV_SZ} espacios)</span>`;
+  } else {
+    addBtnDiv.innerHTML=`
+      <span style="font-size:0.72rem;color:var(--text)">🎒 ${INV_SZ}/${maxSlots} espacios</span>
+      <button class="sbtn" onclick="buyInvSlots(4)" style="font-size:0.68rem;padding:5px 10px">+4 espacios — ${priceNext}🪙</button>`;
+  }
+  g.appendChild(addBtnDiv);
 }
 
 function useItem(idx){
@@ -2236,7 +2345,7 @@ let cCat='herramientas';
 
 // Diccionarios de consejos para el taller
 const RESOURCE_TIPS = {'madera': 'Corta árboles con [E]', 'piedra': 'Golpea rocas grises con [E]', 'fibra': 'Recoge arbustos verdes con [E]', 'barro': 'Recoge los charcos de barro', 'resina': 'Cae al cortar árboles (20% prob.)', 'cuerda': 'Fabricada con 4 fibras en el Taller', 'tabla': 'Fabricada con 3 maderas en el Taller', 'agua': 'Llena tu jarra en el agua o usa el pozo', 'carne': 'Caza animales con [E]', 'fruta': 'Recoge árboles frutales con [E]', 'bayas': 'Recoge arbustos de bayas con [E]', 'pez': 'Pesca en aguas profundas con jarra', 'semilla': 'Cae al recoger arbustos (aleatoria)', 'metal': 'Fabricado con 6 piedras en el Taller', 'ladrillo': 'Fabricado con 4 barros en el Taller', 'brea': 'Fabricada con 3 resinas en el Taller', 'alquitran': 'Fabricada con resina y brea en Taller', 'madera_g': 'Fabricada con 5 maderas + 2 resinas', 'trigo': 'Cosecha el huerto cuando esté listo', 'miel': 'Recolecta arbustos de bayas (raro)', 'cuero': 'Cae al cazar animales grandes'};
-const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas ✝️', 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
+const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas <img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝">', 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
 
 function showTip(msg, dur=2000){
   let el=document.getElementById('craft-tip');
@@ -2331,16 +2440,216 @@ function unlockSkill(id){
   sk.u=true;P.sp-=sk.c;notif(`✨ ${sk.n} desbloqueada`,'gld');renderSkills();
 }
 
+function xpNeed(lv){ return Math.round(100 * Math.pow(lv, 1.65)); }
+
 function addXP(n){
-  const mult=(hasSkill('prof')?1.5:1);
+  const mult=(hasSkill('prof')?1.6:1);
   const gained=Math.round(n*mult);
   P.xp+=gained;
-  // Mostrar XP ganado brevemente
   const xpEl=document.getElementById('bXp');
   if(xpEl){ xpEl.style.boxShadow='0 0 6px #f0d08088'; setTimeout(()=>{if(xpEl)xpEl.style.boxShadow='';},400); }
-  const need=P.lv*100;
-  if(P.xp>=need){P.xp-=need;P.lv++;P.sp++;P.mhp+=10;P.hp=Math.min(P.mhp,P.hp+20);sndLevelUp();notif(`⬆️ ¡Nivel ${P.lv}! +1 talento — SP disponibles`,'gld');}
+  const need=xpNeed(P.lv);
+  if(P.xp>=need){
+    P.xp-=need;
+    P.lv++;
+    // Recompensas escaladas por nivel
+    const spGain = P.lv%3===0?2:1;          // cada 3 niveles: 2 SP
+    const hpGain = 10 + Math.floor(P.lv/5)*5; // +10 base, +5 cada 5 niveles
+    P.sp+=spGain;
+    P.mhp+=hpGain;
+    P.hp=Math.min(P.mhp,P.hp+hpGain);
+    sndLevelUp();
+    showLevelUpScreen(P.lv, spGain, hpGain);
+  }
 }
+
+function showLevelUpScreen(lv, spGain, hpGain){
+  const old=document.getElementById('lvup-overlay'); if(old) old.remove();
+
+  // Beneficios especiales
+  const extras=[];
+  if(lv===3)  extras.push({icon:'👦',text:'¡Puedes reclutar a <b style="color:#f0d080">Sem</b>!'});
+  if(lv===5)  extras.push({icon:'👦',text:'¡Puedes reclutar a <b style="color:#f0d080">Cam</b>!'});
+  if(lv===8)  extras.push({icon:'👦',text:'¡Puedes reclutar a <b style="color:#f0d080">Jafet</b>!'});
+  if(lv%5===0)extras.push({icon:'💎',text:`<b style="color:#80d0ff">+5 HP extra</b> — ¡Hito de nivel ${lv}!`});
+  if(lv%3===0)extras.push({icon:'✨',text:`<b style="color:#f0d080">+2 talentos</b> — ¡Nivel triple especial!`});
+  if(lv===10) extras.push({icon:'⛵',text:'<b style="color:#60d090">El Arca te llama.</b> Ya puedes avanzar al siguiente paso.'});
+  if(lv===15) extras.push({icon:'🌊',text:'<b style="color:#60a0ff">El diluvio se acerca</b> — ¡Apresúrate!'});
+  if(lv===20) extras.push({icon:'👑',text:'<b style="color:#f0d080">¡Guerrero de Dios!</b> Noé alcanza su plenitud.'});
+
+  // Título según nivel
+  const titles=['','Aprendiz','Aventurero','Explorador','Buscador','Siervo','Elegido','Profeta','Guardián','Heraldo','Campeón','Forjador','Constructor','Visionario','Sabio','Señor del Arca','Bendecido','Consagrado','Iluminado','Justo','Noé el Grande'];
+  const title=titles[Math.min(lv,20)]||'Maestro';
+
+  // Confeti colors
+  const confColors=['#f0d080','#80d0ff','#ff8080','#80ff90','#c080ff','#ffb060'];
+
+  const ov=document.createElement('div');
+  ov.id='lvup-overlay';
+  ov.style.cssText=`position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.82);backdrop-filter:blur(6px) brightness(0.45);
+    animation:lvupIn 0.05s ease;`;
+
+  ov.innerHTML=`
+    <!-- Destellos de fondo -->
+    <div id="lvup-rays" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+      ${Array.from({length:12},(_,i)=>`
+        <div style="position:absolute;left:50%;top:50%;
+          width:3px;height:48vh;background:linear-gradient(to bottom,rgba(201,168,76,0.7),transparent);
+          transform-origin:bottom center;transform:translateX(-50%) rotate(${i*30}deg);
+          animation:lvupShine ${1.4+i*0.1}s ease-in-out infinite alternate;
+          opacity:0.4"></div>`).join('')}
+    </div>
+
+    <!-- Confeti partículas -->
+    <div id="lvup-confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">
+      ${Array.from({length:30},(_,i)=>{
+        const col=confColors[i%confColors.length];
+        const left=Math.random()*100;
+        const delay=Math.random()*1.2;
+        const dur=1.5+Math.random()*1.5;
+        const sz=6+Math.random()*10;
+        return `<div style="position:absolute;left:${left}%;top:-10px;
+          width:${sz}px;height:${sz}px;background:${col};border-radius:${Math.random()>0.5?'50%':'2px'};
+          animation:confettiFall ${dur}s ${delay}s ease-in infinite;opacity:0.9"></div>`;
+      }).join('')}
+    </div>
+
+    <!-- Tarjeta principal -->
+    <div id="lvup-card" style="
+      position:relative;z-index:1;
+      text-align:center;
+      background:linear-gradient(160deg,#120800 0%,#2a1200 40%,#1a0c00 70%,#0d0600 100%);
+      border:2px solid transparent;
+      border-radius:20px;
+      padding:32px 28px 24px;
+      width:min(360px,92vw);
+      max-height:90vh;
+      overflow-y:auto;
+      animation:lvupIn 0.45s cubic-bezier(0.22,1,0.36,1),lvupPulse 2.5s ease-in-out 0.5s infinite;
+      background-clip:padding-box;
+      box-shadow:0 0 0 2px #c9a84c,0 0 60px rgba(201,168,76,0.7),0 0 120px rgba(201,168,76,0.3),inset 0 0 40px rgba(201,168,76,0.08);">
+
+      <!-- Halo superior -->
+      <div style="position:absolute;top:-1px;left:10%;right:10%;height:2px;
+        background:linear-gradient(90deg,transparent,#f0d080,#fff,#f0d080,transparent);
+        border-radius:2px;box-shadow:0 0 20px #f0d080"></div>
+
+      <!-- Número de nivel explosivo -->
+      <div style="position:relative;margin-bottom:6px">
+        <div style="font-size:4.5rem;line-height:1;animation:lvupFloat 1.8s ease-in-out infinite;
+          filter:drop-shadow(0 0 20px rgba(201,168,76,0.9)) drop-shadow(0 0 40px rgba(201,168,76,0.5))">⭐</div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+          font-family:Cinzel,serif;font-size:1.5rem;font-weight:900;
+          color:transparent;
+          background:linear-gradient(180deg,#fff 0%,#f0d080 40%,#c9a84c 100%);
+          -webkit-background-clip:text;background-clip:text;
+          animation:lvupGlow 2s ease-in-out infinite;
+          text-shadow:none">
+          ${lv}
+        </div>
+      </div>
+
+      <!-- Título del nivel -->
+      <div style="font-family:Cinzel,serif;font-size:0.65rem;letter-spacing:0.25em;color:rgba(201,168,76,0.6);text-transform:uppercase;margin-bottom:4px">rango desbloqueado</div>
+      <div style="font-family:Cinzel,serif;font-size:1.5rem;font-weight:900;letter-spacing:0.05em;
+        color:transparent;
+        background:linear-gradient(135deg,#f0e0a0,#f0d080,#c9a84c,#f0d080,#fff8e0);
+        background-size:200% auto;
+        -webkit-background-clip:text;background-clip:text;
+        animation:shimmer 2s linear infinite;
+        margin-bottom:2px">
+        ¡${title}!
+      </div>
+      <div style="font-family:Cinzel,serif;font-size:0.78rem;color:rgba(240,208,128,0.7);letter-spacing:0.15em">NIVEL ${lv}</div>
+
+      <!-- Separador ornamental -->
+      <div style="display:flex;align-items:center;gap:8px;margin:16px 0 14px">
+        <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(201,168,76,0.6))"></div>
+        <div style="font-size:0.8rem;color:rgba(201,168,76,0.7)">✦</div>
+        <div style="flex:1;height:1px;background:linear-gradient(to left,transparent,rgba(201,168,76,0.6))"></div>
+      </div>
+
+      <!-- Beneficios -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.35);border-radius:10px;padding:9px 14px;animation:lvupBadge 0.5s 0.2s both">
+          <span style="font-size:1.4rem">❤️</span>
+          <div style="text-align:left">
+            <div style="font-size:0.8rem;font-weight:bold;color:#ff8080">+${hpGain} HP Máximo</div>
+            <div style="font-size:0.62rem;color:rgba(255,128,128,0.7)">Tu corazón se fortalece con Dios</div>
+          </div>
+          <div style="margin-left:auto;font-family:Cinzel,serif;font-size:1rem;color:#ff8080;font-weight:900">+${hpGain}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.35);border-radius:10px;padding:9px 14px;animation:lvupBadge 0.5s 0.35s both">
+          <span style="font-size:1.4rem">✨</span>
+          <div style="text-align:left">
+            <div style="font-size:0.8rem;font-weight:bold;color:#f0d080">+${spGain} Punto${spGain>1?'s':''} de Talento</div>
+            <div style="font-size:0.62rem;color:rgba(240,208,128,0.7)">La sabiduría divina te guía</div>
+          </div>
+          <div style="margin-left:auto;font-family:Cinzel,serif;font-size:1rem;color:#f0d080;font-weight:900">+${spGain}</div>
+        </div>
+        ${extras.map((e,i)=>`
+          <div style="display:flex;align-items:center;gap:12px;background:rgba(100,200,100,0.1);border:1px solid rgba(100,200,100,0.35);border-radius:10px;padding:9px 14px;animation:lvupBadge 0.5s ${0.5+i*0.12}s both">
+            <span style="font-size:1.3rem">${e.icon}</span>
+            <div style="text-align:left;font-size:0.78rem;color:#a0e8a0;line-height:1.4">${e.text}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- XP próximo nivel -->
+      <div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:8px 12px;margin-bottom:16px;font-size:0.7rem;color:var(--muted)">
+        XP para <b style="color:#f0d080">Nv.${lv+1}</b>:
+        <b style="color:#fff;font-size:0.82rem">${xpNeed(lv).toLocaleString()}</b> puntos
+      </div>
+
+      <!-- Versículo bíblico aleatorio -->
+      <div style="font-style:italic;font-size:0.7rem;color:rgba(201,168,76,0.65);line-height:1.6;margin-bottom:18px;padding:0 8px">
+        ${[
+          '"Esfuérzate y sé valiente." — Josué 1:9',
+          '"Todo lo puedo en Cristo que me fortalece." — Fil. 4:13',
+          '"El justo florecerá como la palmera." — Sal. 92:12',
+          '"Tu palabra es lámpara a mis pies." — Sal. 119:105',
+          '"La sabiduría vale más que las piedras preciosas." — Prov. 8:11',
+        ][lv%5]}
+      </div>
+
+      <!-- Botón continuar -->
+      <button class="mbtn pri" id="lvup-cont"
+        onclick="closeLevelUp()"
+        style="width:100%;font-size:0.9rem;padding:14px;letter-spacing:0.12em;
+          animation:lvupFloat 1.8s ease-in-out 1s infinite;
+          box-shadow:0 0 20px rgba(201,168,76,0.5)">
+        <img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝"> &nbsp; ¡Gloria a Dios! &nbsp; <img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝">
+      </button>
+
+      <!-- Halo inferior -->
+      <div style="position:absolute;bottom:-1px;left:10%;right:10%;height:2px;
+        background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);
+        border-radius:2px"></div>
+    </div>`;
+
+  document.body.appendChild(ov);
+  gPause=true;
+
+  // Sonido de fanfarria visual: flash dorado en el canvas
+  const gc=document.getElementById('gameCanvas');
+  if(gc){
+    gc.style.transition='filter 0.3s';
+    gc.style.filter='brightness(0.3) saturate(0.5)';
+  }
+}
+
+window.closeLevelUp=function(){
+  const ov=document.getElementById('lvup-overlay');
+  if(ov){
+    ov.style.transition='opacity 0.35s,transform 0.35s';
+    ov.style.opacity='0';
+    ov.style.transform='scale(1.05)';
+    setTimeout(()=>{ov.remove();},350);
+  }
+  const gc=document.getElementById('gameCanvas');
+  if(gc){ gc.style.filter=''; }
+  gPause=false;
+};
 
 function doOrar(){
   if(!structs.find(s=>s.tipo==='altar'&&Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<80)){
@@ -2348,7 +2657,7 @@ function doOrar(){
   }
   const sp=P.sp; // puntos de talento
   // La oración cuesta 1 minuto de juego (tick)
-  if(tick-lastPrayTick<3600){notif(`✝️ Ya oraste hace poco — espera ${Math.ceil((3600-(tick-lastPrayTick))/60)} min`,'');return;}
+  if(tick-lastPrayTick<3600){notif(`<img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝"> Ya oraste hace poco — espera ${Math.ceil((3600-(tick-lastPrayTick))/60)} min`,'');return;}
   lastPrayTick=tick;
   const roll=Math.random();
   if(hasSkill('sant')){
@@ -2458,7 +2767,7 @@ function updateHUD(){
   document.getElementById('bHu').style.width=P.hunger+'%';
   document.getElementById('bTh').style.width=P.thirst+'%';
   document.getElementById('bEn').style.width=P.energy+'%';
-  document.getElementById('bXp').style.width=(P.xp/(P.lv*100))*100+'%';
+  document.getElementById('bXp').style.width=Math.min(100,(P.xp/xpNeed(P.lv))*100).toFixed(1)+'%';
   document.getElementById('hudLv').textContent=`Nv.${P.lv}`;
   document.getElementById('hudSiclos').textContent=`🪙 ${siclos}`;
   const hfBtn=document.getElementById('hudFamilia'); if(hfBtn) hfBtn.textContent=`👨‍👦 ${familia.length||0}`;
@@ -2511,6 +2820,18 @@ window.toggleP=function(w){
     gPause=false;
   }
 };
+
+window.buyInvSlots = function(n){
+  const maxSlots=40;
+  if(INV_SZ>=maxSlots){ notif('🎒 Bolsa al máximo',''); return; }
+  const price=Math.round(15+(INV_SZ-24)*4);
+  if(siclos<price){ notif(`Necesitas ${price} 🪙 para ampliar la bolsa`,'red'); return; }
+  siclos-=price;
+  INV_SZ=Math.min(maxSlots,INV_SZ+n);
+  notif(`🎒 ¡Bolsa ampliada! Ahora tienes ${INV_SZ} espacios`,'gld');
+  renderInv();
+};
+
 window.closeAllPanels=function(){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='';
@@ -2595,7 +2916,12 @@ window.toggleFamiliaPanel=function(){
   gPause=true;
 };
 window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0});startGame();};
-window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';showS('s-menu');};
+window.doManualSave=async function(){
+  const btn=document.querySelector('#hud-float-btns .hfloat');
+  if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
+  await saveGame();
+};
+window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none';showS('s-menu');};
 window.doLogout=async function(){await signOut(auth);};
 
 
@@ -2872,7 +3198,7 @@ function renderTutStep(){
   const isLast = _tutIdx === total - 1;
   const nextBtn = document.getElementById('tut-next');
   const prevBtn = document.getElementById('tut-prev');
-  nextBtn.textContent = isLast ? '¡Comenzar! ✝️' : 'Siguiente →';
+  nextBtn.textContent = isLast ? '¡Comenzar! <img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝">' : 'Siguiente →';
   nextBtn.className = isLast ? 'mbtn pri' : 'mbtn pri';
   prevBtn.style.display = _tutIdx === 0 ? 'none' : 'block';
 
@@ -3176,6 +3502,7 @@ function beginLoop(){
   showS('');
   document.getElementById('hud').style.display='flex';
   document.getElementById('mpad').style.display='flex';
+  const fb=document.getElementById('hud-float-btns'); if(fb) fb.style.display='flex';
   gRun=true;gPause=false;godVoiceActive=false;
   // Cargar sprites solo si no se han cargado antes
   if(!noahLoaded) loadNoahSprites(()=>{console.log('🎨 Sprites Noé cargados');});
@@ -3271,7 +3598,9 @@ async function saveGame(){
     await fbUpdate(ref(db,`rpg2/${cu.uid}`),{
       day:wDay,facing:P.facing||'down',lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,siclos,armasEstado,skillsEstado,
       skills:SKILLS.filter(s=>s.u).map(s=>s.id),
-      inventory:inv.filter(Boolean),structs:structs,
+      inventory:inv.filter(Boolean),structs:structs,invSz:INV_SZ,
+      familia:familia.map(m=>({id:m.id,nivel:m.nivel,intervalo:m.intervalo})),
+      divineState:[DIVINE[1].unlocked,DIVINE[2].unlocked],
       px:Math.round(P.x),py:Math.round(P.y),savedAt:Date.now()
     });
     notif('💾 Progreso guardado','grn');
@@ -3295,6 +3624,15 @@ async function loadGame(){
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
     if(d.structs)structs.push(...d.structs);
     if(d.px)P.x=d.px;if(d.py)P.y=d.py;
+    if(d.invSz && d.invSz>24) INV_SZ=Math.min(40,d.invSz);
+    if(d.familia && d.familia.length){
+      familia.length=0;
+      d.familia.forEach(saved=>{
+        const fd=FAMILIA_DEFS.find(f=>f.id===saved.id);
+        if(fd) familia.push({...fd,nivel:saved.nivel||1,intervalo:saved.intervalo||fd.intervalo});
+      });
+    }
+    if(d.divineState){DIVINE[1].unlocked=!!d.divineState[0];DIVINE[2].unlocked=!!d.divineState[1];}
     genMundo();notif('📜 ¡Bienvenido de vuelta!','grn');
   }catch(e){genMundo();}
 }
@@ -3648,7 +3986,7 @@ function checkMisiones(){
     misionCompletada.push(m.id);
     m.recompensa();
     const scM=15+misionActual*10;addSiclos(scM);
-    notif(`✝️ Misión cumplida: ${m.titulo} +${scM}🪙`,'gld');
+    notif(`<img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝"> Misión cumplida: ${m.titulo} +${scM}🪙`,'gld');
     misionActual=Math.min(misionActual+1,MISIONES.length-1);
     if(misionActual<MISIONES.length){
       setTimeout(()=>showGodVoice(MISIONES[misionActual]),3000);
@@ -3670,7 +4008,7 @@ function updateMisionHUD(){
   const m=MISIONES[misionActual];
   if(!m||misionActual>=MISIONES.length-1){el.style.display='none';return;}
   el.style.display='block';
-  document.getElementById('mision-txt').textContent=`✝️ ${m.titulo}`;
+  document.getElementById('mision-txt').textContent=`<img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.outerHTML='✝'" alt="✝"> ${m.titulo}`;
 }
 
 // ════════════════════════════════════════════
@@ -4361,8 +4699,8 @@ function tickFamilia(){
 
 function getFamiliaPanel(){
   const lvReqs={shem:3,cam:5,jafet:8};
-  const xpPorNivel = P.lv*100;
-  const xpActual   = Math.floor(P.xp);
+  const xpPorNivel = xpNeed(P.lv);
+  const xpActual = Math.floor(P.xp);
   const xpFalta    = xpPorNivel - xpActual;
 
   // Guía de cómo subir nivel
@@ -4434,8 +4772,9 @@ window.reclutarFamilia=function(id){
   const lvReq=id==='shem'?3:id==='cam'?5:8;
   if(P.lv<lvReq){notif(`Necesitas nivel ${lvReq} para reclutar a ${fd.n}`,'red');return;}
   if(familia.find(f=>f.id===id)){notif('Ya está en tu familia','');return;}
-  familia.push({...fd});
+  familia.push({...fd,nivel:1});
   notif(`👨‍👦 ${fd.n} se unió a tu familia — recolectará ${fd.emoji}`,'gld');
+  refreshFamiliaPanel();
 };
 window.subirNivelFamilia=function(id){
   const m=familia.find(f=>f.id===id); if(!m) return;
@@ -4446,7 +4785,16 @@ window.subirNivelFamilia=function(id){
   removeItem('madera',cost.madera); removeItem('piedra',cost.piedra);
   m.nivel++; m.intervalo=Math.max(60,m.intervalo-20);
   notif(`⬆️ ${m.n} subió a nivel ${m.nivel}`,'gld');
+  sndLevelUp();
+  refreshFamiliaPanel();
 };
+
+function refreshFamiliaPanel(){
+  const modal=document.getElementById('familia-modal');
+  if(!modal) return;
+  const content=modal.querySelector('div>div:last-child');
+  if(content) content.innerHTML=getFamiliaPanel();
+}
 
 function renderShop(){
   const siclosEls=document.querySelectorAll('#hudSiclos,#shopSiclos');
