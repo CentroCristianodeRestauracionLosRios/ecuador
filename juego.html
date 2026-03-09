@@ -1462,7 +1462,7 @@ function drawPlayer(cx,cy){
 
   // ── SPRITE SHEET ─────────────────────────────────────────
   if(noahLoaded){
-    const {sheet, anim, flipX} = getNoahAnim();
+    const {sheet, anim, flipX} = getNoahSheet();
     if(sheet){
       const fw = NOAH_CFG.frameW;
       const fh = NOAH_CFG.frameH;
@@ -1961,6 +1961,7 @@ window.doInteract=function(){
     const animalCerca=animales.find(a=>!a.enArca&&Math.hypot(a.x-P.x,a.y-P.y)<55);
     if(animalCerca){
       if(hasItem('lanza')||hasItem('espada')||hasItem('arco')||(armasEstado['arco']?.nivel>0)||(armasEstado['espada_s']?.nivel>0)){
+        triggerNoahAction('pierce');
         animalCerca.hp-=25;
         addFlash(animalCerca.x,animalCerca.y-20);
         sndAxe();
@@ -1974,25 +1975,30 @@ window.doInteract=function(){
   const o=nearObj;
   const bon=(hasSkill('fuerza')?2:1)*(getBuff('fuerza2x')?2:1)*(getArmaBonus('craft')>0?1+(getArmaBonus('craft')/200):1);
   if(o.tipo==='arbol'){
+    triggerNoahAction('slice');
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
     if(hasItem('hacha')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('hacha',1);notif('🪓 La hacha se rompió — crea otra','red');}
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪵');
     sndAxe();addFlash(P.x,P.y-20); if(o.hp<=0){addItem('madera',5+Math.floor(Math.random()*4));if(Math.random()<0.3)addItem('resina',1);removeObj(o);sndCollect();notif('🪵 Madera','');addXP(10);}
     else addItem('madera',1);
   }else if(o.tipo==='roca'){
+    triggerNoahAction('crush');
     const c=(hasItem('pico')?3:1)*bon;o.hp-=c;
     if(hasItem('pico')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('pico',1);notif('⛏️ El pico se rompió — crea otro','red');}
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪨');
     sndRock();addFlash(P.x,P.y-20); if(o.hp<=0){addItem('piedra',4+Math.floor(Math.random()*3));addItem('barro',Math.random()<0.4?2:1);removeObj(o);sndCollect();notif('🪨 Piedra','');addXP(8);}
     else addItem('piedra',1);
   }else if(o.tipo==='arbusto'||o.tipo==='cana'){
+    triggerNoahAction('collect');
     sndPickPlant();addItem('fibra',2+Math.floor(Math.random()*2));if(Math.random()<0.3)addItem('semilla',1);removeObj(o);sndCollect();notif('🌿 Fibra','');addXP(5);
   }else if(o.tipo==='bayas'){
+    triggerNoahAction('collect');
     sndPickPlant();addItem('bayas',3+Math.floor(Math.random()*3));if(hasSkill('colm')&&Math.random()<0.4)addItem('miel',1);removeObj(o);sndCollect();notif('🫐 Bayas','');addXP(5);
   }else if(o.tipo==='frutal'){
+    triggerNoahAction('collect');
     sndPickPlant();addItem('fruta',2+Math.floor(Math.random()*2));removeObj(o);sndCollect();notif('🍎 Fruta','');addXP(5);
   }else if(o.tipo==='agua'){
-    if(hasItem('jarra')){removeItem('jarra',1);addItem('agua',1);sndDrink();
+    if(hasItem('jarra')){triggerNoahAction('collect');removeItem('jarra',1);addItem('agua',1);sndDrink();
       addSplash(P.x,P.y);notif('🫙 ¡Jarra llena de agua!','grn');}
     // Pescar si tiene fibra como caña improvisada
     // Solo se puede pescar en agua tipo 'fish' (profunda)
@@ -2000,6 +2006,7 @@ window.doInteract=function(){
     const tileAdj=[-1,0,1].flatMap(dy=>[-1,0,1].map(dx=>wMap[Math.floor(P.y/TILE)+dy]?.[Math.floor(P.x/TILE)+dx])).find(t=>t&&t.wt==='fish');
     if(hasItem('fibra',2)&&Math.random()<(hasSkill('pesc')?0.7:0.3)){
       if(tileAdj||tileAqui?.wt==='fish'){
+        triggerNoahAction('fish');
         removeItem('fibra',1);addItem('pez',1);sndCollect();
         addSplash(P.x,P.y);notif('🐟 ¡Pescaste un pez!','grn');addXP(8);
       } else {
@@ -2009,7 +2016,7 @@ window.doInteract=function(){
       notif('🎣 Para pescar necesitas 2 fibras como improvisación','');
     }
   }else if(o.tipo==='pozo'){
-    // El pozo no necesita jarra — da agua directamente
+    triggerNoahAction('collect');
     addItem('agua',2);sndDrink();notif('🪣 Sacaste agua del pozo','grn');addXP(2);
   }else if(o.tipo==='huerto'){
     // El huerto produce comida si han pasado suficientes horas
@@ -2392,71 +2399,131 @@ async function loadAndPlay(){await loadGame();beginLoop();}
 //  O se pueden embeber en Base64 pegando las constantes abajo
 // ════════════════════════════════════════════════════════════
 
-// ── OPCIÓN A: Base64 embebido (pegar aquí si tienes el script) ──
-// Si tienes los PNG, corre: python3 embed_sprites.py
-// y pega las 3 líneas SHEET_DOWN_B64, SHEET_UP_B64, SHEET_SIDE_B64 aquí:
-const SHEET_DOWN_B64 = null;   // reemplazar con "data:image/png;base64,..."
-const SHEET_UP_B64   = null;   // reemplazar con "data:image/png;base64,..."
-const SHEET_SIDE_B64 = null;   // reemplazar con "data:image/png;base64,..."
+// ════════════════════════════════════════════════════════════
+//  SISTEMA DE ANIMACIONES NOÉ — múltiples spritesheets
+//  Cada acción × dirección tiene su propio PNG
+// ════════════════════════════════════════════════════════════
 
-// ── Configuración del spritesheet ───────────────────────────
-// Medido de los sprites subidos:
-// Sheet total: ~512×64px → 8 frames de 64×64px cada uno
-// Frame 4 = luna decorativa (separador visual, NO animar)
-// Frames útiles: 0-3 caminar | 5-7 ataque/idle
+// Configuración del spritesheet (medido: 512x64 → 8 frames de 64x64)
 const NOAH_CFG = {
-  frameW:  64,         // confirmado: 512/8 = 64px
-  frameH:  64,         // confirmado: 64px de alto
-  totalFrames: 8,
-  scale:   1.5,        // escala para tile=32 → sprite ~48px visible
-  offsetY: 0.85,       // base del sprite alineada al suelo
-  fps:     8,
+  frameW: 64, frameH: 64, totalFrames: 8,
+  scale:  1.5,   // tamaño renderizado
+  offsetY: 0.85, // alineación base del sprite
+  fps:    10,    // frames por segundo de animación
 };
 
-// Índices de frames por estado (frame 4 = luna, se salta)
+// Frames útiles por tipo de animación
+// (frame 4 = luna decorativa — se omite)
 const NOAH_ANIM = {
-  walk:   [0,1,2,3],  // caminata — 4 frames
-  idle:   [0],        // quieto   — 1 frame (primer frame)
-  attack: [5,6,7],    // ataque   — 3 frames
+  walk:   [0,1,2,3],
+  idle:   [0],
+  action: [5,6,7],   // corte, golpe, pesca — 3 frames de acción
 };
 
-// Sheets cargados
-const NOAH_SHEETS = { down:null, up:null, side:null };
-let noahLoaded = false;
+// Estado de animación del personaje
+// noahAction: qué está haciendo ('idle','walk','slice','crush','pierce','fish')
+let noahAction = 'idle';
+let noahActionTimer = 0;  // ticks que dura la animación de acción
+const NOAH_ACTION_DURATION = 30; // frames que se muestra la animación de acción
 
-// Contador de animación
+// Sheets indexados por [accion][direccion]
+const NS = {
+  walk:   { down:null, up:null, side:null },
+  slice:  { down:null, up:null, side:null },
+  crush:  { down:null, up:null, side:null },
+  pierce: { down:null, up:null, side:null },
+  fish:   { down:null, up:null, side:null },
+  collect:{ down:null, up:null, side:null },
+  death:  { down:null, up:null, side:null },
+};
+
+let noahLoaded = false;
 let _noahTick=0, _noahFrame=0;
-const _noahTicksPerFrame = Math.round(60 / NOAH_CFG.fps);
+const _noahTicksPerFrame = Math.max(1, Math.round(60 / NOAH_CFG.fps));
 
 function tickNoahAnim(){
   _noahTick++;
   if(_noahTick >= _noahTicksPerFrame){ _noahTick=0; _noahFrame++; }
+  // Reducir timer de acción
+  if(noahActionTimer > 0){
+    noahActionTimer--;
+    if(noahActionTimer === 0) noahAction = P.moving ? 'walk' : 'idle';
+  }
 }
 
-function getNoahAnim(){
-  const dir = P.facing||'down';
-  const sheet = dir==='up' ? NOAH_SHEETS.up
-              : (dir==='left'||dir==='right') ? NOAH_SHEETS.side
-              : NOAH_SHEETS.down;
-  const anim  = P.inv>0 ? NOAH_ANIM.attack
-              : P.moving ? NOAH_ANIM.walk
-              : NOAH_ANIM.idle;
+// Llamar esto cuando el jugador ejecuta una acción
+function triggerNoahAction(type){
+  // type: 'slice'|'crush'|'pierce'|'fish'|'collect'|'death'
+  // La muerte no se interrumpe con ninguna otra acción
+  if(noahAction==='death') return;
+  noahAction = type;
+  // Muerte dura más para verse completa (8 frames × ~6 ticks = ~48 ticks)
+  noahActionTimer = (type==='death') ? 90 : NOAH_ACTION_DURATION;
+  _noahFrame = 0;
+  _noahTick  = 0;
+}
+
+function getNoahSheet(){
+  const dir = P.facing || 'down';
+  const dirKey = (dir==='left'||dir==='right') ? 'side' : dir;
+
+  // Determinar estado actual
+  let stateKey;
+  if(noahActionTimer > 0){
+    stateKey = noahAction; // 'slice','crush','pierce','fish'
+  } else if(P.moving){
+    stateKey = 'walk';
+  } else {
+    stateKey = 'walk'; // idle usa primer frame de walk
+  }
+
+  const sheet = NS[stateKey]?.[dirKey] || NS.walk?.[dirKey] || null;
+  // Muerte usa todos los frames (0-7), acciones usan frames de acción (5-7)
+  const anim = stateKey==='death'   ? [0,1,2,3,4,5,6,7]
+             : noahActionTimer > 0  ? NOAH_ANIM.action
+             : P.moving             ? NOAH_ANIM.walk
+             :                        NOAH_ANIM.idle;
   return { sheet, anim, flipX:(dir==='left') };
 }
 
 function loadNoahSprites(callback){
-  // Prioridad: 1) Base64 embebido  2) Archivo externo  3) fallback dibujado
-  const sources = {
-    down: SHEET_DOWN_B64 || 'Slice_DownSheet.png',
-    up:   SHEET_UP_B64   || 'Slice_UpSheet.png',
-    side: SHEET_SIDE_B64 || 'Slice_SideSheet.png',
-  };
-  let done=0, total=3;
-  Object.entries(sources).forEach(([key,src])=>{
-    if(!src){ done++; if(done===total&&callback)callback(); return; }
+  // Mapa de todos los PNG necesarios
+  const SPRITE_MAP = [
+    ['walk',   'down', 'Run_DownSheet.png'],
+    ['walk',   'up',   'Run_UpSheet.png'],
+    ['walk',   'side', 'Run_SideSheet.png'],
+    ['slice',  'down', 'Slice_DownSheet.png'],
+    ['slice',  'up',   'Slice_UpSheet.png'],
+    ['slice',  'side', 'Slice_SideSheet.png'],
+    ['crush',  'down', 'Crush_DownSheet.png'],
+    ['crush',  'up',   'Crush_UpSheet.png'],
+    ['crush',  'side', 'Crush_SideSheet.png'],
+    ['pierce', 'down', 'Pierce_DownSheet.png'],
+    ['pierce', 'up',   'Pierce_UpSheet.png'],
+    ['pierce', 'side', 'Pierce_SideSheet.png'],
+    ['fish',   'down', 'Fishing_DownSheet.png'],
+    ['fish',   'up',   'Fishing_UpSheet.png'],
+    ['fish',   'side', 'Fishing_SideSheet.png'],
+    ['collect','down', 'Collect_DownSheet.png'],
+    ['collect','up',   'Collect_UpSheet.png'],
+    ['collect','side', 'Collect_SideSheet.png'],
+    ['death',  'down', 'Death_DownSheet.png'],
+    ['death',  'up',   'Death_UpSheet.png'],
+    ['death',  'side', 'Death_SideSheet.png'],
+  ];
+  let done=0, anyLoaded=false;
+  const total=SPRITE_MAP.length;
+  SPRITE_MAP.forEach(([state,dir,src])=>{
     const img=new Image();
-    img.onload =()=>{ NOAH_SHEETS[key]=img; done++; if(done===total){noahLoaded=true;if(callback)callback();} };
-    img.onerror=()=>{ console.warn(`Sprite ${key} no encontrado — usando fallback`); done++; if(done===total&&callback)callback(); };
+    img.onload=()=>{
+      NS[state][dir]=img; done++; anyLoaded=true;
+      if(done===total){ noahLoaded=true; if(callback)callback(); }
+    };
+    img.onerror=()=>{
+      console.warn('Sprite no encontrado:',src);
+      done++;
+      if(done===total){ if(anyLoaded)noahLoaded=true; if(callback)callback(); }
+    };
     img.src=src;
   });
 }
@@ -2486,7 +2553,11 @@ function beginLoop(){
   setTimeout(()=>notif('💧 Lleva la jarra al agua y presiona [E] para llenarla',''),9500);
   setTimeout(()=>notif('🍎 Abre tu bolsa y toca una fruta para comerla',''),13000);
 }
-function gameOver(){gRun=false;sndGameOver();showS('s-over');}
+function gameOver(){
+  // Mostrar animación de muerte antes de ir a pantalla de game over
+  triggerNoahAction('death');
+  setTimeout(()=>{ gRun=false; sndGameOver(); showS('s-over'); }, 1200);
+}
 
 // ─── FIREBASE AUTH ────────────────────────────
 onAuthStateChanged(auth,async u=>{
