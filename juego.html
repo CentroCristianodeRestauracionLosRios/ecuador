@@ -286,6 +286,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .linput::placeholder{color:var(--muted);}
 .lerr{color:#e74c3c;font-size:0.78rem;text-align:center;min-height:16px;}
 .lback{background:transparent;border:none;color:var(--muted);font-size:0.78rem;cursor:pointer;text-decoration:underline;}
+.ltab{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:var(--muted);font-size:0.75rem;padding:6px;cursor:pointer;font-family:'Cinzel',serif;transition:all 0.15s;}
+.ltab.active{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.45);color:var(--gold);}
 .lback:hover{color:var(--text);}
 .divider{width:100%;height:1px;background:var(--border);}
 
@@ -516,6 +518,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .load-spin{width:40px;height:40px;border:3px solid rgba(201,168,76,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+
+/* ── Ranking ── */
+.rank-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.rank-row:last-child{border-bottom:none;}
+.rank-row.me{background:rgba(201,168,76,0.08);border-radius:8px;border-bottom:none;margin-bottom:2px;}
+.rank-pos{font-family:'Cinzel',serif;font-size:0.95rem;width:28px;text-align:center;flex-shrink:0;}
+.rank-name{flex:1;font-size:0.82rem;color:var(--text);font-family:'Cinzel',serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rank-stats{font-size:0.68rem;color:var(--muted);display:flex;gap:7px;flex-shrink:0;}
+.rank-stat{background:rgba(255,255,255,0.05);border-radius:6px;padding:2px 6px;}
+.rank-sep{font-family:'Cinzel',serif;font-size:0.7rem;color:var(--muted);text-align:center;padding:7px;letter-spacing:0.1em;}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.28);border-radius:2px;}
@@ -576,6 +589,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <button class="hbtn"            onclick="toggleP('shop')"           title="Tienda">🏪</button>
       <button class="hbtn"            onclick="toggleP('equip')"          title="Equipo">⚔️</button>
       <button class="hbtn"            onclick="openSettings()" title="Ajustes">⚙️</button>
+      <button class="hbtn"            onclick="openRanking()" title="Ranking" id="btnRanking">🏆</button>
       <button class="hbtn"            onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
     </div>
     <div id="hud-row2" style="display:none"></div>
@@ -834,16 +848,42 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 <!-- LOGIN -->
 <div class="screen" id="s-login">
-  <div class="lbox">
-    <div style="font-size:2.5rem">⛵</div>
-    <div class="ltitle">Inicia sesión</div>
-    <p class="lsub">Usa el mismo correo con el que entraste al chat</p>
-    <input class="linput" type="email" id="lEmail" placeholder="Correo electrónico" autocomplete="email"/>
-    <input class="linput" type="password" id="lPass" placeholder="Contraseña"/>
-    <div class="lerr" id="lErr"></div>
-    <button class="mbtn pri" style="width:100%" onclick="doLogin()">Entrar →</button>
-    <div class="divider"></div>
-    <button class="lback" onclick="showS('s-menu')">← Regresar</button>
+  <div class="lbox" style="gap:10px">
+    <div style="font-size:2.2rem">⛵</div>
+    <div class="ltitle" id="lTitle">Accede al juego</div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;width:100%">
+      <button class="ltab active" id="ltab-login"   onclick="switchLoginTab('login')">Ingresar</button>
+      <button class="ltab"        id="ltab-register" onclick="switchLoginTab('register')">Registrarse</button>
+    </div>
+    <!-- Tab Login -->
+    <div id="ltab-login-body" style="width:100%;display:flex;flex-direction:column;gap:8px">
+      <p class="lsub" style="margin:0">Usa el mismo correo del chat de la iglesia</p>
+      <input class="linput" type="email"    id="lEmail" placeholder="Correo electrónico" autocomplete="email"/>
+      <input class="linput" type="password" id="lPass"  placeholder="Contraseña" autocomplete="current-password"/>
+      <div class="lerr" id="lErr"></div>
+      <button class="mbtn pri" style="width:100%" onclick="doLogin()">Entrar →</button>
+      <button class="lback" onclick="switchLoginTab('recover')" style="font-size:0.72rem">¿Olvidé mi contraseña?</button>
+    </div>
+    <!-- Tab Registro -->
+    <div id="ltab-register-body" style="width:100%;display:flex;flex-direction:column;gap:8px;display:none">
+      <p class="lsub" style="margin:0">Crea una cuenta nueva para guardar tu progreso</p>
+      <input class="linput" type="text"     id="rNick"  placeholder="Nombre de jugador (ej: Noé123)" maxlength="20" autocomplete="username"/>
+      <input class="linput" type="email"    id="rEmail" placeholder="Correo electrónico" autocomplete="email"/>
+      <input class="linput" type="password" id="rPass"  placeholder="Contraseña (mínimo 6 caracteres)" autocomplete="new-password"/>
+      <div class="lerr" id="rErr"></div>
+      <button class="mbtn pri" style="width:100%" onclick="doRegister()">Crear cuenta →</button>
+    </div>
+    <!-- Tab Recuperar -->
+    <div id="ltab-recover-body" style="width:100%;display:flex;flex-direction:column;gap:8px;display:none">
+      <p class="lsub" style="margin:0">Te enviaremos un enlace para restablecer tu contraseña</p>
+      <input class="linput" type="email" id="recEmail" placeholder="Tu correo electrónico"/>
+      <div class="lerr" id="recErr"></div>
+      <button class="mbtn pri" style="width:100%" onclick="doRecover()">Enviar enlace →</button>
+      <button class="lback" onclick="switchLoginTab('login')">← Volver al ingreso</button>
+    </div>
+    <div class="divider" style="margin-top:4px"></div>
+    <button class="lback" onclick="showS('s-menu')">← Jugar sin cuenta</button>
   </div>
 </div>
 
@@ -1028,7 +1068,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getDatabase,ref,set,get,update as fbUpdate}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getDatabase,ref,set,get,update as fbUpdate,query,orderByChild,limitToFirst}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
 const auth=getAuth(app),db=getDatabase(app);
@@ -4127,16 +4167,89 @@ window.doLogin=async function(){
   const ps=document.getElementById('lPass').value;
   const er=document.getElementById('lErr');
   er.textContent='';
-  if(!em||!ps){er.textContent='Debes ingresar tu correo y contraseña.';return;}
+  if(!em||!ps){er.textContent='Ingresa tu correo y contraseña.';return;}
+  const btn=document.querySelector('#ltab-login-body .mbtn.pri');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Ingresando...';}
   try{
-    await signInWithEmailAndPassword(auth,em,ps);
-    // onAuthStateChanged actualizará cu automáticamente
-    // luego arrancamos el juego
+    const cred = await signInWithEmailAndPassword(auth,em,ps);
+    // Esperar a que onAuthStateChanged procese la sesión (max 3s)
+    let waited=0;
+    while(cu===null && waited<3000){ await new Promise(r=>setTimeout(r,100)); waited+=100; }
+    // cu ya fue actualizado por onAuthStateChanged
     showS('s-menu');
     startGame();
   }catch(e){
-    er.textContent='El correo o la contraseña no son correctos.';
+    const codes={'auth/user-not-found':'No existe una cuenta con ese correo.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-email':'Correo inválido.','auth/invalid-credential':'Correo o contraseña incorrectos.'};
+    er.textContent=codes[e.code]||'Error al ingresar. Verifica tus datos.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Entrar →';}
   }
+};
+
+// Registro de nueva cuenta
+window.doRegister=async function(){
+  const nick2=document.getElementById('rNick').value.trim();
+  const em=document.getElementById('rEmail').value.trim();
+  const ps=document.getElementById('rPass').value;
+  const er=document.getElementById('rErr');
+  er.textContent='';
+  if(!nick2||!em||!ps){er.textContent='Completa todos los campos.';return;}
+  if(nick2.length<2){er.textContent='El nombre debe tener al menos 2 caracteres.';return;}
+  if(ps.length<6){er.textContent='La contraseña debe tener al menos 6 caracteres.';return;}
+  const btn=document.querySelector('#ltab-register-body .mbtn.pri');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Creando cuenta...';}
+  try{
+    const {createUserWithEmailAndPassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const cred=await createUserWithEmailAndPassword(auth,em,ps);
+    // Guardar nickname en Firebase (misma ruta que el chat)
+    await fbUpdate(ref(db,`usuarios/${cred.user.uid}`),{nickname:nick2,email:em,createdAt:Date.now()});
+    nick=nick2;
+    // Esperar confirmación auth
+    let waited=0;
+    while(cu===null && waited<3000){ await new Promise(r=>setTimeout(r,100)); waited+=100; }
+    showS('s-menu');
+    startGame();
+  }catch(e){
+    const codes={'auth/email-already-in-use':'Ya existe una cuenta con ese correo. Prueba iniciar sesión.','auth/invalid-email':'Correo inválido.','auth/weak-password':'La contraseña es muy débil (mínimo 6 caracteres).'};
+    er.textContent=codes[e.code]||'Error al registrar. Intenta con otro correo.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Crear cuenta →';}
+  }
+};
+
+// Recuperar contraseña
+window.doRecover=async function(){
+  const em=document.getElementById('recEmail').value.trim();
+  const er=document.getElementById('recErr');
+  er.textContent='';
+  er.style.color='';
+  if(!em){er.textContent='Ingresa tu correo.';return;}
+  const btn=document.querySelector('#ltab-recover-body .mbtn.pri');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Enviando...';}
+  try{
+    const {sendPasswordResetEmail}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await sendPasswordResetEmail(auth,em);
+    er.textContent='✅ Enlace enviado. Revisa tu correo (también el spam).';
+    er.style.color='#50c880';
+  }catch(e){
+    er.textContent='No se encontró una cuenta con ese correo.';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Enviar enlace →';}
+  }
+};
+
+// Cambiar entre tabs del login
+window.switchLoginTab=function(tab){
+  ['login','register','recover'].forEach(t=>{
+    const body=document.getElementById('ltab-'+t+'-body');
+    const btn=document.getElementById('ltab-'+t);
+    if(body) body.style.display = t===tab ? 'flex' : 'none';
+    if(btn)  btn.classList.toggle('active', t===tab);
+  });
+  // El tab "recover" no tiene botón de tab, así que ignorar su btn
+  document.getElementById('lErr') && (document.getElementById('lErr').textContent='');
+  document.getElementById('rErr') && (document.getElementById('rErr').textContent='');
+  document.getElementById('recErr') && (document.getElementById('recErr').textContent='');
 };
 
 // ─── SAVE / LOAD ──────────────────────────────
@@ -4152,6 +4265,7 @@ async function saveGame(){
       px:Math.round(P.x),py:Math.round(P.y),savedAt:Date.now()
     });
     notif('💾 Progreso guardado','grn');
+    guardarRanking().catch(()=>{});
   }catch(e){notif('No se pudo guardar','red');}
 }
 
@@ -5636,7 +5750,138 @@ function initBgMenu(){
   fr();
 }
 
+// ═══════════════════════════════════════════════════════
+// RANKING GLOBAL — rpg_ranking/{uid}
+// Campos: nick, lv, day, arcaP, savedAt, score
+// score = lv*1000 + day*10 + arcaP*500
+// ═══════════════════════════════════════════════════════
+
+async function guardarRanking(){
+  if(!cu) return;
+  // Score: nivel es lo más importante, luego días, luego arca
+  const score = (P.lv * 1000) + (wDay * 10) + (arcaProgress * 500);
+  try{
+    // Solo actualizar si mejora el score anterior (evita regresión)
+    const prev = await get(ref(db, `rpg_ranking/${cu.uid}/score`));
+    const prevScore = prev.val() || 0;
+    if(score <= prevScore) return; // no sobreescribir si es peor
+    await fbUpdate(ref(db, `rpg_ranking/${cu.uid}`), {
+      nick: nick || 'Noé',
+      lv:   P.lv,
+      day:  wDay,
+      arcaP: arcaProgress,
+      score: score,
+      savedAt: Date.now()
+    });
+  }catch(e){ console.warn('Ranking update error:', e); }
+}
+
+async function openRanking(){
+  const panel = document.getElementById('p-rank');
+  if(!panel) return;
+  // Alternar: si ya está abierto, cerrar
+  if(panel.classList.contains('open')){ closeRanking(); return; }
+  // Cerrar otros paneles pero no pausar el juego
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  panel.classList.add('open');
+
+  const body = document.getElementById('rankBody');
+  body.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted)"><div class="load-spin" style="margin:0 auto 10px"></div><div style="font-size:0.8rem">Cargando ranking...</div></div>`;
+
+  try{
+    // Primero guardar el score propio antes de leer
+    await guardarRanking();
+
+    // Leer top 20 por score descendente
+    const q = query(ref(db,'rpg_ranking'), orderByChild('score'), limitToFirst(200));
+    const snap = await get(q);
+    const rows = [];
+    snap.forEach(child => {
+      const d = child.val();
+      if(d && d.score > 0) rows.push({ uid: child.key, ...d });
+    });
+    // Ordenar descendente (Firebase orderByChild es ascendente)
+    rows.sort((a,b) => b.score - a.score);
+    const top = rows.slice(0, 20);
+
+    if(top.length === 0){
+      body.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);font-size:0.8rem">Aún no hay jugadores en el ranking.<br>¡Guarda tu partida para aparecer aquí!</div>`;
+      return;
+    }
+
+    // Encontrar posición propia si no está en top 20
+    let myPos = -1;
+    let myData = null;
+    if(cu){
+      myPos = rows.findIndex(r => r.uid === cu.uid);
+      if(myPos >= 0) myData = rows[myPos];
+    }
+
+    const medals = ['🥇','🥈','🥉'];
+    let html = '';
+    top.forEach((r, i) => {
+      const isMe = cu && r.uid === cu.uid;
+      const pos = medals[i] || `<span style="color:var(--muted)">${i+1}</span>`;
+      const arcaBar = r.arcaP >= 3 ? '⛵ Completa' : '▓'.repeat(r.arcaP||0) + '░'.repeat(3-(r.arcaP||0));
+      html += `<div class="rank-row${isMe?' me':''}">
+        <div class="rank-pos">${pos}</div>
+        <div class="rank-name">${isMe?'<span style="color:var(--gold)">▶ </span>':''}${escHtml(r.nick||'Noé')}</div>
+        <div class="rank-stats">
+          <span class="rank-stat">Nv.${r.lv||1}</span>
+          <span class="rank-stat">Día ${r.day||1}</span>
+          <span class="rank-stat" title="Arca">${arcaBar}</span>
+        </div>
+      </div>`;
+    });
+
+    // Si el jugador actual está fuera del top 20, mostrarlo al final
+    if(cu && myPos >= 20 && myData){
+      html += `<div class="rank-sep">· · · tu posición · · ·</div>
+      <div class="rank-row me">
+        <div class="rank-pos"><span style="color:var(--muted)">${myPos+1}</span></div>
+        <div class="rank-name"><span style="color:var(--gold)">▶ </span>${escHtml(myData.nick||'Noé')}</div>
+        <div class="rank-stats">
+          <span class="rank-stat">Nv.${myData.lv||1}</span>
+          <span class="rank-stat">Día ${myData.day||1}</span>
+          <span class="rank-stat">${myData.arcaP>=3?'⛵':('▓'.repeat(myData.arcaP||0)+'░'.repeat(3-(myData.arcaP||0)))}</span>
+        </div>
+      </div>`;
+    }
+
+    if(!cu){
+      html += `<div class="rank-sep" style="color:rgba(201,168,76,0.5)">Inicia sesión para aparecer en el ranking</div>`;
+    }
+
+    body.innerHTML = html;
+
+  }catch(e){
+    console.error('Ranking load error:', e);
+    body.innerHTML = `<div style="text-align:center;padding:30px;color:#e88;font-size:0.8rem">❌ Error al cargar el ranking.<br>${e.message||''}</div>`;
+  }
+}
+
+function closeRanking(){
+  const panel = document.getElementById('p-rank');
+  if(panel) panel.classList.remove('open');
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 window.addEventListener('DOMContentLoaded',initBgMenu);
 </script>
+
+<!-- ═══ PANEL RANKING ═══ -->
+<div class="panel" id="p-rank" style="width:min(380px,94vw)">
+  <div class="ph">
+    <span class="ptitle">🏆 Ranking Global</span>
+    <button class="pclose" onclick="closeRanking()">✕</button>
+  </div>
+  <div class="pbody" id="rankBody" style="width:min(380px,94vw);min-height:180px">
+    <div style="text-align:center;padding:30px;color:var(--muted)">
+      <div class="load-spin" style="margin:0 auto 10px"></div>
+      <div style="font-size:0.8rem">Cargando ranking...</div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
