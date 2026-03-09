@@ -66,7 +66,7 @@
         </a>
       </li>
       <li>
-        <a href="#chat-anchor" class="nav-icon-link" onclick="abrirChat()" title="Punto de Encuentro">
+        <a href="#" class="nav-icon-link" onclick="abrirChat(event)" title="Punto de Encuentro">
           <span>Punto de Encuentro</span>
           <img src="CHAT.png" class="nav-icon" alt="Chat"/>
         </a>
@@ -297,7 +297,7 @@
 
   <!-- SECCIÓN CHAT -->
   <section id="chat-anchor" class="section chat-promo">
-    <div class="chat-promo-inner" onclick="abrirChat()">
+    <div class="chat-promo-inner" onclick="abrirChat(event)">
       <img src="CHAT.png" alt="Punto de Encuentro" class="chat-promo-icon-img"/>
       <div>
         <h2 class="section-title">Punto de Encuentro</h2>
@@ -506,6 +506,26 @@
         <img src="UJIERES.png"   alt="Ujieres" class="min-logo-claro"/>
         <span>MINISTERIO DE UJIERES</span>
         <small>Ujieres</small>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL MINISTERIO -->
+  <div class="ministerio-modal hidden" id="ministerioModal">
+    <div class="ministerio-modal-inner">
+      <div class="ministerio-sticky-header">
+        <div class="ministerio-header">
+          <img id="minIcon" src="" alt="" class="min-logo"/>
+          <div class="ministerio-header-text">
+            <h2 id="minNombre"></h2>
+            <span id="minCategoria" class="ministerio-categoria"></span>
+          </div>
+          <button class="ministerio-close-btn" onclick="cerrarMinisterio()">✕</button>
+        </div>
+      </div>
+      <div class="ministerio-gallery" id="minGallery">
+        <p class="loading-txt">Cargando contenido...</p>
       </div>
     </div>
   </div>
