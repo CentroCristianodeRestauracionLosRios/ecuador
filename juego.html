@@ -75,7 +75,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 /* PANELS */
 .panel{
-  position:fixed;inset:0;z-index:200;
+  position:fixed;inset:0;z-index:999;
   background:linear-gradient(160deg,#06080f 0%,#0d0a1e 60%,#080f1a 100%);
   display:none;flex-direction:column;overflow:hidden;
   animation:pi 0.22s ease;
@@ -103,34 +103,58 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 @media(max-width:380px){.igrid{grid-template-columns:repeat(4,56px);}}
 /* HUD responsivo — pantalla vertical (móvil portrait) */
 @media(orientation:portrait),(max-width:520px){
-  /* HUD superior: solo retrato + barras */
   #hud{background:none;padding:5px 8px;}
   .hud-mid{display:none;}
 
-  /* Panel lateral derecho con los botones en 2 columnas */
+  /* Panel lateral derecho — oculto por defecto, visible con clase .open */
   #hud-actions{
+    position:fixed;
+    top:50%;
+    right:-120px; /* oculto fuera de pantalla */
+    transform:translateY(-50%);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px;
+    padding:6px 4px 6px 8px;
+    margin:0;
+    background:rgba(0,0,0,0.82);
+    border-radius:12px 0 0 12px;
+    border:1px solid rgba(201,168,76,0.3);
+    border-right:none;
+    z-index:21;
+    pointer-events:all;
+    transition:right 0.25s ease;
+  }
+  #hud-actions.open{right:0;}
+
+  /* Botón viñeta — siempre visible en el borde derecho */
+  #hud-toggle{
+    display:flex;
     position:fixed;
     top:50%;
     right:0;
     transform:translateY(-50%);
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    grid-template-rows:auto;
-    gap:4px;
-    padding:6px 4px 6px 6px;
-    margin:0;
-    background:rgba(0,0,0,0.55);
-    border-radius:10px 0 0 10px;
-    border:1px solid rgba(201,168,76,0.2);
+    z-index:22;
+    background:rgba(0,0,0,0.75);
+    border:1px solid rgba(201,168,76,0.4);
     border-right:none;
-    z-index:21;
+    border-radius:8px 0 0 8px;
+    padding:10px 5px;
+    cursor:pointer;
     pointer-events:all;
+    color:var(--gold);
+    font-size:0.7rem;
+    writing-mode:vertical-rl;
+    letter-spacing:0.05em;
+    font-family:Cinzel,serif;
+    transition:right 0.25s ease;
   }
-  /* Siclos ocupa las 2 columnas arriba */
+  #hud-toggle.shifted{right:120px;}
+
   #hudSiclos{
     grid-column:1/3;
     text-align:center;
-    font-size:0.7rem;
+    font-size:0.68rem;
     padding:2px 0 4px;
     border-bottom:1px solid rgba(201,168,76,0.2);
     margin-bottom:2px;
@@ -139,15 +163,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   .hbtn{
     font-size:1rem;
     padding:7px 0;
-    width:38px;
+    width:40px;
+    height:40px;
     text-align:center;
     border-radius:7px;
     display:flex;
     align-items:center;
     justify-content:center;
   }
-  /* En portrait 🎒 y ⚒️ SÍ se muestran en el panel lateral */
   .hbtn-inv,.hbtn-craft{display:flex;}
+}
+/* En landscape el toggle está oculto */
+@media(orientation:landscape) and (min-width:521px){
+  #hud-toggle{display:none;}
 }
 .islot{width:56px;height:64px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:1.2rem;cursor:pointer;position:relative;transition:all 0.15s;}
 .islot:hover,.islot:active{border-color:var(--gold);background:rgba(201,168,76,0.12);}
@@ -210,6 +238,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .abtns{display:flex;gap:7px;align-items:flex-end;pointer-events:all;}
 .abtn{width:50px;height:50px;background:rgba(0,0,0,0.55);border:1.5px solid rgba(255,255,255,0.18);border-radius:50%;color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .abtn:active{background:rgba(201,168,76,0.28);}
+.abtn-divine{border-width:2px;}
+.abtn-cooldown{position:absolute;inset:0;border-radius:50%;background:conic-gradient(rgba(0,0,0,0.65) 0% var(--cd,0%),transparent var(--cd,0%) 100%);pointer-events:none;transition:--cd 0.1s;}
+.abtn-wrap{display:flex;}
 
 /* Hint */
 #ihint{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(0,0,0,0.72);border:1px solid var(--border);border-radius:18px;padding:4px 14px;font-size:0.75rem;color:var(--gold);pointer-events:none;display:none;}
@@ -303,18 +334,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div id="buff-bar" style="display:flex;gap:3px;justify-content:center;min-height:14px;margin-top:1px;"></div>
     <div class="hud-tbar"><div class="hud-tf" id="bTime" style="width:0%"></div></div>
   </div>
+  <!-- Viñeta toggle (solo portrait) -->
+  <button id="hud-toggle" onclick="toggleHudPanel()" title="Menú">☰</button>
   <!-- Botones HUD: fila en landscape, 2 columnas en portrait -->
   <div id="hud-actions">
     <div class="hud-siclos" id="hudSiclos">🪙 0</div>
     <div id="hud-row1" class="hud-btns">
-      <button class="hbtn hbtn-inv"  onclick="toggleP('inv')"          title="Bolsa (I)">🎒</button>
-      <button class="hbtn hbtn-craft" onclick="toggleP('craft')"        title="Taller (C)">⚒️</button>
-      <button class="hbtn"           onclick="toggleP('skills')"        title="Talentos">✨</button>
-      <button class="hbtn"           onclick="toggleFamiliaPanel()"     title="Familia" id="hudFamilia">👨‍👦</button>
-      <button class="hbtn"           onclick="toggleP('shop')"          title="Tienda">🏪</button>
-      <button class="hbtn"           onclick="toggleP('equip')"         title="Equipo">⚔️</button>
-      <button class="hbtn"           id="soundBtn" onclick="toggleSound()" title="Sonido">🔊</button>
-      <button class="hbtn"           onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
+      <button class="hbtn hbtn-inv"   onclick="toggleP('inv')"           title="Bolsa">🎒</button>
+      <button class="hbtn hbtn-craft" onclick="toggleP('craft')"         title="Taller">⚒️</button>
+      <button class="hbtn"            onclick="toggleP('skills')"         title="Talentos">✨</button>
+      <button class="hbtn"            onclick="toggleFamiliaPanel()"      title="Familia" id="hudFamilia">👨‍👦</button>
+      <button class="hbtn"            onclick="toggleP('shop')"           title="Tienda">🏪</button>
+      <button class="hbtn"            onclick="toggleP('equip')"          title="Equipo">⚔️</button>
+      <button class="hbtn"            id="soundBtn" onclick="toggleSound()" title="Sonido">🔊</button>
+      <button class="hbtn"            onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
     </div>
     <div id="hud-row2" style="display:none"></div>
   </div>
@@ -333,10 +366,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div></div><div class="dp" ontouchstart="mk.d=true" ontouchend="mk.d=false">▼</div><div></div>
   </div>
   <div class="abtns">
-    <button class="abtn" onclick="toggleP('inv')" title="Bolsa" style="font-size:1.1rem">🎒</button>
-    <button class="abtn" style="border-color:rgba(201,168,76,0.5);font-family:Cinzel,serif;font-weight:bold" onclick="doInteract()">E</button>
+    <!-- Habilidad Divina 1 -->
+    <div class="abtn-wrap" style="position:relative">
+      <button class="abtn abtn-divine" id="div1Btn" onclick="useDivine(1)" title="Protección Divina" style="border-color:rgba(100,180,255,0.7);font-size:1rem;flex-direction:column;gap:1px">
+        🛡️<span style="font-size:0.45rem;color:#80c8ff">PROT</span>
+      </button>
+      <div id="div1CD" class="abtn-cooldown"></div>
+    </div>
+    <!-- E interactuar -->
+    <button class="abtn" style="border-color:rgba(201,168,76,0.5);font-family:Cinzel,serif;font-weight:bold;font-size:1.1rem" onclick="doInteract()">E</button>
+    <!-- Ataque -->
     <button class="abtn" style="border-color:rgba(231,76,60,0.6);font-size:0.9rem" onclick="attackNefilim()">⚔</button>
-    <button class="abtn" onclick="toggleP('craft')" title="Taller" style="font-size:1.1rem">⚒️</button>
+    <!-- Habilidad Divina 2 -->
+    <div class="abtn-wrap" style="position:relative">
+      <button class="abtn abtn-divine" id="div2Btn" onclick="useDivine(2)" title="Sanación Divina" style="border-color:rgba(100,255,150,0.7);font-size:1rem;flex-direction:column;gap:1px">
+        💚<span style="font-size:0.45rem;color:#80ffb0">CURA</span>
+      </button>
+      <div id="div2CD" class="abtn-cooldown"></div>
+    </div>
   </div>
 </div>
 
@@ -791,8 +838,8 @@ const SHOP_SKILLS_TIENDA=[
 
 // Estado de armas del jugador: {armaId: {nivel, rareza_idx}}
 // Catálogo de tienda: SHOP_CATS por sección
-const SHOP_CATS=['bendiciones','armas','habilidades','fusion','recursos'];
-const SHOP_CATS_NAMES={
+const SHOP_CATS=['bendiciones','divinas','armas','habilidades','fusion','recursos'];
+const SHOP_CATS_NAMES={divinas:'⚡ Divinas',
   bendiciones:'✨ Bendiciones',
   armas:'⚔️ Armas',
   habilidades:'🌟 Habilidades',
@@ -1873,6 +1920,7 @@ function update(){
   if(P.moving){P.eT++;if(P.eT>110){P.eT=0;P.energy=Math.max(0,P.energy-1);}}
   if(P.inv>0)P.inv--;
   tickFamilia();
+  tickDivine();
   // Autoguardado cada 5 minutos
   if(tick>0 && tick%18000===0) saveGame();
   wTime+=1/(60*60*3);
@@ -2116,6 +2164,7 @@ window.doInteract=function(){
     }
   }else if(o.tipo==='pozo'){
     triggerNoahAction('collect');
+    gPause=false; // asegurar que no se queda pausado
     addItem('agua',2);sndDrink();notif('🪣 Sacaste agua del pozo','grn');addXP(2);
   }else if(o.tipo==='huerto'){
     // El huerto produce comida si han pasado suficientes horas
@@ -2184,6 +2233,24 @@ function useItem(idx){
 }
 
 let cCat='herramientas';
+
+// Diccionarios de consejos para el taller
+const RESOURCE_TIPS = {'madera': 'Corta árboles con [E]', 'piedra': 'Golpea rocas grises con [E]', 'fibra': 'Recoge arbustos verdes con [E]', 'barro': 'Recoge los charcos de barro', 'resina': 'Cae al cortar árboles (20% prob.)', 'cuerda': 'Fabricada con 4 fibras en el Taller', 'tabla': 'Fabricada con 3 maderas en el Taller', 'agua': 'Llena tu jarra en el agua o usa el pozo', 'carne': 'Caza animales con [E]', 'fruta': 'Recoge árboles frutales con [E]', 'bayas': 'Recoge arbustos de bayas con [E]', 'pez': 'Pesca en aguas profundas con jarra', 'semilla': 'Cae al recoger arbustos (aleatoria)', 'metal': 'Fabricado con 6 piedras en el Taller', 'ladrillo': 'Fabricado con 4 barros en el Taller', 'brea': 'Fabricada con 3 resinas en el Taller', 'alquitran': 'Fabricada con resina y brea en Taller', 'madera_g': 'Fabricada con 5 maderas + 2 resinas', 'trigo': 'Cosecha el huerto cuando esté listo', 'miel': 'Recolecta arbustos de bayas (raro)', 'cuero': 'Cae al cazar animales grandes'};
+const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas ✝️', 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
+
+function showTip(msg, dur=2000){
+  let el=document.getElementById('craft-tip');
+  if(!el){
+    el=document.createElement('div');
+    el.id='craft-tip';
+    el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid rgba(201,168,76,0.5);border-radius:10px;padding:9px 16px;font-size:0.8rem;color:#f0e8d0;z-index:1000;text-align:center;max-width:280px;pointer-events:none;transition:opacity 0.3s';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+  el.style.opacity='1';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.style.opacity='0';},dur);
+}
 function renderCraft(){
   const cc=document.getElementById('cCats');cc.innerHTML='';
   RCATS.forEach(c=>{
@@ -2200,9 +2267,14 @@ function renderCraft(){
     const strOk=!r.str||structs.some(s=>s.tipo===r.str);
     const div=document.createElement('div');
     div.className='citem'; // nunca oscurecer el ítem completo
-    const rh=Object.entries(r.req).map(([id,q])=>`<span class="creq ${cntItem(id)>=q?'ok':'no'}">${ITEMS[id]?.e||id} ${cntItem(id)}/${q}</span>`).join('');
+    const rh=Object.entries(r.req).map(([id,q])=>{
+      const nm=ITEMS[id]?.n||id;
+      const tip=RESOURCE_TIPS[id]||'';
+      return `<span class="creq ${cntItem(id)>=q?'ok':'no'}" onclick="showTip('${tip.replace(/'/g,"\'")||nm}','2000')" style="cursor:pointer" title="${nm}: ${tip}">${ITEMS[id]?.e||id} <b>${nm}</b> ${cntItem(id)}/${q}</span>`;
+    }).join('');
     const sw=r.str&&!strOk?`<span class="creq no">Necesitas: ${ITEMS[r.str]?.n||r.str}</span>`:'';
-    div.innerHTML=`<div class="cemi">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Hacer</button>`;
+    const itemTip=ITEM_USES[r.r]||r.n;
+    div.innerHTML=`<div class="cemi" onclick="showTip('${itemTip.replace(/'/g,"\'")}',2500)" style="cursor:pointer" title="${itemTip}">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Hacer</button>`;
     cl.appendChild(div);
   });
 }
@@ -2422,6 +2494,9 @@ window.toggleP=function(w){
   if(!was){
     el.classList.add('open');
     gPause=true;
+    // Ocultar canvas y mpad para que no bloqueen el panel
+    const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='-1';
+    const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='-1';
     try{
       if(w==='inv')   renderInv();
       if(w==='craft') renderCraft();
@@ -2430,11 +2505,16 @@ window.toggleP=function(w){
       if(w==='equip') renderEquip();
     }catch(e){ console.error('Error al renderizar panel',w,e); }
   } else {
+    // Restaurar canvas y mpad
+    const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='';
+    const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='';
     gPause=false;
   }
 };
 window.closeAllPanels=function(){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='';
+  const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='';
   gPause=false;
 };
 
@@ -2832,6 +2912,107 @@ window.skipTutorial = function(){
   if(confirm('¿Saltar el tutorial? Puedes volver a verlo desde el menú de pausa.'))
     finishTutorial();
 };
+
+
+// ── Toggle panel lateral HUD (portrait) ─────────────────────
+window.toggleHudPanel = function(){
+  const a = document.getElementById('hud-actions');
+  const t = document.getElementById('hud-toggle');
+  if(!a) return;
+  const isOpen = a.classList.contains('open');
+  a.classList.toggle('open');
+  if(t){ t.classList.toggle('shifted'); t.textContent = isOpen ? '☰' : '✕'; }
+};
+
+// ── Habilidades Divinas ──────────────────────────────────────
+const DIVINE = {
+  1:{ name:'Protección Divina', cd:30, timer:0, unlocked:false,
+      shopId:'div_prot', price:25,
+      effect(){ P.hp=Math.min(P.mhp, P.hp+30); addBuff('escudo_div',600); notif('🛡️ ¡Protección Divina! +30 vida','gld'); }},
+  2:{ name:'Sanación Divina',   cd:45, timer:0, unlocked:false,
+      shopId:'div_cura', price:35,
+      effect(){ P.hp=Math.min(P.mhp,P.hp+P.mhp*0.5); P.hunger=Math.min(100,P.hunger+30); P.thirst=Math.min(100,P.thirst+30); notif('💚 ¡Sanación Divina! HP restaurado','gld'); }},
+};
+
+window.useDivine = function(n){
+  const d = DIVINE[n];
+  if(!d) return;
+  if(!d.unlocked){
+    showShopArrow(n);
+    return;
+  }
+  if(d.timer > 0){ notif(`⏳ ${d.name} — espera ${Math.ceil(d.timer/60)}s`,''); return; }
+  d.effect();
+  d.timer = d.cd * 60;
+  updateDivineCooldowns();
+};
+
+function showShopArrow(divN){
+  // Quitar flecha anterior
+  const old=document.getElementById('shop-arrow-overlay'); if(old) old.remove();
+  const shopBtn=document.querySelector('.hbtn[title="Tienda"]')||document.querySelector('[onclick*="shop"]');
+  const d=DIVINE[divN];
+  const ov=document.createElement('div');
+  ov.id='shop-arrow-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;pointer-events:all;background:rgba(0,0,0,0.5)';
+  ov.innerHTML=`
+    <div style="text-align:center;pointer-events:none">
+      <div style="font-size:1rem;color:#fff;background:rgba(0,0,0,0.8);border:1px solid rgba(201,168,76,0.6);border-radius:12px;padding:14px 20px;max-width:260px;margin:0 auto 20px">
+        🔒 <b style="color:#f0d080">${d.name}</b><br>
+        <span style="font-size:0.78rem;color:#d4c090">Cuesta <b style="color:#f0d080">${d.price} 🪙</b> — Cómprala en la Tienda</span>
+      </div>
+      <div style="font-size:3rem;animation:arrowBounce 0.6s ease-in-out infinite alternate">👆</div>
+      <div style="font-size:0.75rem;color:#c9a84c;margin-top:6px;font-family:Cinzel,serif">TIENDA 🏪</div>
+    </div>`;
+  ov.onclick=()=>ov.remove();
+  document.body.appendChild(ov);
+  // Añadir animación si no existe
+  if(!document.getElementById('arrow-style')){
+    const st=document.createElement('style');
+    st.id='arrow-style';
+    st.textContent='@keyframes arrowBounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}';
+    document.head.appendChild(st);
+  }
+}
+
+// Llamado desde la tienda al comprar habilidad divina
+window.unlockDivine = function(n){
+  const d=DIVINE[n]; if(!d) return;
+  if(siclos<d.price){ notif('🪙 Siclos insuficientes','red'); return; }
+  siclos-=d.price;
+  d.unlocked=true;
+  updateDivineCooldowns();
+  notif(`✅ ${d.name} desbloqueada`,'gld');
+  renderShop();
+};
+
+function updateDivineCooldowns(){
+  [1,2].forEach(n=>{
+    const d=DIVINE[n];
+    const btn=document.getElementById('div'+n+'Btn');
+    const cd=document.getElementById('div'+n+'CD');
+    if(!btn||!cd) return;
+    if(!d.unlocked){
+      btn.style.opacity='0.5';
+      btn.style.filter='grayscale(1)';
+      btn.querySelector('span').textContent='🔒';
+      cd.style.setProperty('--cd','0%');
+      return;
+    }
+    btn.style.filter='';
+    const pct = d.timer>0 ? (d.timer/(d.cd*60)*100).toFixed(1)+'%' : '0%';
+    cd.style.setProperty('--cd', pct);
+    btn.style.opacity = d.timer>0 ? '0.5' : '1';
+    btn.querySelector('span').textContent = n===1?'PROT':'CURA';
+  });
+}
+
+// Llamar en cada tick del juego (en la función de update del loop)
+function tickDivine(){
+  let changed=false;
+  [1,2].forEach(n=>{ if(DIVINE[n].timer>0){ DIVINE[n].timer--; changed=true; }});
+  if(changed) updateDivineCooldowns();
+}
 
 function startGame(){
   genMundo();
@@ -3675,15 +3856,17 @@ function updateNefilim(){
       n.x+=fx*n.spd*1.5;n.y+=fy*n.spd*1.5;return;
     }
     if(fogonNear&&distP<200){n.stunT=60;return;}
-    // Decidir objetivo: arca o jugador
+    // Siempre van al jugador; si hay arca cerca y HP alto, la atacan
     const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
-    if(arca&&Math.random()<0.3){n.target='arca';}else{n.target='jugador';}
+    const distArca=arca?Math.hypot(arca.tx*TILE-n.x,arca.ty*TILE-n.y):9999;
+    if(arca&&distArca<120&&distP>180&&Math.random()<0.4){n.target='arca';}
+    else{n.target='jugador';}
     let tx,ty;
     if(n.target==='arca'&&arca){tx=arca.tx*TILE;ty=arca.ty*TILE;}
     else{tx=P.x;ty=P.y;}
     const dx=tx-n.x,dy=ty-n.y,dist=Math.hypot(dx,dy);
-    if(dist>50){
-      n.x+=dx/dist*n.spd;n.y+=dy/dist*n.spd;
+    if(dist>30){
+      n.x+=dx/dist*n.spd*1.2;n.y+=dy/dist*n.spd*1.2;
     } else {
       // Atacar
       n.attackT++;
@@ -4305,6 +4488,29 @@ function renderShop(){
 
   // ── Contenido por categoría ─────────────────────────────────
   grid.innerHTML='';
+
+  if(shopCatActual==='divinas'){
+    grid.style.gridTemplateColumns='1fr';
+    [1,2].forEach(n=>{
+      const d=DIVINE[n];
+      const div=document.createElement('div');
+      div.className='sitem'+(d.unlocked?' owned':'');
+      const icon=n===1?'🛡️':'💚';
+      div.innerHTML=`
+        <div class="sitem-top">
+          <span style="font-size:1.8rem">${icon}</span>
+          <div style="flex:1;padding-left:10px">
+            <div style="font-size:0.85rem;color:var(--text);font-weight:bold">${d.name}</div>
+            <div style="font-size:0.7rem;color:var(--muted)">${n===1?'Escudo +30 HP · Cooldown 30s':'Restaura 50% HP, hambre y sed · Cooldown 45s'}</div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--gold)">${d.unlocked?'✅ Desbloqueada':`${d.price} 🪙`}</div>
+        </div>
+        ${!d.unlocked?`<button class="sbtn" style="width:100%;margin-top:8px" onclick="unlockDivine(${n})">Comprar — ${d.price} 🪙</button>`:'<div style="text-align:center;font-size:0.72rem;color:#80c860;padding:4px 0">Ya disponible en tus botones de acción</div>'}
+      `;
+      grid.appendChild(div);
+    });
+    return;
+  }
 
   if(shopCatActual==='bendiciones'){
     grid.style.gridTemplateColumns='repeat(2,1fr)';
