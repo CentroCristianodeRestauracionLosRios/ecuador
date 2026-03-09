@@ -33,6 +33,48 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 .screen.on{display:flex;}
 
 /* ── MENÚ ── */
+/* ── BARRA DE NAVEGACIÓN SUPERIOR ── */
+.game-topnav{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 14px;
+  background:rgba(5,3,1,0.75);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(201,168,76,0.15);
+  height:44px;
+}
+.game-topnav-btn{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(201,168,76,0.25);
+  border-radius:20px;
+  padding:5px 13px;
+  color:rgba(245,237,216,0.75);
+  font-family:'Cinzel',serif;
+  font-size:0.68rem;
+  letter-spacing:0.06em;
+  cursor:pointer;
+  text-decoration:none;
+  transition:all 0.18s;
+}
+.game-topnav-btn:hover{
+  border-color:rgba(201,168,76,0.6);
+  color:var(--gold2);
+  background:rgba(201,168,76,0.08);
+}
+.game-topnav-title{
+  font-family:'Cinzel',serif;
+  font-size:0.7rem;
+  letter-spacing:0.15em;
+  color:rgba(201,168,76,0.45);
+  text-transform:uppercase;
+}
+/* compensar la barra en las pantallas */
+#s-menu{padding-top:52px;}
+#s-game{padding-top:52px;}
+#s-result{padding-top:52px;}
+#s-ranking{padding-top:52px;}
+
 #s-menu{background:transparent;}
 .menu-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:440px;width:100%;margin:auto;padding:8px 0 12px;}
 .menu-crown{display:flex;align-items:center;justify-content:center;animation:halo 3s ease-in-out infinite;line-height:1;}
@@ -188,6 +230,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 <div id="toast"></div>
 
 <!-- ── MENÚ ── -->
+<nav class="game-topnav">
+  <a href="index.html" class="game-topnav-btn">🏠 Página</a>
+  <span class="game-topnav-title">Trivia Bíblica</span>
+  <button class="game-topnav-btn" onclick="irMenuJuegos()">🎮 Juegos</button>
+</nav>
+
 <div class="screen on" id="s-menu">
   <div class="menu-wrap">
     <div class="menu-crown">
@@ -284,7 +332,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getDatabase,ref,set,get,query,orderByChild,limitToLast}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getDatabase,ref,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
@@ -580,15 +628,16 @@ async function loadRanking(lv){
   const list=document.getElementById('rank-list');
   list.innerHTML='<div class="rank-loading">Cargando...</div>';
   try{
-    const q2=query(ref(db,`trivia_ranking/${lv}`),orderByChild('score'),limitToLast(15));
-    const snap=await get(q2);
+    const snap=await get(ref(db,`trivia_ranking/${lv}`));
+    if(!snap.exists()){list.innerHTML='<div class="rank-empty">No hay puntajes aún.<br>¡Sé el primero!</div>';return;}
     const data=[];
-    snap.forEach(c=>{data.push({uid:c.key,...c.val()});});
+    snap.forEach(c=>{const v=c.val();if(v&&v.score)data.push({uid:c.key,...v});});
     data.sort((a,b)=>b.score-a.score);
-    if(data.length===0){list.innerHTML='<div class="rank-empty">No hay puntajes aún.<br>¡Sé el primero!</div>';return;}
+    const top=data.slice(0,15);
+    if(top.length===0){list.innerHTML='<div class="rank-empty">No hay puntajes aún.<br>¡Sé el primero!</div>';return;}
     list.innerHTML='';
     const medals=['🥇','🥈','🥉'];
-    data.forEach((d,i)=>{
+    top.forEach((d,i)=>{
       const div=document.createElement('div');
       div.className='rank-item'+(i<3?` top${i+1}`:'');
       div.style.animationDelay=i*0.05+'s';
@@ -597,7 +646,10 @@ async function loadRanking(lv){
       div.innerHTML=`${pos}<div class="rank-name">${isMe?'<span style="color:var(--gold)">★ </span>':''}${d.nick||'Anónimo'}</div><div style="text-align:right"><div class="rank-score">${d.score} pts</div><div class="rank-sub">${d.correct||0}/10 · racha ${d.maxStreak||0}</div></div>`;
       list.appendChild(div);
     });
-  }catch(e){list.innerHTML='<div class="rank-empty">Error al cargar. Verifica tu conexión.</div>';}
+  }catch(e){
+    console.error('Ranking error:',e);
+    list.innerHTML=`<div class="rank-empty">Error: ${e.message||'sin conexión'}</div>`;
+  }
 }
 
 // ══════════════════════════════════════
@@ -890,6 +942,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('touchstart', startAudio);
 });
 
+window.irMenuJuegos=function(){
+  stopMenuMusic();stopTick();clearInterval(timerInterval);
+  // Intentar abrir el modal de juegos en index.html
+  if(window.opener&&!window.opener.closed){
+    window.opener.focus();
+    if(typeof window.opener.abrirMenuJuegos==='function')window.opener.abrirMenuJuegos(new Event('click'));
+    window.close();
+  }else{
+    window.location.href='index.html#juegos';
+  }
+};
 </script>
 </body>
 </html>
