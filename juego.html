@@ -70,7 +70,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 /* PANELS */
 .panel{
-  position:fixed;inset:0;z-index:80;
+  position:fixed;inset:0;z-index:200;
   background:linear-gradient(160deg,#06080f 0%,#0d0a1e 60%,#080f1a 100%);
   display:none;flex-direction:column;overflow:hidden;
   animation:pi 0.22s ease;
@@ -259,7 +259,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <button class="hbtn" onclick="toggleP('shop')" title="Tienda">🏪</button>
     <button class="hbtn" onclick="toggleP('equip')" title="Equipamiento">⚔️</button>
     <button class="hbtn" id="soundBtn" onclick="toggleSound()">🔊</button>
-    <button class="hbtn" onclick="doPause()">⏸</button>
+    <button class="hbtn" onclick="togglePause()" id="pauseBtn">⏸</button>
   </div>
 </div>
 
@@ -782,10 +782,8 @@ function genMundo(){
     for(let x=0;x<MW;x++){
       const n=n2d(x*0.08,y*0.08),n2=n2d(x*0.03+99,y*0.03+99);
       let t=T.GRASS;
-      if(n2<-0.52)t=T.WATER;  // menos agua en el mapa
-      else if(n2<-0.18)t=T.SAND;
-      else if(n>0.28&&n<0.45)t=T.STONE;
-      else if(n>0.55)t=T.DIRT;
+      if(n2<-0.62)t=T.WATER;  // agua solo en zonas muy bajas (antes -0.52)
+      // Sin SAND, STONE, DIRT — solo pasto y agua
       // agua profunda (n2 muy bajo) = pescar; agua superficial = beber
       const waterType=(t===T.WATER&&n2<-0.70)?'fish':'drink';
       wMap[y][x]={t,obj:null,wt:(t===T.WATER?waterType:null)};
@@ -998,7 +996,7 @@ function buildSandSprite(variant){
 //  PRE-GENERAR todos los sprites al iniciar
 // ════════════════════════════════════════════════════════════
 function initSprites(){
-  for(let v=0;v<8;v++) buildGrassSprite(v);
+  for(let v=0;v<3;v++) buildGrassSprite(v);  // solo 3 variantes de verde
   for(let v=0;v<4;v++) buildDirtSprite(v);
   for(let v=0;v<4;v++) buildStoneSprite(v);
   for(let v=0;v<4;v++) buildSandSprite(v);
@@ -1253,13 +1251,8 @@ function drawWorld(cx,cy){
       // rnd 100% determinista por posición del tile — nunca cambia
       const rnd=((wtx*17+wty*31)^(wtx*7))&0xff;
       let sprite;
-      switch(tile.t){
-        case T.GRASS: sprite=buildGrassSprite(rnd%8); break;
-        case T.DIRT:  sprite=buildDirtSprite(rnd%4);  break;
-        case T.STONE: sprite=buildStoneSprite(rnd%4); break;
-        case T.SAND:  sprite=buildSandSprite(rnd%4);  break;
-        default:      sprite=buildGrassSprite(rnd%8);
-      }
+      // Solo pasto — sin tierra, piedra ni arena como suelo
+      sprite=buildGrassSprite(rnd%3);  // 3 variantes de verde
       if(sprite) ctx.drawImage(sprite, sx, sy);
     }
   }
@@ -1763,7 +1756,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='e'||e.key==='E')doInteract();
   if(e.key==='i'||e.key==='I')toggleP('inv');
   if(e.key==='c'||e.key==='C')toggleP('craft');
-  if(e.key==='Escape')doPause();
+  if(e.key==='Escape')togglePause();
   if(e.key===' ')attackNefilim();
   // Solo prevenir default para teclas del juego (no bloquear inputs de texto)
   const gameKeys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '];
@@ -1889,7 +1882,7 @@ function findNearestWater(px,py){
 function drawNearIndicator(cx,cy){
   const hint=document.getElementById('ihint');
   const px=Math.floor(P.x/TILE),py=Math.floor(P.y/TILE);
-  nearObj=null;let minD=2.8;
+  nearObj=null;let minD=1.5;  // más cerca para recolectar
   wObjs.forEach(o=>{
     let ddx=o.tx-px, ddy=o.ty-py;
     if(ddx>MW/2)ddx-=MW; if(ddx<-MW/2)ddx+=MW;
@@ -2339,7 +2332,6 @@ window.toggleP=function(w){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   if(!was){
     el.classList.add('open');
-    el.style.display='flex'; // forzar display por si CSS falla
     gPause=true;
     try{
       if(w==='inv')   renderInv();
@@ -2349,7 +2341,6 @@ window.toggleP=function(w){
       if(w==='equip') renderEquip();
     }catch(e){ console.error('Error al renderizar panel',w,e); }
   } else {
-    el.style.display='';
     gPause=false;
   }
 };
@@ -2363,6 +2354,20 @@ window.showS=function(id){
   if(id){const el=document.getElementById(id);if(el)el.classList.add('active');}
 };
 window.doPause=function(){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));gPause=true;showS('s-pause');};
+window.togglePause=function(){
+  if(gPause){
+    // Reanudar
+    gPause=false;
+    document.getElementById('s-pause').classList.remove('active');
+    const pb=document.getElementById('pauseBtn'); if(pb) pb.textContent='⏸';
+  } else {
+    // Pausar
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+    gPause=true;
+    showS('s-pause');
+    const pb=document.getElementById('pauseBtn'); if(pb) pb.textContent='▶';
+  }
+};
 window.doResume=function(){gPause=false;document.getElementById('s-pause').classList.remove('active');};
 
 // ── doJugar: espera a que Firebase confirme la sesión ──
