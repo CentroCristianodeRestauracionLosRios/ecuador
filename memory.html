@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>Memory Bíblico — CCRLR</title>
+<link href="https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#030d08;--bg2:#061408;--bg3:#0a1f10;
+  --green:#1a5c2a;--green2:#2d8a45;--green3:#52c46a;
+  --amber:#c9921a;--amber2:#f0b830;--amber3:#ffe080;
+  --card-back:#0d2b12;--card-border:#2d5a1a;
+  --matched:#1a6b35;--matched2:#52c46a;
+  --wrong:#6b1a1a;--wrong2:#c43a3a;
+  --parch:#e8f0e0;--parch2:#c8dab8;
+  --r:10px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Philosopher',Georgia,serif;color:var(--parch);}
+
+/* ── FONDO VITRAL ── */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.bg-base{position:absolute;inset:0;
+  background:radial-gradient(ellipse 110% 80% at 50% 10%,#0d2b10 0%,#040e06 55%,#020504 100%);}
+/* Patrón vitral */
+.bg-stained{position:absolute;inset:0;opacity:0.07;
+  background-image:
+    repeating-linear-gradient(60deg,transparent,transparent 30px,rgba(82,196,106,0.4) 30px,rgba(82,196,106,0.4) 31px),
+    repeating-linear-gradient(-60deg,transparent,transparent 30px,rgba(201,146,26,0.3) 30px,rgba(201,146,26,0.3) 31px),
+    repeating-linear-gradient(0deg,transparent,transparent 52px,rgba(82,196,106,0.2) 52px,rgba(82,196,106,0.2) 53px);}
+.bg-glow{position:absolute;border-radius:50%;filter:blur(100px);animation:drift 16s ease-in-out infinite;}
+.g1{width:500px;height:500px;top:-100px;left:-50px;background:rgba(26,92,42,0.14);animation-delay:0s;}
+.g2{width:400px;height:400px;bottom:-60px;right:-60px;background:rgba(201,146,26,0.08);animation-delay:-7s;}
+.g3{width:300px;height:300px;top:40%;left:50%;background:rgba(26,92,42,0.06);animation-delay:-12s;}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(15px,-10px) scale(1.05);}}
+
+/* ── PANTALLAS ── */
+.screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;
+  align-items:center;justify-content:flex-start;padding:10px 12px 12px;overflow-y:auto;}
+.screen.on{display:flex;}
+
+/* ── NAV ── */
+.game-topnav{position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 14px;background:rgba(2,8,3,0.85);
+  backdrop-filter:blur(10px);border-bottom:1px solid rgba(82,196,106,0.15);height:44px;}
+.topnav-btn{display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(82,196,106,0.25);
+  border-radius:20px;padding:5px 12px;color:rgba(200,218,184,0.7);
+  font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.06em;
+  cursor:pointer;text-decoration:none;transition:all 0.18s;}
+.topnav-btn:hover{border-color:var(--green3);color:var(--parch);}
+.topnav-title{font-family:'Cinzel',serif;font-size:0.65rem;
+  letter-spacing:0.18em;color:rgba(82,196,106,0.45);text-transform:uppercase;}
+
+/* ── MENÚ ── */
+#s-menu{padding-top:54px;}
+.menu-wrap{display:flex;flex-direction:column;align-items:center;
+  gap:10px;max-width:420px;width:100%;margin:auto;padding:6px 0 12px;}
+.menu-img{animation:halo-green 3s ease-in-out infinite;}
+@keyframes halo-green{
+  0%,100%{filter:drop-shadow(0 0 10px rgba(82,196,106,0.5)) drop-shadow(0 0 30px rgba(82,196,106,0.2));}
+  50%{filter:drop-shadow(0 0 22px rgba(82,196,106,0.8)) drop-shadow(0 0 60px rgba(82,196,106,0.35));}}
+.menu-badge{font-family:'Cinzel',serif;font-size:0.52rem;letter-spacing:0.45em;
+  color:rgba(82,196,106,0.45);text-transform:uppercase;}
+.menu-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1.3rem,5vw,1.9rem);
+  font-weight:700;color:var(--green3);text-align:center;line-height:1.15;
+  text-shadow:0 0 40px rgba(82,196,106,0.5),0 3px 12px rgba(0,0,0,0.8);}
+.menu-sub{font-style:italic;font-size:0.82rem;color:rgba(232,240,224,0.45);text-align:center;}
+.menu-verse{background:rgba(82,196,106,0.05);border:1px solid rgba(82,196,106,0.18);
+  border-radius:var(--r);padding:8px 14px;font-style:italic;font-size:0.76rem;
+  color:rgba(232,240,224,0.6);text-align:center;line-height:1.5;max-width:360px;}
+
+/* Selector de nivel y tamaño */
+.config-section{width:100%;display:flex;flex-direction:column;gap:8px;}
+.config-label{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;
+  color:rgba(82,196,106,0.5);text-transform:uppercase;padding:0 2px;}
+.config-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.config-card{background:rgba(255,255,255,0.02);border:1.5px solid rgba(82,196,106,0.15);
+  border-radius:9px;padding:10px 6px;text-align:center;cursor:pointer;
+  transition:all 0.2s;position:relative;overflow:hidden;}
+.config-card:hover,.config-card.sel{border-color:var(--green3);
+  background:rgba(82,196,106,0.07);transform:translateY(-2px);}
+.config-card.sel{border-color:var(--amber2);background:rgba(201,146,26,0.08);}
+.config-card::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(82,196,106,0.07),transparent);
+  opacity:0;transition:opacity 0.2s;}
+.config-card:hover::before{opacity:1;}
+.cfg-icon{font-size:1.4rem;margin-bottom:4px;}
+.cfg-name{font-family:'Cinzel',serif;font-size:0.68rem;font-weight:700;color:var(--parch);}
+.cfg-desc{font-size:0.58rem;color:rgba(232,240,224,0.38);margin-top:2px;}
+.btn-jugar{background:linear-gradient(135deg,var(--green),var(--green2));
+  color:#e8f8e8;border:none;border-radius:var(--r);padding:13px;
+  font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;
+  letter-spacing:0.12em;cursor:pointer;transition:all 0.2s;width:100%;}
+.btn-jugar:hover{background:linear-gradient(135deg,var(--green2),var(--green3));
+  transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.4);}
+.btn-ranking-m{background:transparent;border:1.5px solid rgba(82,196,106,0.25);
+  border-radius:var(--r);padding:8px;color:var(--green3);
+  font-family:'Cinzel',serif;font-size:0.72rem;cursor:pointer;
+  transition:all 0.2s;width:100%;}
+.btn-ranking-m:hover{border-color:var(--green3);background:rgba(82,196,106,0.06);}
+
+/* ── JUEGO ── */
+#s-game{padding-top:54px;}
+.game-wrap{width:100%;max-width:560px;display:flex;flex-direction:column;gap:8px;margin:auto;}
+.game-header{display:flex;align-items:center;justify-content:space-between;}
+.game-nivel-badge{font-family:'Cinzel',serif;font-size:0.66rem;letter-spacing:0.1em;
+  text-transform:uppercase;}
+.game-stats{display:flex;gap:7px;}
+.stat-pill{background:rgba(0,0,0,0.45);border:1px solid rgba(82,196,106,0.2);
+  border-radius:20px;padding:3px 10px;font-family:'Cinzel',serif;
+  font-size:0.66rem;color:var(--green3);}
+.timer-pill{border-color:rgba(201,146,26,0.3);color:var(--amber2);}
+.timer-pill.urgent{border-color:rgba(196,58,58,0.5);color:#e05050;
+  animation:urg 0.5s ease-in-out infinite alternate;}
+@keyframes urg{to{background:rgba(196,58,58,0.1);}}
+
+/* ── TABLERO ── */
+.board{display:grid;gap:6px;width:100%;place-items:center;}
+
+/* ── CARTA ── */
+.card-wrap{perspective:600px;cursor:pointer;}
+.card{width:100%;height:100%;position:relative;transform-style:preserve-3d;
+  transition:transform 0.45s cubic-bezier(0.4,0,0.2,1);}
+.card.flipped{transform:rotateY(180deg);}
+.card.matched{transform:rotateY(180deg);}
+.card-face{position:absolute;inset:0;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+
+/* Reverso — patrón vitral */
+.card-back{
+  background:linear-gradient(145deg,#0d2b12,#061408);
+  border:1.5px solid rgba(45,90,26,0.6);
+  box-shadow:0 4px 12px rgba(0,0,0,0.5),inset 0 1px 0 rgba(82,196,106,0.1);}
+.card-back-pattern{width:100%;height:100%;border-radius:8px;overflow:hidden;
+  background-image:
+    repeating-linear-gradient(60deg,transparent,transparent 8px,rgba(82,196,106,0.07) 8px,rgba(82,196,106,0.07) 9px),
+    repeating-linear-gradient(-60deg,transparent,transparent 8px,rgba(201,146,26,0.05) 8px,rgba(201,146,26,0.05) 9px);
+  display:flex;align-items:center;justify-content:center;}
+.card-back-cross{font-size:1.4rem;opacity:0.25;filter:drop-shadow(0 0 4px rgba(82,196,106,0.4));}
+
+/* Frente — imagen o nombre */
+.card-front{transform:rotateY(180deg);
+  background:linear-gradient(145deg,#0f2814,#0a1f10);
+  border:1.5px solid rgba(82,196,106,0.3);
+  box-shadow:0 4px 16px rgba(0,0,0,0.5),inset 0 1px 0 rgba(82,196,106,0.15);
+  flex-direction:column;gap:4px;padding:6px;text-align:center;}
+.card-front.img-card img{width:80%;height:70%;object-fit:contain;border-radius:6px;}
+.card-front.img-card .card-emoji{font-size:clamp(1.8rem,5vw,3rem);}
+.card-front.name-card{background:linear-gradient(145deg,#0d2b14,#061a0a);}
+.card-front.name-card .card-name{font-family:'Cinzel',serif;
+  font-size:clamp(0.6rem,2.2vw,0.9rem);font-weight:700;
+  color:var(--amber3);line-height:1.3;text-shadow:0 0 8px rgba(201,146,26,0.4);}
+.card-front.name-card .card-ref{font-size:clamp(0.5rem,1.6vw,0.72rem);
+  color:rgba(232,240,224,0.4);font-style:italic;margin-top:2px;}
+
+/* Estados */
+.card-wrap.selecting .card-front{
+  border-color:var(--amber2);
+  box-shadow:0 0 16px rgba(201,146,26,0.4),0 4px 16px rgba(0,0,0,0.5);}
+.card-wrap.matched-anim .card-front{
+  border-color:var(--green3);
+  box-shadow:0 0 20px rgba(82,196,106,0.5),0 4px 16px rgba(0,0,0,0.5);
+  animation:match-pulse 0.5s ease;}
+@keyframes match-pulse{0%{transform:rotateY(180deg) scale(1);}
+  40%{transform:rotateY(180deg) scale(1.06);}100%{transform:rotateY(180deg) scale(1);}}
+.card-wrap.wrong-anim .card-front{
+  border-color:var(--wrong2);
+  box-shadow:0 0 16px rgba(196,58,58,0.4);
+  animation:wrong-shake 0.4s ease;}
+@keyframes wrong-shake{0%,100%{transform:rotateY(180deg) translateX(0);}
+  25%{transform:rotateY(180deg) translateX(-5px);}
+  75%{transform:rotateY(180deg) translateX(5px);}}
+
+/* ── RESULTADO ── */
+#s-result{padding-top:54px;}
+.result-wrap{width:100%;max-width:400px;display:flex;flex-direction:column;
+  align-items:center;gap:14px;text-align:center;margin:auto;}
+.result-medal{font-size:4.5rem;animation:medal-in 0.6s cubic-bezier(0.175,0.885,0.32,1.275) both;}
+@keyframes medal-in{from{transform:scale(0) rotate(-20deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+.result-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1.2rem,4.5vw,1.8rem);
+  font-weight:700;color:var(--green3);text-shadow:0 0 30px rgba(82,196,106,0.5);}
+.result-score-box{background:rgba(82,196,106,0.06);border:2px solid rgba(82,196,106,0.28);
+  border-radius:12px;padding:14px 28px;}
+.result-pts{font-family:'Cinzel',serif;font-size:2.4rem;font-weight:700;color:var(--green3);}
+.result-pts-label{font-size:0.7rem;color:rgba(82,196,106,0.45);letter-spacing:0.2em;
+  text-transform:uppercase;font-family:'Cinzel',serif;}
+.result-stats{display:flex;gap:16px;justify-content:center;}
+.rst{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.rst-num{font-family:'Cinzel',serif;font-size:1.3rem;font-weight:700;color:var(--parch);}
+.rst-label{font-size:0.62rem;color:rgba(232,240,224,0.38);letter-spacing:0.1em;}
+.result-verse{font-style:italic;font-size:0.85rem;color:rgba(232,240,224,0.5);
+  line-height:1.7;max-width:300px;}
+.result-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.rbtn{border-radius:var(--r);padding:10px 18px;font-family:'Cinzel',serif;
+  font-size:0.72rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;
+  transition:all 0.2s;border:1.5px solid rgba(82,196,106,0.3);
+  background:transparent;color:var(--green3);}
+.rbtn:hover{border-color:var(--green3);background:rgba(82,196,106,0.07);}
+.rbtn.pri{background:linear-gradient(135deg,var(--green),var(--green2));
+  color:#e8f8e8;border-color:var(--green3);}
+.rbtn.pri:hover{background:linear-gradient(135deg,var(--green2),var(--green3));}
+
+/* ── RANKING ── */
+#s-ranking{padding-top:54px;}
+.rank-wrap{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;margin:auto;}
+.rank-header{display:flex;align-items:center;justify-content:space-between;}
+.rank-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--green3);}
+.rank-back{background:transparent;border:1px solid rgba(82,196,106,0.28);
+  border-radius:var(--r);padding:5px 12px;color:var(--green3);
+  font-family:'Cinzel',serif;font-size:0.66rem;cursor:pointer;}
+.rank-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px;}
+.rtab{flex:1;padding:6px 4px;text-align:center;font-family:'Cinzel',serif;font-size:0.65rem;
+  border-radius:5px;cursor:pointer;color:rgba(232,240,224,0.38);transition:all 0.18s;}
+.rtab.on{background:rgba(82,196,106,0.13);color:var(--green3);
+  border:1px solid rgba(82,196,106,0.3);}
+.rank-list{display:flex;flex-direction:column;gap:5px;max-height:52vh;overflow-y:auto;}
+.rank-item{display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;padding:9px 12px;animation:fadeUp 0.3s ease both;}
+.rank-item.top1{border-color:rgba(201,146,26,0.4);background:rgba(201,146,26,0.05);}
+.rank-item.top2{border-color:rgba(192,192,192,0.28);}
+.rank-item.top3{border-color:rgba(180,120,60,0.28);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.rank-pos{font-family:'Cinzel',serif;font-size:0.78rem;font-weight:700;
+  width:22px;text-align:center;color:rgba(232,240,224,0.3);}
+.rank-pos.p1{color:#ffd700;font-size:1rem;}.rank-pos.p2{color:#c0c0c0;}.rank-pos.p3{color:#cd7f32;}
+.rank-name{flex:1;font-size:0.86rem;color:var(--parch);}
+.rank-score{font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;color:var(--green3);}
+.rank-sub{font-size:0.62rem;color:rgba(232,240,224,0.28);}
+.rank-empty{text-align:center;color:rgba(232,240,224,0.28);font-style:italic;padding:18px;}
+.rank-loading{text-align:center;color:rgba(82,196,106,0.45);font-family:'Cinzel',serif;
+  font-size:0.76rem;padding:16px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+
+/* ── MINI MODAL JUEGOS ── */
+#mini-juegos{position:fixed;inset:0;z-index:10000;
+  background:rgba(0,0,0,0.82);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;padding:20px;}
+.mj-panel{background:linear-gradient(160deg,#061408,#0a1f10);
+  border:1.5px solid rgba(82,196,106,0.3);border-radius:14px;
+  width:min(380px,100%);padding:18px;position:relative;
+  animation:panel-up 0.25s ease;}
+@keyframes panel-up{from{transform:scale(0.93) translateY(14px);opacity:0;}
+  to{transform:scale(1) translateY(0);opacity:1;}}
+.mj-close{position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);border-radius:50%;width:28px;height:28px;
+  color:rgba(255,255,255,0.4);font-size:0.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.mj-item{display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.07);
+  border-radius:9px;padding:10px 12px;text-decoration:none;color:inherit;
+  transition:all 0.18s;margin-bottom:6px;}
+.mj-item:hover:not(.mj-dis):not(.mj-cur){border-color:rgba(82,196,106,0.4);}
+.mj-item.mj-cur{border-color:rgba(82,196,106,0.35);background:rgba(82,196,106,0.05);opacity:0.6;cursor:default;}
+.mj-item.mj-dis{opacity:0.35;cursor:default;}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:200;
+  background:rgba(3,10,4,0.95);border:1.5px solid var(--green3);border-radius:8px;
+  padding:8px 18px;font-family:'Cinzel',serif;font-size:0.74rem;color:var(--green3);
+  white-space:nowrap;transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+  box-shadow:0 6px 24px rgba(0,0,0,0.6);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── FLOAT PTS ── */
+.float-pts{position:fixed;font-family:'Cinzel',serif;font-size:1rem;font-weight:700;
+  pointer-events:none;z-index:100;animation:float-up 1s ease forwards;}
+@keyframes float-up{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-48px);}}
+
+#mute-btn{position:fixed;bottom:14px;right:14px;z-index:999;width:36px;height:36px;
+  border-radius:50%;background:rgba(0,0,0,0.5);border:1.5px solid rgba(82,196,106,0.25);
+  display:flex;align-items:center;justify-content:center;font-size:0.95rem;cursor:pointer;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:rgba(82,196,106,0.2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div id="bg">
+  <div class="bg-base"></div>
+  <div class="bg-stained"></div>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+</div>
+
+<nav class="game-topnav">
+  <a href="index.html" class="topnav-btn">🏠 Página</a>
+  <span class="topnav-title">Memory Bíblico</span>
+  <button class="topnav-btn" onclick="document.getElementById('mini-juegos').style.display='flex'">🎮 Juegos</button>
+</nav>
+
+<div id="toast"></div>
+
+<!-- ══ MENÚ ══ -->
+<div class="screen on" id="s-menu">
+  <div class="menu-wrap">
+    <div class="menu-img">
+      <img src="memory1.png" alt="Memory Bíblico"
+        style="width:min(110px,34vw);height:auto;border-radius:10px;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.7));"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none;font-size:3rem">🃏</span>
+    </div>
+    <div class="menu-badge">Centro Cristiano de Restauración Los Ríos</div>
+    <div class="menu-title">Memory Bíblico</div>
+    <div class="menu-sub">Encuentra los pares — imagen y personaje</div>
+    <div class="menu-verse">"He guardado tu palabra en mi corazón." — Salmos 119:11</div>
+
+    <div class="config-section">
+      <div class="config-label">Nivel de dificultad</div>
+      <div class="config-grid">
+        <div class="config-card sel" id="cfg-facil" onclick="selNivel('facil',this)">
+          <div class="cfg-icon">🕊️</div>
+          <div class="cfg-name">Fácil</div>
+          <div class="cfg-desc">8 pares · 90s</div>
+        </div>
+        <div class="config-card" id="cfg-medio" onclick="selNivel('medio',this)">
+          <div class="cfg-icon">📖</div>
+          <div class="cfg-name">Medio</div>
+          <div class="cfg-desc">10 pares · 75s</div>
+        </div>
+        <div class="config-card" id="cfg-dificil" onclick="selNivel('dificil',this)">
+          <div class="cfg-icon">⚔️</div>
+          <div class="cfg-name">Difícil</div>
+          <div class="cfg-desc">15 pares · 60s</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-jugar" onclick="iniciarJuego()">✦ JUGAR ✦</button>
+    <button class="btn-ranking-m" onclick="showRanking()">🏆 &nbsp;Ver Tabla de Líderes</button>
+    <div id="user-status" style="font-size:0.68rem;color:rgba(82,196,106,0.38);text-align:center;font-family:'Cinzel',serif;"></div>
+  </div>
+</div>
+
+<!-- ══ JUEGO ══ -->
+<div class="screen" id="s-game">
+  <div class="game-wrap">
+    <div class="game-header">
+      <div id="g-nivel" class="game-nivel-badge">🕊️ Fácil</div>
+      <div class="game-stats">
+        <div class="stat-pill" id="g-pairs">0/8</div>
+        <div class="stat-pill" id="g-moves">0 mov</div>
+        <div class="stat-pill timer-pill" id="g-timer">90s</div>
+      </div>
+    </div>
+    <div class="board" id="board"></div>
+    <button style="background:transparent;border:none;color:rgba(232,240,224,0.2);
+      font-size:0.66rem;cursor:pointer;font-family:'Cinzel',serif;margin-top:4px;"
+      onclick="abandonar()">Abandonar</button>
+  </div>
+</div>
+
+<!-- ══ RESULTADO ══ -->
+<div class="screen" id="s-result">
+  <div class="result-wrap">
+    <div class="result-medal" id="r-medal">🥇</div>
+    <div class="result-title" id="r-title">¡Excelente!</div>
+    <div class="result-score-box">
+      <div class="result-pts" id="r-pts">0</div>
+      <div class="result-pts-label">puntos</div>
+    </div>
+    <div class="result-stats">
+      <div class="rst"><div class="rst-num" id="r-pairs">0/0</div><div class="rst-label">Pares</div></div>
+      <div class="rst"><div class="rst-num" id="r-moves">0</div><div class="rst-label">Movimientos</div></div>
+      <div class="rst"><div class="rst-num" id="r-time">0s</div><div class="rst-label">Tiempo</div></div>
+    </div>
+    <div class="result-verse" id="r-verse"></div>
+    <div class="result-btns">
+      <button class="rbtn pri" onclick="iniciarJuego()">🔄 Jugar de nuevo</button>
+      <button class="rbtn" onclick="showS('s-menu')">🏠 Menú</button>
+      <button class="rbtn" onclick="showRanking()">🏆 Ranking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RANKING ══ -->
+<div class="screen" id="s-ranking">
+  <div class="rank-wrap">
+    <div class="rank-header">
+      <div class="rank-title">🏆 Líderes</div>
+      <button class="rank-back" onclick="showS('s-menu')">← Volver</button>
+    </div>
+    <div class="rank-tabs">
+      <div class="rtab on" onclick="setRankTab('facil',this)">🕊️ Fácil</div>
+      <div class="rtab" onclick="setRankTab('medio',this)">📖 Medio</div>
+      <div class="rtab" onclick="setRankTab('dificil',this)">⚔️ Difícil</div>
+    </div>
+    <div class="rank-list" id="rank-list"><div class="rank-loading">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ══ MINI MODAL JUEGOS ══ -->
+<div id="mini-juegos" onclick="if(event.target===this)this.style.display='none'"
+  style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.82);
+    backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
+  <div class="mj-panel">
+    <button class="mj-close" onclick="document.getElementById('mini-juegos').style.display='none'">✕</button>
+    <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:#f0d080;margin-bottom:12px;">🎮 Juegos Bíblicos</div>
+    <a href="trivia.html" class="mj-item"><span style="font-size:1.3rem">🎯</span><div><div style="font-family:'Cinzel',serif;font-size:0.76rem;color:#f0e8d0;font-weight:700;">Trivia Bíblica</div><div style="font-size:0.63rem;color:rgba(255,255,255,0.33)">3 niveles · Ranking</div></div></a>
+    <a href="sopa.html" class="mj-item"><span style="font-size:1.3rem">🧩</span><div><div style="font-family:'Cinzel',serif;font-size:0.76rem;color:#f0e8d0;font-weight:700;">Sopa de Letras</div><div style="font-size:0.63rem;color:rgba(255,255,255,0.33)">5 temas · Ranking</div></div></a>
+    <div class="mj-item mj-cur"><span style="font-size:1.3rem">🃏</span><div><div style="font-family:'Cinzel',serif;font-size:0.76rem;color:#f0e8d0;font-weight:700;">Memory Bíblico <span style="font-size:0.58rem;color:rgba(82,196,106,0.6)">(jugando)</span></div></div></div>
+    <a href="juego.html" class="mj-item"><span style="font-size:1.3rem">⛵</span><div><div style="font-family:'Cinzel',serif;font-size:0.76rem;color:#f0e8d0;font-weight:700;">El Arca de Noé</div><div style="font-size:0.63rem;color:rgba(255,255,255,0.33)">RPG Survival</div></div></a>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getDatabase,ref,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getAuth,onAuthStateChanged,signInAnonymously}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
+const db=getDatabase(app),auth=getAuth(app);
+let cu=null,userNick='Jugador';
+
+onAuthStateChanged(auth,async u=>{
+  if(u){
+    cu=u;
+    if(!u.isAnonymous){
+      try{const s=await get(ref(db,`usuarios/${u.uid}/nickname`));
+        userNick=s.val()||(u.email?u.email.split('@')[0]:'Jugador');}
+      catch(e){userNick=u.email?u.email.split('@')[0]:'Jugador';}
+      document.getElementById('user-status').textContent=`✝ Jugando como ${userNick}`;
+    }
+  }else{try{await signInAnonymously(auth);}catch(e){}}
+});
+
+// ═══════════════════════════════════════
+//  PERSONAJES BÍBLICOS — 15 pares
+// ═══════════════════════════════════════
+const PERSONAJES=[
+  {id:'moises',   emoji:'🪨', nombre:'Moisés',    ref:'Éxodo 3:10',   dato:'Liberó a Israel de Egipto'},
+  {id:'david',    emoji:'🎵', nombre:'David',     ref:'1 Samuel 17',  dato:'Rey y salmista de Israel'},
+  {id:'jesus',    emoji:'✝️', nombre:'Jesús',     ref:'Juan 3:16',    dato:'El Hijo de Dios'},
+  {id:'maria',    emoji:'🌹', nombre:'María',     ref:'Lucas 1:28',   dato:'Madre de Jesús'},
+  {id:'pablo',    emoji:'📜', nombre:'Pablo',     ref:'Hechos 9:3',   dato:'Apóstol de los gentiles'},
+  {id:'pedro',    emoji:'🐟', nombre:'Pedro',     ref:'Mateo 16:18',  dato:'La roca de la iglesia'},
+  {id:'abraham',  emoji:'⭐', nombre:'Abraham',   ref:'Génesis 12:1', dato:'Padre de la fe'},
+  {id:'noé',      emoji:'⛵', nombre:'Noé',       ref:'Génesis 6:14', dato:'Construyó el arca'},
+  {id:'elias',    emoji:'🔥', nombre:'Elías',     ref:'1 Reyes 18',   dato:'Profeta del fuego'},
+  {id:'samuel',   emoji:'🕯️', nombre:'Samuel',    ref:'1 Samuel 3',   dato:'Ungió al primer rey'},
+  {id:'ester',    emoji:'👑', nombre:'Ester',     ref:'Ester 4:14',   dato:'Reina que salvó a su pueblo'},
+  {id:'jose',     emoji:'🌈', nombre:'José',      ref:'Génesis 37',   dato:'Soñador de sueños'},
+  {id:'daniel',   emoji:'🦁', nombre:'Daniel',    ref:'Daniel 6:22',  dato:'Sobrevivió el foso de leones'},
+  {id:'juan',     emoji:'📖', nombre:'Juan',      ref:'Apocalipsis 1',dato:'Escribió el Apocalipsis'},
+  {id:'salomon',  emoji:'💎', nombre:'Salomón',   ref:'1 Reyes 3:12', dato:'El rey más sabio de Israel'},
+];
+
+const NIVEL_CONFIG={
+  facil: {pares:8, tiempo:90, cols:4, label:'🕊️ Fácil'},
+  medio: {pares:10,tiempo:75, cols:4, label:'📖 Medio'},
+  dificil:{pares:15,tiempo:60,cols:5, label:'⚔️ Difícil'},
+};
+const VERSOS=['He guardado tu palabra en mi corazón. — Salmos 119:11',
+  'La fe es la certeza de lo que se espera. — Hebreos 11:1',
+  'Dios es amor. — 1 Juan 4:8','Todo lo puedo en Cristo. — Filipenses 4:13'];
+
+// ═══════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════
+let nivelActual='facil',cards=[],flipped=[],matched=0,moves=0;
+let timerInterval=null,timeLeft=90,gameActive=false,canFlip=true;
+let mutedSFX=false;
+
+// ═══════════════════════════════════════
+//  SELECTOR NIVEL/TAMAÑO
+// ═══════════════════════════════════════
+window.selNivel=(id,el)=>{
+  nivelActual=id;
+  document.querySelectorAll('.config-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+};
+
+window.showS=id=>{
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+};
+
+// ═══════════════════════════════════════
+//  INICIAR JUEGO
+// ═══════════════════════════════════════
+window.iniciarJuego=()=>{
+  const cfg=NIVEL_CONFIG[nivelActual];
+  // Seleccionar personajes aleatorios
+  const pool=[...PERSONAJES];
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const selected=pool.slice(0,cfg.pares);
+  // Crear pares: una carta imagen + una carta nombre
+  cards=[];
+  selected.forEach(p=>{
+    cards.push({...p,type:'img', cardId:'img_'+p.id, pairId:p.id, flipped:false, matched:false});
+    cards.push({...p,type:'name',cardId:'nam_'+p.id,pairId:p.id, flipped:false, matched:false});
+  });
+  // Barajar
+  for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}
+  flipped=[];matched=0;moves=0;canFlip=true;gameActive=true;timeLeft=cfg.tiempo;
+  // UI
+  document.getElementById('g-nivel').textContent=cfg.label;
+  document.getElementById('g-pairs').textContent=`0/${cfg.pares}`;
+  document.getElementById('g-moves').textContent='0 mov';
+  renderBoard(cfg.cols);
+  showS('s-game');
+  startTimer();
+  sfxStart();
+};
+
+// ═══════════════════════════════════════
+//  RENDER TABLERO
+// ═══════════════════════════════════════
+function cardSize(cols){
+  // Calcula tamaño de carta según cols y viewport
+  const vw=Math.min(window.innerWidth,560);
+  const gap=(cols-1)*6+24;
+  const w=Math.floor((vw-gap)/cols);
+  const h=Math.floor(w*1.35);
+  return{w,h};
+}
+
+function renderBoard(cols){
+  const board=document.getElementById('board');
+  board.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  board.innerHTML='';
+  const{w,h}=cardSize(cols);
+  cards.forEach((c,idx)=>{
+    const wrap=document.createElement('div');
+    wrap.className='card-wrap';
+    wrap.id='cw_'+c.cardId;
+    wrap.style.cssText=`width:${w}px;height:${h}px;`;
+    wrap.innerHTML=`
+      <div class="card" id="cd_${c.cardId}">
+        <div class="card-face card-back">
+          <div class="card-back-pattern">
+            <div class="card-back-cross">✞</div>
+          </div>
+        </div>
+        <div class="card-face card-front ${c.type==='img'?'img-card':'name-card'}">
+          ${c.type==='img'
+            ? `<div class="card-emoji">${c.emoji}</div><div style="font-size:clamp(0.45rem,1.4vw,0.6rem);color:rgba(232,240,224,0.35);font-family:'Cinzel',serif">${c.ref}</div>`
+            : `<div class="card-name">${c.nombre}</div><div class="card-ref">${c.dato}</div>`
+          }
+        </div>
+      </div>`;
+    wrap.onclick=()=>flipCard(idx);
+    board.appendChild(wrap);
+  });
+}
+
+// ═══════════════════════════════════════
+//  LÓGICA DE JUEGO
+// ═══════════════════════════════════════
+function flipCard(idx){
+  if(!gameActive||!canFlip)return;
+  const c=cards[idx];
+  if(c.flipped||c.matched)return;
+  if(flipped.length>=2)return;
+  c.flipped=true;
+  const cd=document.getElementById('cd_'+c.cardId);
+  const cw=document.getElementById('cw_'+c.cardId);
+  cd.classList.add('flipped');
+  cw.classList.add('selecting');
+  flipped.push(idx);
+  sfxFlip();
+  if(flipped.length===2)checkMatch();
+}
+
+function checkMatch(){
+  canFlip=false;moves++;
+  document.getElementById('g-moves').textContent=moves+' mov';
+  const [i1,i2]=flipped;
+  const c1=cards[i1],c2=cards[i2];
+  if(c1.pairId===c2.pairId&&c1.type!==c2.type){
+    // ¡Par encontrado!
+    setTimeout(()=>{
+      c1.matched=c2.matched=true;
+      matched++;
+      [c1,c2].forEach(c=>{
+        document.getElementById('cw_'+c.cardId).classList.remove('selecting');
+        document.getElementById('cw_'+c.cardId).classList.add('matched-anim');
+      });
+      const cfg=NIVEL_CONFIG[nivelActual];
+      document.getElementById('g-pairs').textContent=`${matched}/${cfg.pares}`;
+      sfxMatch(matched);
+      const pts=Math.max(50,200-moves*5+timeLeft*3);
+      const el=document.getElementById('cw_'+c1.cardId);
+      const rect=el.getBoundingClientRect();
+      floatPts(rect,'+'+pts,'#52c46a');
+      flipped=[];canFlip=true;
+      if(matched===cfg.pares)finJuego(true);
+    },400);
+  }else{
+    // No coinciden
+    setTimeout(()=>{
+      [c1,c2].forEach(c=>{
+        c.flipped=false;
+        const cd=document.getElementById('cd_'+c.cardId);
+        const cw=document.getElementById('cw_'+c.cardId);
+        cd.classList.remove('flipped');
+        cw.classList.remove('selecting');
+        cw.classList.add('wrong-anim');
+        setTimeout(()=>cw.classList.remove('wrong-anim'),450);
+      });
+      sfxWrong();
+      flipped=[];canFlip=true;
+    },900);
+  }
+}
+
+// ═══════════════════════════════════════
+//  TIMER
+// ═══════════════════════════════════════
+function startTimer(){
+  clearInterval(timerInterval);
+  const pill=document.getElementById('g-timer');
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    pill.textContent=timeLeft+'s';
+    pill.className='stat-pill timer-pill'+(timeLeft<=15?' urgent':'');
+    if(timeLeft<=10&&timeLeft>0&&!mutedSFX)sfxTick();
+    if(timeLeft<=0){clearInterval(timerInterval);finJuego(false);}
+  },1000);
+}
+
+window.abandonar=()=>{clearInterval(timerInterval);gameActive=false;showS('s-menu');};
+
+// ═══════════════════════════════════════
+//  FIN DE JUEGO
+// ═══════════════════════════════════════
+async function finJuego(completado){
+  clearInterval(timerInterval);gameActive=false;
+  const cfg=NIVEL_CONFIG[nivelActual];
+  const pct=matched/cfg.pares;
+  const tiempoUsado=cfg.tiempo-timeLeft;
+  const pts=completado?Math.max(100,matched*200-moves*8+timeLeft*5):Math.max(0,matched*100-moves*4);
+  let medal='🥉',title='¡Sigue practicando!';
+  if(completado&&timeLeft>30){medal='🏆';title='¡Maestro de la Memoria!';}
+  else if(completado){medal='🥇';title='¡Todos los pares!';}
+  else if(pct>=0.6){medal='🥈';title='¡Muy bien!';}
+  document.getElementById('r-medal').textContent=medal;
+  document.getElementById('r-title').textContent=title;
+  document.getElementById('r-pts').textContent=pts;
+  document.getElementById('r-pairs').textContent=`${matched}/${cfg.pares}`;
+  document.getElementById('r-moves').textContent=moves;
+  const m=Math.floor(tiempoUsado/60),s=tiempoUsado%60;
+  document.getElementById('r-time').textContent=m>0?`${m}m${s}s`:`${s}s`;
+  document.getElementById('r-verse').textContent=VERSOS[Math.floor(Math.random()*VERSOS.length)];
+  showS('s-result');
+  if(pct>=0.6)setTimeout(sfxVictoria,200);else setTimeout(sfxDerrota,150);
+  // Guardar
+  const guardar=async()=>{
+    if(!cu){await new Promise(r=>setTimeout(r,2000));}
+    if(!cu)return;
+    try{
+      const rk=ref(db,`memory_ranking/${nivelActual}/${cu.uid}`);
+      const snap=await get(rk);
+      const prev=snap.val()?.pts||0;
+      const nick=cu.isAnonymous?('J_'+cu.uid.slice(0,5)):userNick;
+      if(pts>=prev){
+        await set(rk,{pts,matched,total:cfg.pares,moves,tiempoUsado,nick,nivel:nivelActual,ts:Date.now()});
+        if(pts>prev)showToast('🏆 ¡Nuevo récord guardado!');
+      }
+    }catch(e){console.error(e);}
+  };
+  guardar();
+}
+
+// ═══════════════════════════════════════
+//  RANKING
+// ═══════════════════════════════════════
+let rankTab='facil';
+window.showRanking=async()=>{showS('s-ranking');await loadRanking(rankTab);};
+window.setRankTab=async(id,el)=>{
+  rankTab=id;
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  await loadRanking(id);
+};
+async function loadRanking(nivel){
+  const list=document.getElementById('rank-list');
+  list.innerHTML='<div class="rank-loading">Cargando...</div>';
+  try{
+    const snap=await get(ref(db,`memory_ranking/${nivel}`));
+    if(!snap.exists()){list.innerHTML='<div class="rank-empty">No hay puntajes aún.<br>¡Sé el primero!</div>';return;}
+    const data=[];
+    snap.forEach(c=>{const v=c.val();if(v&&v.pts!==undefined)data.push({uid:c.key,...v});});
+    data.sort((a,b)=>b.pts-a.pts);
+    const top=data.slice(0,15);
+    if(!top.length){list.innerHTML='<div class="rank-empty">¡Sé el primero!</div>';return;}
+    list.innerHTML='';
+    const medals=['🥇','🥈','🥉'];
+    top.forEach((d,i)=>{
+      const div=document.createElement('div');
+      div.className='rank-item'+(i<3?` top${i+1}`:'');
+      div.style.animationDelay=i*0.05+'s';
+      const pos=i<3?`<div class="rank-pos p${i+1}">${medals[i]}</div>`:`<div class="rank-pos">${i+1}</div>`;
+      const isMe=cu&&d.uid===cu.uid;
+      const nick=d.nick&&!d.nick.startsWith('J_')?d.nick:(isMe?'Tú':'Anónimo');
+      const m=Math.floor(d.tiempoUsado/60),s=d.tiempoUsado%60;
+      div.innerHTML=`${pos}<div class="rank-name">${isMe?'<span style="color:var(--green3)">★ </span>':''}${nick}</div><div style="text-align:right"><div class="rank-score">${d.pts} pts</div><div class="rank-sub">${d.matched}/${d.total} · ${d.moves} mov · ${m>0?m+'m':''}${s}s</div></div>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML=`<div class="rank-empty">❌ ${e.message}</div>`;}
+}
+
+// ═══════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════
+let AC=null;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC;}
+function tone(f,t2,d,v,type='sine'){const ctx=getAC(),t=t2??ctx.currentTime;const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v??0.18,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.start(t);o.stop(t+d+0.01);}
+function sfxStart(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;[[329,0],[392,0.1],[523,0.2]].forEach(([f,dt])=>tone(f,t+dt,0.15,0.14,'triangle'));}
+function sfxFlip(){if(mutedSFX)return;tone(660,null,0.06,0.07,'sine');}
+function sfxMatch(n){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;const f=440+n*20;tone(f,t,0.12,0.2,'triangle');tone(f*1.5,t+0.08,0.14,0.1,'sine');if(n%4===0){tone(f*2,t+0.16,0.18,0.08,'sine');}}
+function sfxWrong(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;tone(250,t,0.07,0.1,'sawtooth');tone(200,t+0.06,0.09,0.08,'sawtooth');}
+function sfxTick(){if(mutedSFX)return;tone(880,null,0.04,0.06,'square');}
+function sfxVictoria(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;[[523,0],[659,0.1],[784,0.2],[1047,0.32],[784,0.48],[1047,0.58],[1319,0.68]].forEach(([f,dt])=>tone(f,t+dt,0.18,0.2,'triangle'));}
+function sfxDerrota(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;[[440,0],[392,0.22],[349,0.44],[294,0.66]].forEach(([f,dt])=>tone(f,t+dt,0.2,0.13,'sine'));}
+
+const muteBtn=document.createElement('div');
+muteBtn.id='mute-btn';muteBtn.innerHTML='🔊';
+muteBtn.onclick=()=>{mutedSFX=!mutedSFX;muteBtn.innerHTML=mutedSFX?'🔇':'🔊';muteBtn.style.opacity=mutedSFX?'0.4':'1';};
+document.body.appendChild(muteBtn);
+
+// ═══════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function floatPts(rect,txt,color){const el=document.createElement('div');el.className='float-pts';el.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top}px;color:${color};`;el.textContent=txt;document.body.appendChild(el);setTimeout(()=>el.remove(),1000);}
+</script>
+</body>
+</html>

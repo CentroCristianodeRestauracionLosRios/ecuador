@@ -78,7 +78,7 @@
           👤 <span id="userEmailLabel"></span> ▾
         </button>
         <div class="user-dropdown hidden" id="userDropdown">
-          <button onclick="abrirCambiarContrasena()">🔑 Cambia contraseña</button>
+          <button onclick="abrirCambiarContrasena()">🔑 Cambiar contraseña</button>
           <button onclick="chatUserLogout()">🚪 Cerrar sesión</button>
         </div>
       </div>
@@ -599,16 +599,17 @@
           </div>
           <div class="juego-card-badge">¡Disponible!</div>
         </a>
-        <div class="juego-card coming">
+        <a href="memory.html" class="juego-card">
           <div class="juego-card-img">
-            <div class="juego-card-emoji-fb" style="display:flex">🃏</div>
+            <img src="memory1.png" alt="Memory Bíblico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+            <div class="juego-card-emoji-fb" style="display:none">🃏</div>
           </div>
           <div class="juego-card-body">
-            <div class="juego-card-name">Memory de Versículos</div>
-            <div class="juego-card-desc">Versículo + referencia · Memoriza la Biblia</div>
+            <div class="juego-card-name">Memory Bíblico</div>
+            <div class="juego-card-desc">Imagen ↔ Personaje · 3 niveles · Ranking</div>
           </div>
-          <div class="juego-card-badge soon">Próximamente</div>
-        </div>
+          <div class="juego-card-badge">¡Disponible!</div>
+        </a>
         <div class="juego-card coming" style="grid-column:1/-1">
           <div style="display:flex;align-items:center;gap:14px;padding:14px 16px">
             <div style="font-size:2rem">🏆</div>
