@@ -150,6 +150,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 #sl-ov.on{display:flex;background:rgba(0,0,20,0.94);}
 .slmsg{font-family:'Cinzel',serif;font-size:1.8rem;color:var(--gold);text-align:center;}
 
+@keyframes godAppear{from{transform:scale(0.8) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 /* Loading overlay */
 #loadOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 #loadOverlay.hidden{display:none;}
@@ -215,6 +216,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   <div class="abtns">
     <button class="abtn" onclick="toggleP('inv')">🎒</button>
     <button class="abtn" style="border-color:rgba(201,168,76,0.5)" onclick="doInteract()">E</button>
+    <button class="abtn" style="border-color:rgba(231,76,60,0.6);font-size:0.75rem" onclick="attackNefilim()">⚔️</button>
     <button class="abtn" onclick="toggleP('craft')">⚒️</button>
   </div>
 </div>
@@ -303,6 +305,50 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <!-- SLEEP -->
 <div id="sl-ov"><div class="slmsg" id="slMsg">🌙 Durmiendo...<br><span style="font-size:0.9rem;color:var(--muted)">Pasa la noche...</span></div></div>
 
+<!-- VOZ DE DIOS -->
+<div id="god-voice" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;flex-direction:column;">
+  <div style="max-width:500px;width:90vw;background:linear-gradient(160deg,#1a1000,#2a1800);border:2px solid #c9a84c;border-radius:16px;padding:32px 28px;text-align:center;box-shadow:0 0 60px rgba(201,168,76,0.4),0 0 120px rgba(201,168,76,0.15);animation:godAppear 0.8s ease;">
+    <div style="font-size:2.8rem;margin-bottom:8px;filter:drop-shadow(0 0 20px gold)">✝️</div>
+    <div style="font-family:Cinzel,serif;font-size:1.1rem;color:#f0d080;letter-spacing:0.1em;margin-bottom:16px;text-shadow:0 0 20px rgba(255,215,0,0.6)" id="gv-title">El Llamado</div>
+    <div style="border-top:1px solid rgba(201,168,76,0.3);margin:12px 0"></div>
+    <p style="font-family:Crimson Text,serif;font-size:1rem;color:#f0e8d0;line-height:1.8;font-style:italic;white-space:pre-line" id="gv-text"></p>
+    <div style="border-top:1px solid rgba(201,168,76,0.3);margin:16px 0"></div>
+    <button class="mbtn pri" style="min-width:160px" onclick="closeGodVoice()">✝️ Así se hará</button>
+  </div>
+</div>
+
+<!-- PANTALLA DE VICTORIA -->
+<div id="victory-screen" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;flex-direction:column;">
+  <div style="max-width:520px;width:92vw;text-align:center;padding:32px;">
+    <div style="font-size:4rem;animation:fly 2s infinite">⛵</div>
+    <div style="font-family:Cinzel,serif;font-size:2rem;color:#f0d080;text-shadow:0 0 30px gold;margin:12px 0">¡El Arca está completa!</div>
+    <p style="font-family:Crimson Text,serif;font-size:1rem;color:#f0e8d0;font-style:italic;line-height:1.9;margin:16px 0">
+      "Y el Señor le dijo a Noé: Entra en el arca tú y toda tu familia,<br>porque he visto que eres justo delante de mí."<br><span style="color:#c9a84c">— Génesis 7:1</span>
+    </p>
+    <button class="mbtn pri" style="margin-top:16px" onclick="location.reload()">🙏 Jugar de nuevo</button>
+  </div>
+</div>
+
+<!-- HUD ARCA -->
+<div id="arca-hud" style="display:none;position:fixed;bottom:75px;left:50%;transform:translateX(-50%);z-index:22;background:rgba(0,0,0,0.7);border:1px solid rgba(201,168,76,0.5);border-radius:10px;padding:7px 14px;min-width:200px;">
+  <div style="font-family:Cinzel,serif;font-size:0.65rem;color:#c9a84c;text-align:center;margin-bottom:4px">⛵ El Arca de Noé</div>
+  <div style="display:flex;flex-direction:column;gap:3px;">
+    <div style="display:flex;align-items:center;gap:5px;font-size:0.6rem;color:#aaa">⚓<div style="flex:1;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div id="ah1" style="height:100%;border-radius:3px;transition:width 0.3s;width:0%"></div></div></div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:0.6rem;color:#aaa">🏗️<div style="flex:1;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div id="ah2" style="height:100%;border-radius:3px;transition:width 0.3s;width:0%"></div></div></div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:0.6rem;color:#aaa">🛖<div style="flex:1;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden"><div id="ah3" style="height:100%;border-radius:3px;transition:width 0.3s;width:0%"></div></div></div>
+  </div>
+</div>
+
+<!-- BARRA DILUVIO -->
+<div id="flood-bar" style="display:none;position:fixed;top:0;left:0;right:0;height:4px;z-index:25;background:rgba(0,0,50,0.5)">
+  <div id="flood-fill" style="height:100%;background:linear-gradient(90deg,#1a4aaa,#4a8aff);width:0%;transition:width 1s;box-shadow:0 0 8px #4a8aff"></div>
+</div>
+
+<!-- HUD MISIÓN ACTIVA -->
+<div id="mision-hud" style="display:none;position:fixed;top:58px;left:50%;transform:translateX(-50%);z-index:22;background:rgba(0,0,0,0.65);border:1px solid rgba(201,168,76,0.4);border-radius:18px;padding:4px 14px;">
+  <div id="mision-txt" style="font-family:Cinzel,serif;font-size:0.7rem;color:#c9a84c;"></div>
+</div>
+
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -338,6 +384,19 @@ let drops=[];
 let nearObj=null;
 let parts=[];
 let nubes=[];
+
+// ─── FASE 2 — Estado ─────────────────────────
+let animales=[];
+let nefilim=[];
+let arcaProgress=0;
+let arcaHP={1:100,2:100,3:100};
+let floodLevel=0;
+let misionActual=0;
+let misionCompletada=[];
+let victoryAchieved=false;
+let animalesEnArca=0;
+let godVoiceActive=false;
+let visionRadius=999;
 
 // ─── ITEMS ───────────────────────────────────
 const ITEMS={
@@ -915,8 +974,11 @@ function loop(){
   drawSky();
   drawWorld(cx,cy);
   drawObjs(cx,cy);
+  drawAnimales(cx,cy);
+  drawNefilim(cx,cy);
   drawPlayer(cx,cy);
   drawRain();
+  drawNight();
   drawParts(cx,cy);
   drawNearIndicator(cx,cy);
   drawMinimap();
@@ -936,6 +998,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='i'||e.key==='I')toggleP('inv');
   if(e.key==='c'||e.key==='C')toggleP('craft');
   if(e.key==='Escape')doPause();
+  if(e.key===' ')attackNefilim();
   e.preventDefault();
 });
 window.addEventListener('keyup',e=>{
@@ -978,8 +1041,8 @@ function update(){
   if(drops.length===0&&(clima==='lluvia'||clima==='tormenta'))initDrops();
   else if(drops.length>0&&clima!=='lluvia'&&clima!=='tormenta')drops=[];
   if(tick%60===0){
-    P.hunger=Math.max(0,P.hunger-0.9);
-    P.thirst=Math.max(0,P.thirst-1.3);
+    P.hunger=Math.max(0,P.hunger-0.35);  // reducido para que no distraiga del Arca
+    P.thirst=Math.max(0,P.thirst-0.5);
     if(P.hunger>50&&P.thirst>50)P.energy=Math.min(100,P.energy+0.4);
     if(P.hunger===0||P.thirst===0){P.hp=Math.max(0,P.hp-2);}
     if(P.hunger>30&&P.thirst>30&&P.hp<P.mhp)P.hp=Math.min(P.mhp,P.hp+0.6);
@@ -990,6 +1053,12 @@ function update(){
     if(P.thirst<20){sndNotifBad();notif('💧 ¡Mucha sed!','red');}
     if(P.energy<15){sndNotifBad();notif('⚡ ¡Muy cansado! Duerme','red');}
   }
+  // ── Fase 2 ──
+  updateAnimales();
+  updateNefilim();
+  spawnNefilim();
+  updateDiluvio();
+  if(tick%120===0){checkMisiones();updateMisionHUD();}
   updateHUD();
 }
 
@@ -1095,12 +1164,14 @@ function drawNearIndicator(cx,cy){
 }
 
 window.doInteract=function(){
+  // Si hay nefilim cerca, atacar primero
+  if(atacarNefilim())return;
   if(!nearObj)return;const o=nearObj;
   const bon=hasSkill('fuerza')?2:1;
   if(o.tipo==='arbol'){
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪵');
-    sndAxe(); if(o.hp<=0){addItem('madera',3+Math.floor(Math.random()*3));if(Math.random()<0.3)addItem('resina',1);removeObj(o);sndCollect();notif('🪵 Madera','');addXP(10);}
+    sndAxe(); if(o.hp<=0){addItem('madera',5+Math.floor(Math.random()*4));if(Math.random()<0.3)addItem('resina',1);removeObj(o);sndCollect();notif('🪵 Madera','');addXP(10);}
     else addItem('madera',1);
   }else if(o.tipo==='roca'){
     const c=(hasItem('pico')?3:1)*bon;o.hp-=c;
@@ -1208,7 +1279,12 @@ function placeSt(tipo){
     const tx=px+dx,ty=py+dy;
     if(!isSolid(tx,ty)){
       structs.push({tx,ty,tipo});removeItem(tipo,1);
-      notif(`🏗️ ${ITEMS[tipo]?.n||tipo} colocado en el suelo`,'grn');addXP(20);renderInv();return;
+      notif(`🏗️ ${ITEMS[tipo]?.n||tipo} colocado en el suelo`,'grn');addXP(20);renderInv();
+      // Actualizar progreso del Arca
+      if(tipo==='arca1'){arcaProgress=Math.max(arcaProgress,1);arcaHP[1]=100;updateArcaHUD();document.getElementById('arca-hud').style.display='block';}
+      if(tipo==='arca2'){arcaProgress=Math.max(arcaProgress,2);arcaHP[2]=100;updateArcaHUD();}
+      if(tipo==='arca3'){arcaProgress=Math.max(arcaProgress,3);arcaHP[3]=100;updateArcaHUD();notif('⛵ ¡El Arca está completa!','gld');sndLevelUp();}
+      return;
     }
   }
   notif('❌ No hay espacio para colocar esto','red');
@@ -1372,7 +1448,7 @@ window.doContinuar=function(){
   if(!cu){showS('s-login');return;}
   loadAndPlay();
 };
-window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0});startGame();};
+window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0});startGame();};
 window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';showS('s-menu');};
 window.doLogout=async function(){await signOut(auth);};
 
@@ -1399,6 +1475,11 @@ function beginLoop(){
   loop();
   // Notificaciones de tutorial escalonadas
   scheduleAmbience();
+  spawnAnimales();
+  arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;
+  misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;
+  // Misión 0 — El Llamado (automática al inicio)
+  setTimeout(()=>showGodVoice(MISIONES[0]),2000);
   notif(`🕊️ ¡Que Dios te guíe, ${nick}!`,'gld');
   setTimeout(()=>notif('🌿 Acércate a un árbol y presiona [E] para cortarlo',''),2500);
   setTimeout(()=>notif('🏺 Crea una Jarra de barro con 3 barros — para cargar agua',''),6000);
@@ -1462,7 +1543,7 @@ async function saveGame(){
   if(!cu)return;
   try{
     await fbUpdate(ref(db,`rpg2/${cu.uid}`),{
-      day:wDay,lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,
+      day:wDay,lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,
       skills:SKILLS.filter(s=>s.u).map(s=>s.id),
       inventory:inv.filter(Boolean),structs:structs,
       px:Math.round(P.x),py:Math.round(P.y),savedAt:Date.now()
@@ -1477,6 +1558,7 @@ async function loadGame(){
     const s=await get(ref(db,`rpg2/${cu.uid}`));
     const d=s.val();if(!d)return;
     wDay=d.day||1;P.lv=d.lv||1;P.xp=d.xp||0;P.hp=d.hp||100;
+    arcaProgress=d.arcaP||0;misionActual=d.mision||0;misionCompletada=d.misionC||[];
     P.hunger=d.hunger||100;P.thirst=d.thirst||100;P.energy=d.energy||100;P.sp=d.sp||0;
     if(d.skills)d.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk)sk.u=true;});
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
@@ -1764,6 +1846,508 @@ window.toggleSound=function(){
   if(btn) btn.textContent=soundEnabled?'🔊':'🔇';
   notif(soundEnabled?'🔊 Sonido activado':'🔇 Sonido silenciado','');
 };
+
+
+// ════════════════════════════════════════════
+//  FASE 2 — MISIONES DE DIOS
+// ════════════════════════════════════════════
+const MISIONES=[
+  {id:0, titulo:'El Llamado de Dios',
+   texto:'Noé... He visto tu justicia entre los hombres.\nEl mundo está corrompido. Debes prepararte.\nReúne materiales: 20 maderas y 10 piedras.',
+   check:()=>misionCompletada.includes(0)||false,
+   req:()=>cntItem('madera')>=20&&cntItem('piedra')>=10,
+   recompensa:()=>{P.speed+=0.4;P.mhp+=20;P.hp=P.mhp;notif('✨ Dios te bendice: +velocidad +salud','gld');sndLevelUp();}
+  },
+  {id:1, titulo:'El Mandato del Arca',
+   texto:'Construye el Arca conforme te ordeno.\nHazla de madera de gofer.\nCimientos primero — usa la tabla de creación.',
+   check:()=>misionCompletada.includes(1)||false,
+   req:()=>arcaProgress>=1,
+   recompensa:()=>{addItem('madera',15);addItem('cuerda',10);notif('✨ Dios provee: +madera +cuerdas','gld');sndLevelUp();}
+  },
+  {id:2, titulo:'Reúne los Animales',
+   texto:'De todo animal limpio tomarás siete parejas.\nAcércate a los animales que deambulan por la tierra.\nEl Pastor los guiará hacia el Arca.',
+   check:()=>misionCompletada.includes(2)||false,
+   req:()=>animalesEnArca>=2,
+   recompensa:()=>{P.mhp+=15;P.hp=P.mhp;addItem('carne',3);notif('✨ Dios te bendice: +salud +provisiones','gld');sndLevelUp();}
+  },
+  {id:3, titulo:'Completa el Arca',
+   texto:'Cúbrela de brea por dentro y por fuera.\nHazla de trescientos codos de largo.\nEl tiempo se acaba — los cielos se oscurecen.',
+   check:()=>misionCompletada.includes(3)||false,
+   req:()=>arcaProgress>=3,
+   recompensa:()=>{floodLevel=0;notif('✨ El Arca está lista — ¡entra con los animales!','gld');sndLevelUp();}
+  },
+  {id:4, titulo:'El Diluvio se Acerca',
+   texto:'Entra tú y toda tu familia en el Arca.\nDentro de 7 días haré llover 40 días y 40 noches.\n¡Apresúrate!',
+   check:()=>misionCompletada.includes(4)||false,
+   req:()=>victoryAchieved,
+   recompensa:()=>{}
+  },
+];
+
+function showGodVoice(mision){
+  if(!mision||godVoiceActive) return;
+  godVoiceActive=true;
+  gPause=true;
+  const ov=document.getElementById('god-voice');
+  if(!ov) return;
+  document.getElementById('gv-title').textContent=mision.titulo;
+  document.getElementById('gv-text').textContent=mision.texto;
+  ov.style.display='flex';
+  // Sonido divino — acorde celestial
+  if(audioReady){
+    setTimeout(()=>playChord([261,329,392,523],'sine',3,0.12),200);
+    setTimeout(()=>playChord([196,247,294,392],'sine',2,0.08),1500);
+  }
+  setTimeout(()=>{
+    ov.style.opacity='1';
+  },100);
+}
+
+window.closeGodVoice=function(){
+  const ov=document.getElementById('god-voice');
+  if(ov) ov.style.display='none';
+  godVoiceActive=false;
+  gPause=false;
+};
+
+function checkMisiones(){
+  if(victoryAchieved) return;
+  const m=MISIONES[misionActual];
+  if(!m) return;
+  if(m.req&&m.req()&&!misionCompletada.includes(m.id)){
+    misionCompletada.push(m.id);
+    m.recompensa();
+    notif(`✝️ Misión cumplida: ${m.titulo}`,'gld');
+    misionActual=Math.min(misionActual+1,MISIONES.length-1);
+    if(misionActual<MISIONES.length){
+      setTimeout(()=>showGodVoice(MISIONES[misionActual]),3000);
+    }
+  }
+  // Verificar victoria
+  if(arcaProgress>=3&&animalesEnArca>=2&&floodLevel>0){
+    const cerca=structs.find(s=>s.tipo==='arca3');
+    if(cerca){
+      const dx=Math.abs(P.x/TILE-cerca.tx),dy=Math.abs(P.y/TILE-cerca.ty);
+      if(dx<5&&dy<5) checkVictory();
+    }
+  }
+}
+
+function updateMisionHUD(){
+  const el=document.getElementById('mision-hud');
+  if(!el) return;
+  const m=MISIONES[misionActual];
+  if(!m||misionActual>=MISIONES.length-1){el.style.display='none';return;}
+  el.style.display='block';
+  document.getElementById('mision-txt').textContent=`✝️ ${m.titulo}`;
+}
+
+// ════════════════════════════════════════════
+//  FASE 2 — ANIMALES
+// ════════════════════════════════════════════
+const ANIMAL_TIPOS=[
+  {t:'oveja',e:'🐑',color:'#f0f0f0',spd:0.6,hp:30},
+  {t:'vaca', e:'🐄',color:'#c8a860',spd:0.4,hp:50},
+  {t:'paloma',e:'🕊️',color:'#ffffff',spd:1.0,hp:15},
+];
+
+function spawnAnimales(){
+  animales=[];
+  for(let i=0;i<12;i++){
+    const tipo=ANIMAL_TIPOS[Math.floor(Math.random()*ANIMAL_TIPOS.length)];
+    let ax,ay,tries=0;
+    do{ax=10+Math.floor(Math.random()*(MW-20));ay=10+Math.floor(Math.random()*(MH-20));tries++;}
+    while((wMap[ay]?.[ax]?.t===2||isSolid(ax,ay))&&tries<30);
+    animales.push({
+      x:ax*TILE+20,y:ay*TILE+20,
+      tipo:tipo.t,e:tipo.e,color:tipo.color,
+      spd:tipo.spd,hp:tipo.hp,mhp:tipo.hp,
+      dir:Math.random()*Math.PI*2,
+      moveT:0,siguiendo:false,enArca:false,
+      animF:0,animT:0,
+    });
+  }
+}
+
+function updateAnimales(){
+  if(!animales.length) return;
+  const hasPastor=hasSkill('past');
+  const followDist=hasPastor?200:120;
+  animales.forEach(a=>{
+    if(a.enArca) return;
+    const dx=P.x-a.x,dy=P.y-a.y;
+    const dist=Math.hypot(dx,dy);
+    // Seguir al jugador si misión 2+ activa y está cerca
+    if(misionActual>=2&&dist<followDist){
+      a.siguiendo=true;
+    }
+    if(a.siguiendo&&dist>50){
+      const spd=a.spd*1.4;
+      const nx=a.x+dx/dist*spd;
+      const ny=a.y+dy/dist*spd;
+      if(!isSolid(Math.floor(nx/TILE),Math.floor(ny/TILE))){a.x=nx;a.y=ny;}
+    } else {
+      // Deambular
+      a.moveT++;
+      if(a.moveT>120){a.moveT=0;a.dir+=( Math.random()-0.5)*1.2;}
+      const nx=a.x+Math.cos(a.dir)*a.spd;
+      const ny=a.y+Math.sin(a.dir)*a.spd;
+      if(!isSolid(Math.floor(nx/TILE),Math.floor(a.y/TILE)))a.x=nx;
+      else a.dir+=Math.PI*0.5;
+      if(!isSolid(Math.floor(a.x/TILE),Math.floor(ny/TILE)))a.y=ny;
+      else a.dir+=Math.PI*0.5;
+    }
+    a.animT++;if(a.animT>10){a.animF=(a.animF+1)%2;a.animT=0;}
+    // Entrar al Arca
+    const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
+    if(arca&&a.siguiendo){
+      const adx=Math.abs(a.x/TILE-arca.tx),ady=Math.abs(a.y/TILE-arca.ty);
+      if(adx<3&&ady<3&&!a.enArca){a.enArca=true;animalesEnArca++;notif(`${a.e} ¡Un animal entró al Arca!`,'grn');}
+    }
+    // Nefilim atacan animales
+    nefilim.forEach(n=>{
+      const nd=Math.hypot(n.x-a.x,n.y-a.y);
+      if(nd<60){a.hp-=0.3;if(a.hp<=0){animales=animales.filter(x=>x!==a);}}
+    });
+  });
+}
+
+function drawAnimales(cx,cy){
+  animales.forEach(a=>{
+    if(a.enArca) return;
+    const sx=a.x-cx,sy=a.y-cy;
+    if(sx<-60||sx>canvas.width+60||sy<-60||sy>canvas.height+60) return;
+    ctx.save();ctx.translate(sx,sy);
+    const bob=a.animF===1?1:0;
+    // Sombra
+    ctx.fillStyle='rgba(0,0,0,0.2)';ctx.beginPath();ctx.ellipse(0,10,12,4,0,0,Math.PI*2);ctx.fill();
+    if(a.tipo==='paloma'){
+      // Paloma volando
+      ctx.fillStyle='#f8f8f8';
+      ctx.beginPath();ctx.ellipse(0,-2+bob,8,5,0,0,Math.PI*2);ctx.fill();
+      // Alas
+      const wa=Math.sin(Date.now()/200)*0.4;
+      ctx.fillStyle='#e8e8e8';
+      ctx.beginPath();ctx.ellipse(-10,-4+bob,8,3,wa,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(10,-4+bob,8,3,-wa,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ff9999';ctx.fillRect(-1,1+bob,2,3);
+    } else if(a.tipo==='oveja'){
+      // Cuerpo lana
+      ctx.fillStyle='#e8e8e8';ctx.beginPath();ctx.ellipse(0,-2+bob,13,9,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#d8d8d8';ctx.beginPath();ctx.arc(-6,-4+bob,6,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(5,-6+bob,7,0,Math.PI*2);ctx.fill();
+      // Patas
+      ctx.fillStyle='#888';ctx.fillRect(-8,5+bob,3,7);ctx.fillRect(-2,6+bob,3,7);ctx.fillRect(3,5+bob,3,7);
+      // Cabeza
+      ctx.fillStyle='#ccc';ctx.beginPath();ctx.arc(12,-2+bob,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#222';ctx.fillRect(14,-4+bob,2,2);
+    } else {
+      // Vaca
+      ctx.fillStyle='#c8a860';ctx.beginPath();ctx.ellipse(0,-2+bob,15,9,0,0,Math.PI*2);ctx.fill();
+      // Manchas
+      ctx.fillStyle='#5a3a10';ctx.beginPath();ctx.ellipse(-4,-3+bob,5,4,0.3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(6,-1+bob,4,3,-0.2,0,Math.PI*2);ctx.fill();
+      // Patas
+      ctx.fillStyle='#a87840';ctx.fillRect(-10,5+bob,3,8);ctx.fillRect(-4,6+bob,3,8);ctx.fillRect(3,6+bob,3,8);ctx.fillRect(9,5+bob,3,8);
+      // Cabeza
+      ctx.fillStyle='#b89050';ctx.beginPath();ctx.arc(16,-2+bob,7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#222';ctx.fillRect(18,-4+bob,2,2);
+      // Ubre
+      ctx.fillStyle='#e8a0a0';ctx.beginPath();ctx.ellipse(-2,7+bob,5,3,0,0,Math.PI*2);ctx.fill();
+    }
+    // Indicador "siguiendo"
+    if(a.siguiendo&&!a.enArca){
+      ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='12px serif';ctx.textAlign='center';
+      ctx.fillText('💛',0,-22+bob);
+    }
+    ctx.restore();
+  });
+}
+
+// ════════════════════════════════════════════
+//  FASE 2 — NEFILIM
+// ════════════════════════════════════════════
+function spawnNefilim(){
+  const isNight=wTime>0.78||wTime<0.25;
+  if(!isNight) return;
+  if(wDay<4) return;
+  const maxN=Math.min(2+Math.floor(wDay/4),6);
+  if(nefilim.length>=maxN) return;
+  if(Math.random()>0.003) return; // spawn gradual
+  // Spawn en borde del mapa lejos del jugador
+  let nx,ny,tries=0;
+  do{
+    const side=Math.floor(Math.random()*4);
+    if(side===0){nx=5+Math.floor(Math.random()*(MW-10));ny=5;}
+    else if(side===1){nx=5+Math.floor(Math.random()*(MW-10));ny=MH-5;}
+    else if(side===2){nx=5;ny=5+Math.floor(Math.random()*(MH-10));}
+    else{nx=MW-5;ny=5+Math.floor(Math.random()*(MH-10));}
+    tries++;
+  }while(Math.hypot(nx-P.x/TILE,ny-P.y/TILE)<25&&tries<20);
+  const power=Math.floor(wDay/4);
+  nefilim.push({
+    x:nx*TILE,y:ny*TILE,
+    hp:30+power*20, mhp:30+power*20,
+    dmg:8+power*4,
+    spd:0.8+power*0.15,
+    target:'jugador', // 'jugador' o 'arca'
+    attackT:0,
+    animF:0,animT:0,
+    stunT:0,
+  });
+  sndNotifBad();
+}
+
+function updateNefilim(){
+  const isNight=wTime>0.78||wTime<0.25;
+  // De día desaparecen
+  if(!isNight){nefilim=[];return;}
+  const hasTorch=hasItem('antorcha');
+  const fogonNear=structs.some(s=>{
+    if(s.tipo!=='fogon') return false;
+    return Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<180;
+  });
+  nefilim.forEach((n,idx)=>{
+    if(n.stunT>0){n.stunT--;return;}
+    // Antorcha y fogón los ahuyentan
+    const distP=Math.hypot(n.x-P.x,n.y-P.y);
+    if(hasTorch&&distP<150){
+      // Huyen
+      const fx=(n.x-P.x)/distP,fy=(n.y-P.y)/distP;
+      n.x+=fx*n.spd*1.5;n.y+=fy*n.spd*1.5;return;
+    }
+    if(fogonNear&&distP<200){n.stunT=60;return;}
+    // Decidir objetivo: arca o jugador
+    const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
+    if(arca&&Math.random()<0.3){n.target='arca';}else{n.target='jugador';}
+    let tx,ty;
+    if(n.target==='arca'&&arca){tx=arca.tx*TILE;ty=arca.ty*TILE;}
+    else{tx=P.x;ty=P.y;}
+    const dx=tx-n.x,dy=ty-n.y,dist=Math.hypot(dx,dy);
+    if(dist>50){
+      n.x+=dx/dist*n.spd;n.y+=dy/dist*n.spd;
+    } else {
+      // Atacar
+      n.attackT++;
+      if(n.attackT>60){
+        n.attackT=0;
+        if(n.target==='jugador'){
+          P.hp=Math.max(0,P.hp-n.dmg);
+          sndNotifBad();
+          notif(`👹 ¡Un gigante te golpea! -${n.dmg} HP`,'red');
+          if(P.hp<=0) gameOver();
+        } else if(arca){
+          const k=arca.tipo==='arca1'?1:arca.tipo==='arca2'?2:3;
+          arcaHP[k]=Math.max(0,(arcaHP[k]||100)-15);
+          updateArcaHUD();
+          notif('👹 ¡Un gigante daña el Arca!','red');
+          if(arcaHP[k]<=0){
+            structs=structs.filter(s=>s!==arca);
+            arcaProgress=Math.max(0,arcaProgress-1);
+            notif('💥 ¡Una parte del Arca fue destruida! Reconstrúyela.','red');
+          }
+        }
+      }
+    }
+    n.animT++;if(n.animT>8){n.animF=(n.animF+1)%2;n.animT=0;}
+  });
+}
+
+function attackNefilim(){
+  // Jugador ataca al nefilim más cercano
+  const bonus=hasSkill('guer')?2:1;
+  let attacked=false;
+  nefilim.forEach((n,i)=>{
+    const d=Math.hypot(n.x-P.x,n.y-P.y);
+    if(d<80){
+      const dmg=(10+P.lv*3)*bonus;
+      n.hp-=dmg;
+      addPart(n.x,n.y,`-${dmg}`);
+      n.stunT=20;
+      if(n.hp<=0){nefilim.splice(i,1);addXP(30);notif('⚔️ ¡Gigante derrotado!','gld');sndLevelUp();}
+      attacked=true;
+    }
+  });
+  if(!attacked) notif('No hay gigantes cerca','');
+}
+window.attackNefilim=attackNefilim;
+
+function drawNefilim(cx,cy){
+  nefilim.forEach(n=>{
+    const sx=n.x-cx,sy=n.y-cy;
+    if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80) return;
+    ctx.save();ctx.translate(sx,sy);
+    const bob=n.animF===1?2:0;
+    // Sombra grande
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(0,18,20,7,0,0,Math.PI*2);ctx.fill();
+    // Cuerpo — gigante oscuro
+    ctx.fillStyle='#2a1a0a';
+    ctx.beginPath();ctx.moveTo(-14,16);ctx.lineTo(-12,-12);ctx.lineTo(12,-12);ctx.lineTo(14,16);ctx.closePath();ctx.fill();
+    // Pecho
+    const pg=ctx.createLinearGradient(-12,-12,12,-12);
+    pg.addColorStop(0,'#3a2010');pg.addColorStop(0.5,'#5a3018');pg.addColorStop(1,'#2a1008');
+    ctx.fillStyle=pg;ctx.fillRect(-11,-10,22,20);
+    // Piernas
+    ctx.fillStyle='#1a0a04';ctx.fillRect(-12,8+bob,10,14);ctx.fillRect(2,8-bob,10,14);
+    // Brazos enormes
+    ctx.fillStyle='#3a1a08';ctx.fillRect(-20,-10,9,18+bob);ctx.fillRect(11,-10,9,18-bob);
+    // Cabeza
+    const hg=ctx.createRadialGradient(-2,-24,2,0,-22,14);
+    hg.addColorStop(0,'#5a3018');hg.addColorStop(1,'#2a0e04');
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(0,-22,13,0,Math.PI*2);ctx.fill();
+    // Ojos rojos brillantes
+    ctx.fillStyle=`rgba(255,50,0,${0.7+Math.sin(Date.now()/200)*0.3})`;
+    ctx.beginPath();ctx.arc(-5,-23,3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(5,-23,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ff0000';ctx.beginPath();ctx.arc(-5,-23,1.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(5,-23,1.5,0,Math.PI*2);ctx.fill();
+    // Cuernos
+    ctx.fillStyle='#1a0a00';
+    ctx.beginPath();ctx.moveTo(-8,-33);ctx.lineTo(-12,-46);ctx.lineTo(-4,-34);ctx.fill();
+    ctx.beginPath();ctx.moveTo(8,-33);ctx.lineTo(12,-46);ctx.lineTo(4,-34);ctx.fill();
+    // Arma (maza)
+    ctx.strokeStyle='#444';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(20,-8+bob);ctx.lineTo(30,8+bob);ctx.stroke();
+    ctx.fillStyle='#666';ctx.beginPath();ctx.arc(30,10+bob,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#888';ctx.beginPath();ctx.arc(30,10+bob,4,0,Math.PI*2);ctx.fill();
+    // Barra de vida
+    const bw=36,bf=(n.hp/n.mhp)*bw;
+    ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(-bw/2,-52,bw,5);
+    ctx.fillStyle=n.hp/n.mhp>0.5?'#e74c3c':'#c0392b';ctx.fillRect(-bw/2,-52,bf,5);
+    // Aura oscura pulsante
+    ctx.fillStyle=`rgba(80,0,0,${0.08+Math.sin(Date.now()/300)*0.05})`;
+    ctx.beginPath();ctx.arc(0,-10,35,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ════════════════════════════════════════════
+//  FASE 2 — OSCURIDAD NOCTURNA + VISIÓN
+// ════════════════════════════════════════════
+function drawNightVision(cx,cy){
+  const isNight=wTime>0.75||wTime<0.28;
+  if(!isNight) return;
+  const nightPct=wTime>0.75?(wTime-0.75)/0.1:wTime<0.2?1:(0.28-wTime)/0.08;
+  const darkness=Math.min(0.88,nightPct*0.88);
+  if(darkness<0.05) return;
+  // Radio de visión: antorcha amplía
+  const hasTorch=hasItem('antorcha');
+  const nearFogon=structs.some(s=>s.tipo==='fogon'&&Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<200);
+  const radius=hasTorch?280:nearFogon?220:130;
+  const px=P.x-cx,py=P.y-cy;
+  // Máscara radial de oscuridad
+  const grad=ctx.createRadialGradient(px,py,radius*0.3,px,py,radius*1.6);
+  grad.addColorStop(0,`rgba(0,0,10,0)`);
+  grad.addColorStop(0.6,`rgba(0,0,10,${darkness*0.5})`);
+  grad.addColorStop(1,`rgba(0,0,10,${darkness})`);
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Halo cálido de antorcha
+  if(hasTorch){
+    const tg=ctx.createRadialGradient(px,py,0,px,py,180);
+    tg.addColorStop(0,`rgba(255,140,30,${0.12*darkness})`);
+    tg.addColorStop(1,'rgba(255,140,30,0)');
+    ctx.fillStyle=tg;ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+  // Estrellas visibles de noche
+  if(darkness>0.4){
+    for(let i=0;i<50;i++){
+      const blink=0.4+Math.sin(Date.now()/600+i)*0.4;
+      ctx.fillStyle=`rgba(255,255,255,${blink*darkness*0.5})`;
+      ctx.fillRect((i*137+70)%canvas.width,(i*89+20)%(canvas.height*0.4),1.5,1.5);
+    }
+  }
+}
+
+// ════════════════════════════════════════════
+//  FASE 2 — DILUVIO
+// ════════════════════════════════════════════
+function updateDiluvio(){
+  if(arcaProgress<3) return;
+  if(victoryAchieved) return;
+  // El diluvio comienza a crecer a partir del día 20
+  if(wDay>=20){
+    floodLevel=Math.min(100,floodLevel+(wDay>=25?0.08:0.02));
+    if(tick%300===0&&floodLevel>0){
+      const msg=floodLevel<30?'🌊 Las nubes se oscurecen...':
+                floodLevel<60?'🌊 ¡El diluvio se acerca! Entra al Arca':
+                '🌊 ¡EL DILUVIO ESTÁ AQUÍ! ¡ENTRA AL ARCA AHORA!';
+      notif(msg,'red');
+      if(floodLevel>60) sndNotifBad();
+    }
+    // Si llega al 100% sin estar en el Arca = game over bíblico
+    if(floodLevel>=100){
+      const arca=structs.find(s=>s.tipo==='arca3');
+      const enArca=arca&&Math.hypot(P.x/TILE-arca.tx,P.y/TILE-arca.ty)<5;
+      if(!enArca){
+        gameOver();
+        notif('🌊 Las aguas cubrieron la tierra...','red');
+      }
+    }
+  }
+  // Aviso a día 18
+  if(wDay===18&&tick%3600<2){
+    showGodVoice(MISIONES[3]);
+  }
+}
+
+function drawDiluvio(cx,cy){
+  if(floodLevel<=0) return;
+  const alpha=floodLevel/100*0.45;
+  ctx.fillStyle=`rgba(20,60,160,${alpha})`;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Olas en pantalla
+  if(floodLevel>20){
+    ctx.strokeStyle=`rgba(80,150,255,${alpha*0.6})`;ctx.lineWidth=2;
+    for(let i=0;i<3;i++){
+      const yo=canvas.height*0.7+i*40;
+      ctx.beginPath();
+      for(let x2=0;x2<canvas.width;x2+=8){
+        const y2=yo+Math.sin((x2+Date.now()/500+i*30)/40)*8;
+        i===0&&x2===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2);
+      }
+      ctx.stroke();
+    }
+  }
+  // Barra de diluvio
+  const el=document.getElementById('flood-bar');
+  if(el){
+    el.style.display='block';
+    document.getElementById('flood-fill').style.width=floodLevel+'%';
+  }
+}
+
+// ════════════════════════════════════════════
+//  FASE 2 — HUD DEL ARCA + MISIONES
+// ════════════════════════════════════════════
+function updateArcaHUD(){
+  const el=document.getElementById('arca-hud');
+  if(!el) return;
+  const p1=arcaHP[1]||0,p2=arcaHP[2]||0,p3=arcaHP[3]||0;
+  document.getElementById('ah1').style.width=(arcaProgress>=1?p1:0)+'%';
+  document.getElementById('ah2').style.width=(arcaProgress>=2?p2:0)+'%';
+  document.getElementById('ah3').style.width=(arcaProgress>=3?p3:0)+'%';
+  document.getElementById('ah1').style.background=arcaProgress>=1?'#c9a84c':'#333';
+  document.getElementById('ah2').style.background=arcaProgress>=2?'#a08030':'#333';
+  document.getElementById('ah3').style.background=arcaProgress>=3?'#7a6020':'#333';
+}
+
+function checkVictory(){
+  if(victoryAchieved) return;
+  victoryAchieved=true;
+  gRun=false;
+  document.getElementById('victory-screen').style.display='flex';
+  if(audioReady){
+    [523,659,784,1047,1319,1047,784,1047,1319].forEach((f,i)=>
+      setTimeout(()=>playTone(f,'sine',0.8,0.2),i*250)
+    );
+  }
+}
+
+// ════════════════════════════════════════════
+//  FASE 2 — INTERACCIÓN NEFILIM
+// ════════════════════════════════════════════
+// (ya definida arriba como attackNefilim)
 
 // ─── FONDO MENÚ ───────────────────────────────
 function initBgMenu(){
