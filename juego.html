@@ -154,11 +154,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 #s-settings{
   position:fixed;inset:0;z-index:800;
   background:rgba(0,0,0,0.92);
-  backdrop-filter:blur(12px) brightness(0.4);
   display:none;flex-direction:column;
   overflow-y:auto;
 }
-#s-settings.active{display:flex;}
+#s-settings.active{
+  display:flex;
+  backdrop-filter:blur(12px) brightness(0.4);
+}
 .settings-wrap{
   width:min(520px,96vw);
   margin:0 auto;
@@ -3672,11 +3674,22 @@ let gameSettings = {
 
 function loadSettings(){
   try{
-    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
-    Object.assign(gameSettings, s);
-  }catch(e){}
-  // No llamar applyAllSettings aquí — el canvas no existe aún
-  // Se aplica cuando el juego arranca (beginLoop)
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      // Solo cargar valores seguros — NO aplicar brillo aquí
+      if(typeof s.brightness === 'number') gameSettings.brightness = s.brightness;
+      if(typeof s.volume     === 'number') gameSettings.volume     = s.volume;
+      if(typeof s.soundOn    === 'boolean')gameSettings.soundOn    = s.soundOn;
+      if(typeof s.orientation=== 'string') gameSettings.orientation= s.orientation;
+      if(typeof s.notifCollect==='boolean')gameSettings.notifCollect=s.notifCollect;
+      if(typeof s.notifMision ==='boolean')gameSettings.notifMision =s.notifMision;
+      if(typeof s.notifCombat ==='boolean')gameSettings.notifCombat =s.notifCombat;
+      if(typeof s.notifLevel  ==='boolean')gameSettings.notifLevel  =s.notifLevel;
+      if(typeof s.notifFamilia==='boolean')gameSettings.notifFamilia=s.notifFamilia;
+    }
+  }catch(e){ console.warn('loadSettings parse error:',e); }
+  // NO aplicar brillo ni volumen aquí — el canvas y AudioContext no existen aún
 }
 
 function saveSettings(){
@@ -3841,7 +3854,17 @@ window.notif = function(msg, tipo){
 };
 
 // Cargar ajustes al iniciar
-document.addEventListener('DOMContentLoaded', ()=>{ try{ loadSettings(); }catch(e){} });
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Asegurar que la pantalla de ajustes NO está visible al inicio
+  const ss = document.getElementById('s-settings');
+  if(ss) ss.classList.remove('active');
+  // Asegurar que loadOverlay se oculta como failsafe en 4s
+  setTimeout(()=>{
+    const lo = document.getElementById('loadOverlay');
+    if(lo && !lo.classList.contains('hidden')) lo.classList.add('hidden');
+  }, 4000);
+  try{ loadSettings(); }catch(e){ console.warn('loadSettings error:',e); }
+});
 
 function startGame(){
   genMundo();
@@ -4042,8 +4065,8 @@ onAuthStateChanged(auth,async u=>{
   // null → verificando | false → sin sesión | objeto → con sesión
   cu = u || false;
 
-  // Ocultar overlay de carga ahora que sabemos el estado
-  document.getElementById('loadOverlay').classList.add('hidden');
+  // Ocultar overlay de carga — siempre, pase lo que pase
+  try{ document.getElementById('loadOverlay').classList.add('hidden'); }catch(e){}
 
   if(u){
     try{
