@@ -1444,6 +1444,189 @@ function hpBar(o,oy){
   ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(-w/2,oy,f,1);
 }
 
+// ════════════════════════════════════════════════════════════
+//  OVERLAY DE ROPA Y PELO — dibujado encima del sprite base
+//  dx,dy = esquina superior izquierda del sprite renderizado
+//  dw,dh = tamaño renderizado (64*scale x 64*scale)
+// ════════════════════════════════════════════════════════════
+function drawNoahClothes(sx, dy, dw, dh, flipX, state){
+  // Escala relativa al frame (64px base → dw px renderizado)
+  const sc = dw / 64;
+
+  // Coordenadas del personaje dentro del frame (medidas en px base 64x64):
+  // Cabeza centro: x=32, y=16  (radio ~9px)
+  // Cuello:        x=32, y=25
+  // Hombros:       x=20-44, y=27
+  // Cadera:        x=22-42, y=40
+  // Rodillas:      x=24-40, y=50
+
+  // Convertir a coordenadas de pantalla
+  const ox = sx - dw/2;  // esquina izq del frame
+  const oy = dy;          // esquina sup del frame
+
+  // Función helper para convertir coord del frame a pantalla
+  const fx = (px) => ox + px * sc;
+  const fy = (py) => oy + py * sc;
+  const fs = (s)  => s * sc;  // escalar tamaño
+
+  ctx.save();
+  if(flipX){ ctx.translate(sx*2, 0); ctx.scale(-1,1); }
+
+  // ── 1. TÚNICA — cuerpo (marrón oscuro / beige bíblico) ───
+  // Franja vertical desde hombros hasta rodillas
+  ctx.fillStyle = '#8B6914';  // marrón dorado — tela de saco
+  // Cuerpo de la túnica
+  ctx.beginPath();
+  ctx.moveTo(fx(19), fy(26));   // hombro izq
+  ctx.lineTo(fx(45), fy(26));   // hombro der
+  ctx.lineTo(fx(47), fy(42));   // cadera der
+  ctx.lineTo(fx(35), fy(57));   // pie der
+  ctx.lineTo(fx(29), fy(57));   // pie izq
+  ctx.lineTo(fx(17), fy(42));   // cadera izq
+  ctx.closePath();
+  ctx.fill();
+
+  // Detalle más claro en el centro de la túnica
+  ctx.fillStyle = '#A07820';
+  ctx.beginPath();
+  ctx.moveTo(fx(27), fy(27));
+  ctx.lineTo(fx(37), fy(27));
+  ctx.lineTo(fx(38), fy(42));
+  ctx.lineTo(fx(32), fy(52));
+  ctx.lineTo(fx(26), fy(42));
+  ctx.closePath();
+  ctx.fill();
+
+  // Cinturón
+  ctx.fillStyle = '#4A2800';
+  ctx.fillRect(fx(18), fy(36), fs(28), fs(3));
+  // Hebilla del cinturón
+  ctx.fillStyle = '#C9A84C';
+  ctx.fillRect(fx(29), fy(35), fs(6), fs(5));
+
+  // Manga izquierda
+  ctx.fillStyle = '#8B6914';
+  ctx.beginPath();
+  ctx.moveTo(fx(19), fy(26));
+  ctx.lineTo(fx(13), fy(26));
+  ctx.lineTo(fx(10), fy(36));
+  ctx.lineTo(fx(16), fy(38));
+  ctx.lineTo(fx(19), fy(35));
+  ctx.closePath();
+  ctx.fill();
+
+  // Manga derecha
+  ctx.beginPath();
+  ctx.moveTo(fx(45), fy(26));
+  ctx.lineTo(fx(51), fy(26));
+  ctx.lineTo(fx(54), fy(36));
+  ctx.lineTo(fx(48), fy(38));
+  ctx.lineTo(fx(45), fy(35));
+  ctx.closePath();
+  ctx.fill();
+
+  // Borde/dobladillo de la túnica (línea oscura)
+  ctx.strokeStyle = '#3A1800';
+  ctx.lineWidth = fs(1.2);
+  ctx.beginPath();
+  ctx.moveTo(fx(19), fy(26));
+  ctx.lineTo(fx(17), fy(42));
+  ctx.lineTo(fx(29), fy(57));
+  ctx.lineTo(fx(35), fy(57));
+  ctx.lineTo(fx(47), fy(42));
+  ctx.lineTo(fx(45), fy(26));
+  ctx.stroke();
+
+  // ── 2. PELO LARGO (castaño oscuro) ───────────────────────
+  // Pelo que cae desde la cabeza hasta los hombros
+  ctx.fillStyle = '#3D1F00';  // castaño muy oscuro
+
+  // Pelo izquierdo
+  ctx.beginPath();
+  ctx.moveTo(fx(23), fy(11));
+  ctx.quadraticCurveTo(fx(14), fy(18), fx(15), fy(30));
+  ctx.lineTo(fx(19), fy(30));
+  ctx.quadraticCurveTo(fx(18), fy(20), fx(25), fy(14));
+  ctx.closePath();
+  ctx.fill();
+
+  // Pelo derecho
+  ctx.beginPath();
+  ctx.moveTo(fx(41), fy(11));
+  ctx.quadraticCurveTo(fx(50), fy(18), fx(49), fy(30));
+  ctx.lineTo(fx(45), fy(30));
+  ctx.quadraticCurveTo(fx(46), fy(20), fx(39), fy(14));
+  ctx.closePath();
+  ctx.fill();
+
+  // Pelo superior (parte de arriba de la cabeza)
+  ctx.fillStyle = '#4A2800';
+  ctx.beginPath();
+  ctx.arc(fx(32), fy(16), fs(10), Math.PI, 0);
+  ctx.fill();
+
+  // Reflejo del pelo
+  ctx.fillStyle = '#6B3A10';
+  ctx.beginPath();
+  ctx.arc(fx(29), fy(13), fs(3), 0, Math.PI*2);
+  ctx.fill();
+
+  // ── 3. BARBA (castaño con toques grises — Noé era anciano) ─
+  ctx.fillStyle = '#5A3010';
+  // Barba principal
+  ctx.beginPath();
+  ctx.moveTo(fx(24), fy(22));  // mejilla izq
+  ctx.quadraticCurveTo(fx(20), fy(28), fx(23), fy(34));  // lado izq
+  ctx.quadraticCurveTo(fx(28), fy(38), fx(32), fy(38));  // punta centro
+  ctx.quadraticCurveTo(fx(36), fy(38), fx(41), fy(34));  // lado der
+  ctx.quadraticCurveTo(fx(44), fy(28), fx(40), fy(22));  // mejilla der
+  ctx.quadraticCurveTo(fx(36), fy(20), fx(32), fy(20));  // labio
+  ctx.quadraticCurveTo(fx(28), fy(20), fx(24), fy(22));
+  ctx.closePath();
+  ctx.fill();
+
+  // Mechones de barba (líneas más claras)
+  ctx.strokeStyle = '#8B5020';
+  ctx.lineWidth = fs(0.8);
+  // Mechón izquierdo
+  ctx.beginPath();
+  ctx.moveTo(fx(26), fy(23));
+  ctx.quadraticCurveTo(fx(23), fy(30), fx(25), fy(36));
+  ctx.stroke();
+  // Mechón centro
+  ctx.beginPath();
+  ctx.moveTo(fx(32), fy(24));
+  ctx.lineTo(fx(32), fy(37));
+  ctx.stroke();
+  // Mechón derecho
+  ctx.beginPath();
+  ctx.moveTo(fx(38), fy(23));
+  ctx.quadraticCurveTo(fx(41), fy(30), fx(39), fy(36));
+  ctx.stroke();
+
+  // Canas en la barba (Noé era anciano)
+  ctx.strokeStyle = 'rgba(220,200,180,0.5)';
+  ctx.lineWidth = fs(0.6);
+  ctx.beginPath(); ctx.moveTo(fx(29),fy(25)); ctx.lineTo(fx(28),fy(33)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(fx(35),fy(25)); ctx.lineTo(fx(36),fy(33)); ctx.stroke();
+
+  // Bigote
+  ctx.fillStyle = '#4A2000';
+  ctx.beginPath();
+  ctx.ellipse(fx(32), fy(22), fs(5), fs(2), 0, 0, Math.PI);
+  ctx.fill();
+
+  // ── 4. SANDALIAS (visible en algunos frames) ─────────────
+  ctx.fillStyle = '#6B3A10';
+  ctx.fillRect(fx(22), fy(55), fs(8), fs(3));  // sandalia izq
+  ctx.fillRect(fx(34), fy(55), fs(8), fs(3));  // sandalia der
+  ctx.fillStyle = '#8B5020';
+  ctx.fillRect(fx(23), fy(54), fs(6), fs(1));  // correa izq
+  ctx.fillRect(fx(35), fy(54), fs(6), fs(1));  // correa der
+
+  ctx.restore();
+}
+
 function drawPlayer(cx,cy){
   const sx=P.x-cx, sy=P.y-cy;
   const T2=Date.now();
@@ -1462,7 +1645,7 @@ function drawPlayer(cx,cy){
 
   // ── SPRITE SHEET ─────────────────────────────────────────
   if(noahLoaded){
-    const {sheet, anim, flipX} = getNoahSheet();
+    const {sheet, anim, flipX, stateKey} = getNoahSheet();
     if(sheet){
       const fw = NOAH_CFG.frameW;
       const fh = NOAH_CFG.frameH;
@@ -1482,7 +1665,6 @@ function drawPlayer(cx,cy){
 
       ctx.save();
       if(flipX){
-        // Espejo horizontal para ir a la izquierda
         ctx.translate(sx*2, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(sheet, srcX, srcY, fw, fh, sx - dw/2, dy, dw, dh);
@@ -1490,6 +1672,9 @@ function drawPlayer(cx,cy){
         ctx.drawImage(sheet, srcX, srcY, fw, fh, dx, dy, dw, dh);
       }
       ctx.restore();
+
+      // ── Ropa, pelo y barba de Noé ──────────────────────────
+      drawNoahClothes(sx, dy, dw, dh, flipX, stateKey);
 
       // Destellos de ataque encima del sprite
       if(P.inv>20){
@@ -2429,6 +2614,7 @@ const NOAH_ACTION_DURATION = 30; // frames que se muestra la animación de acci�
 // Sheets indexados por [accion][direccion]
 const NS = {
   walk:   { down:null, up:null, side:null },
+  stop:   { down:null, up:null, side:null },
   slice:  { down:null, up:null, side:null },
   crush:  { down:null, up:null, side:null },
   pierce: { down:null, up:null, side:null },
@@ -2470,11 +2656,11 @@ function getNoahSheet(){
   // Determinar estado actual
   let stateKey;
   if(noahActionTimer > 0){
-    stateKey = noahAction; // 'slice','crush','pierce','fish'
+    stateKey = noahAction;
   } else if(P.moving){
     stateKey = 'walk';
   } else {
-    stateKey = 'walk'; // idle usa primer frame de walk
+    stateKey = 'stop'; // quieto — usa Stop_*.png
   }
 
   const sheet = NS[stateKey]?.[dirKey] || NS.walk?.[dirKey] || null;
@@ -2483,7 +2669,7 @@ function getNoahSheet(){
              : noahActionTimer > 0  ? NOAH_ANIM.action
              : P.moving             ? NOAH_ANIM.walk
              :                        NOAH_ANIM.idle;
-  return { sheet, anim, flipX:(dir==='left') };
+  return { sheet, anim, flipX:(dir==='left'), stateKey };
 }
 
 function loadNoahSprites(callback){
@@ -2510,6 +2696,9 @@ function loadNoahSprites(callback){
     ['death',  'down', 'Death_DownSheet.png'],
     ['death',  'up',   'Death_UpSheet.png'],
     ['death',  'side', 'Death_SideSheet.png'],
+    ['stop',   'down', 'Stop_DownSheet.png'],
+    ['stop',   'up',   'Stop_UpSheet.png'],
+    ['stop',   'side', 'Stop_SideSheet.png'],
   ];
   let done=0, anyLoaded=false;
   const total=SPRITE_MAP.length;
