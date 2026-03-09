@@ -826,7 +826,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <button class="mbtn pri" id="btnJugar" onclick="doJugar()">⚔️  Jugar</button>
       <button class="mbtn" onclick="doContinuar()" id="btnCont" style="display:none">📜  Continuar partida</button>
       <div id="saveInfo" style="display:none;font-size:0.62rem;color:var(--muted);text-align:center;line-height:1.6;margin-top:-4px"></div>
-      <button class="mbtn" onclick="showS('s-login')" id="btnLogin" style="font-size:0.72rem;opacity:0.62">🔑  Ingresar con mi cuenta</button>
+      <button class="mbtn" onclick="showS('s-login')" id="btnLogin" style="font-size:0.72rem;opacity:0.75">🔑  Ingresar con mi cuenta</button>
       <button class="mbtn" onclick="doLogout()" id="btnLogout" style="display:none;font-size:0.7rem;opacity:0.5">Salir de mi cuenta</button>
     </div>
   </div>
@@ -3191,12 +3191,16 @@ window.doResume=function(){gPause=false;document.getElementById('s-pause').class
 // ── doJugar: espera a que Firebase confirme la sesión ──
 window.doJugar=function(){
   initAudio();
-  // Si ya hay sesión confirmada → jugar directo
-  if(cu){startGame();return;}
-  // Si Firebase ya confirmó que no hay sesión → ir a login
-  if(cu===false){showS('s-login');return;}
-  // cu===null significa Firebase aún verificando
-  // Esperar máx 2s, luego jugar sin cuenta (modo offline)
+  // Siempre se puede jugar — con o sin cuenta
+  // Si Firebase ya respondió, usar ese estado
+  // Si aún verifica (cu===null), esperar máx 1.5s y jugar igual
+  if(cu !== null){
+    // Firebase ya respondió — jugar directo (cu puede ser usuario o false)
+    startGame();
+    if(!cu) notif('Jugando sin cuenta — el progreso no se guardará','');
+    return;
+  }
+  // cu===null → Firebase aún verificando, esperar brevemente
   const btn=document.getElementById('btnJugar');
   const orig=btn.innerHTML;
   btn.innerHTML='⏳ Conectando...';
@@ -3206,24 +3210,23 @@ window.doJugar=function(){
     if(resolved) return;
     resolved=true;
     btn.innerHTML=orig; btn.disabled=false;
-    // Timeout: jugar en modo offline sin guardar
     startGame();
-    notif('⚠️ Sin conexión — progreso no se guardará','red');
-  },2000);
+    notif('Sin conexión — el progreso no se guardará','');
+  },1500);
   const interval=setInterval(()=>{
-    if(cu===null) return; // aún esperando
+    if(cu===null) return;
     clearInterval(interval);
     clearTimeout(timer);
     if(resolved) return;
     resolved=true;
     btn.innerHTML=orig; btn.disabled=false;
-    if(cu){startGame();}else{showS('s-login');}
+    startGame();
+    if(!cu) notif('Jugando sin cuenta — el progreso no se guardará','');
   },100);
 };
 
 window.doContinuar=function(){
-  if(cu===null){showS('s-login');return;}
-  if(!cu){showS('s-login');return;}
+  if(!cu){ showS('s-login'); return; }
   loadAndPlay();
 };
 
