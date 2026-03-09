@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-<title>El Arca de Noé — RPG Survival</title>
+<title>El Arca de Noé — Juego de Supervivencia</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -78,11 +78,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .pbody{padding:14px;overflow-y:auto;max-height:68vh;}
 
 /* Inventario */
-.igrid{display:grid;grid-template-columns:repeat(6,44px);gap:4px;}
-@media(max-width:380px){.igrid{grid-template-columns:repeat(4,44px);}}
-.islot{width:44px;height:44px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;position:relative;transition:all 0.15s;}
-.islot:hover{border-color:var(--gold);background:rgba(201,168,76,0.08);}
-.islot.ok{border-color:rgba(201,168,76,0.28);}
+.igrid{display:grid;grid-template-columns:repeat(5,56px);gap:5px;}
+@media(max-width:380px){.igrid{grid-template-columns:repeat(4,56px);}}
+.islot{width:56px;height:64px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:1.2rem;cursor:pointer;position:relative;transition:all 0.15s;}
+.islot:hover,.islot:active{border-color:var(--gold);background:rgba(201,168,76,0.12);}
+.islot.ok{border-color:rgba(201,168,76,0.35);}
+.iname{font-size:0.52rem;color:rgba(240,230,200,0.8);text-align:center;line-height:1.1;max-width:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'Cinzel',serif;}
 .iqty{position:absolute;bottom:2px;right:3px;font-size:0.6rem;color:var(--gold);font-family:'Cinzel',serif;}
 .itip{display:none;position:absolute;bottom:108%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.92);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:0.7rem;white-space:nowrap;color:var(--text);z-index:10;pointer-events:none;}
 .islot:hover .itip{display:block;}
@@ -166,7 +167,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <!-- Loading overlay mientras Firebase verifica sesión -->
 <div id="loadOverlay">
   <div class="load-spin"></div>
-  <div class="load-txt">Verificando sesión...</div>
+  <div class="load-txt">Cargando el juego...</div>
 </div>
 
 <canvas id="bgc"></canvas>
@@ -224,15 +225,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div style="text-align:center">
       <div class="gt-sub">Centro Cristiano de Restauración Los Ríos</div>
       <div class="gt-main">El Arca de Noé</div>
-      <div class="gt-verse">"Survival RPG · Génesis 6—9"</div>
+      <div class="gt-verse">"Juego de supervivencia · Génesis 6—9"</div>
     </div>
     <div class="ark-icon">⛵</div>
     <div class="ubadge" id="ubadge" style="display:none"><div class="gdot"></div><span id="unick">Jugador</span></div>
     <div class="mbtns">
       <button class="mbtn pri" id="btnJugar" onclick="doJugar()">⚔️  Jugar</button>
-      <button class="mbtn" onclick="doContinuar()" id="btnCont" style="display:none">📜  Continuar</button>
-      <button class="mbtn" onclick="showS('s-login')" id="btnLogin" style="font-size:0.72rem;opacity:0.62">🔑  Iniciar sesión</button>
-      <button class="mbtn" onclick="doLogout()" id="btnLogout" style="display:none;font-size:0.7rem;opacity:0.5">Cerrar sesión</button>
+      <button class="mbtn" onclick="doContinuar()" id="btnCont" style="display:none">📜  Continuar partida</button>
+      <button class="mbtn" onclick="showS('s-login')" id="btnLogin" style="font-size:0.72rem;opacity:0.62">🔑  Ingresar con mi cuenta</button>
+      <button class="mbtn" onclick="doLogout()" id="btnLogout" style="display:none;font-size:0.7rem;opacity:0.5">Salir de mi cuenta</button>
     </div>
   </div>
 </div>
@@ -241,27 +242,27 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <div class="screen" id="s-login">
   <div class="lbox">
     <div style="font-size:2.5rem">⛵</div>
-    <div class="ltitle">Accede a tu cuenta</div>
-    <p class="lsub">Usa tu cuenta del chat de la iglesia</p>
+    <div class="ltitle">Inicia sesión</div>
+    <p class="lsub">Usa el mismo correo con el que entraste al chat</p>
     <input class="linput" type="email" id="lEmail" placeholder="Correo electrónico" autocomplete="email"/>
     <input class="linput" type="password" id="lPass" placeholder="Contraseña"/>
     <div class="lerr" id="lErr"></div>
     <button class="mbtn pri" style="width:100%" onclick="doLogin()">Entrar →</button>
     <div class="divider"></div>
-    <button class="lback" onclick="showS('s-menu')">← Volver</button>
+    <button class="lback" onclick="showS('s-menu')">← Regresar</button>
   </div>
 </div>
 
 <!-- PANEL INVENTARIO -->
 <div class="panel" id="p-inv">
-  <div class="ph"><span class="ptitle">🎒 Inventario</span><button class="pclose" onclick="toggleP('inv')">✕</button></div>
+  <div class="ph"><span class="ptitle">🎒 Bolsa</span><button class="pclose" onclick="toggleP('inv')">✕</button></div>
   <div class="pbody" style="width:min(320px,92vw)"><div class="igrid" id="invGrid"></div>
-  <p style="margin-top:10px;font-size:0.72rem;color:var(--muted);font-style:italic">Toca un objeto para usarlo</p></div>
+  <p style="margin-top:10px;font-size:0.72rem;color:var(--muted);font-style:italic">Toca un objeto para usarlo o colocarlo</p></div>
 </div>
 
 <!-- PANEL CRAFTEO -->
 <div class="panel" id="p-craft">
-  <div class="ph"><span class="ptitle">⚒️ Crafteo</span><button class="pclose" onclick="toggleP('craft')">✕</button></div>
+  <div class="ph"><span class="ptitle">⚒️ Crear</span><button class="pclose" onclick="toggleP('craft')">✕</button></div>
   <div class="pbody" style="width:min(400px,92vw)">
     <div class="ccats" id="cCats"></div>
     <div class="clist" id="cList"></div>
@@ -270,7 +271,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 <!-- PANEL SKILLS -->
 <div class="panel" id="p-skills">
-  <div class="ph"><span class="ptitle">✨ Habilidades</span><button class="pclose" onclick="toggleP('skills')">✕</button></div>
+  <div class="ph"><span class="ptitle">✨ Talentos</span><button class="pclose" onclick="toggleP('skills')">✕</button></div>
   <div class="pbody" style="width:min(380px,92vw)">
     <div class="spts" id="sPts">Puntos: 0</div>
     <div class="stree" id="skillTree"></div>
@@ -280,8 +281,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <!-- PAUSA -->
 <div class="screen" id="s-pause">
   <div class="pbox">
-    <div class="ptit">⏸ Pausa</div><div class="divider"></div>
-    <button class="mbtn pri" onclick="doResume()">▶ Continuar</button>
+    <div class="ptit">⏸ Juego pausado</div><div class="divider"></div>
+    <button class="mbtn pri" onclick="doResume()">▶ Seguir jugando</button>
     <button class="mbtn" onclick="doSaveQuit()">💾 Guardar y salir</button>
   </div>
 </div>
@@ -290,16 +291,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 <div class="screen" id="s-over">
   <div class="pbox">
     <div style="font-size:2.8rem">💀</div>
-    <div class="otit">Has caído</div>
+    <div class="otit">¡Has caído!</div>
     <p class="overse">"El justo puede caer siete veces<br>y volver a levantarse."<br>— Proverbios 24:16</p>
     <div class="divider"></div>
-    <button class="mbtn pri" onclick="doRestart()">🔄 Intentar de nuevo</button>
-    <button class="mbtn" onclick="doSaveQuit()">🏠 Menú principal</button>
+    <button class="mbtn pri" onclick="doRestart()">🔄 Volver a intentar</button>
+    <button class="mbtn" onclick="doSaveQuit()">🏠 Ir al menú</button>
   </div>
 </div>
 
 <!-- SLEEP -->
-<div id="sl-ov"><div class="slmsg" id="slMsg">🌙 Descansando...<br><span style="font-size:0.9rem;color:var(--muted)">El tiempo avanza</span></div></div>
+<div id="sl-ov"><div class="slmsg" id="slMsg">🌙 Durmiendo...<br><span style="font-size:0.9rem;color:var(--muted)">Pasa la noche...</span></div></div>
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -390,15 +391,15 @@ const RECETAS=[
 ];
 
 const SKILLS=[
-  {id:'fuerza',n:'Fuerza',e:'💪',d:'Recolectas más por golpe',c:1,req:null,u:false},
+  {id:'fuerza',n:'Fuerza',e:'💪',d:'Recoges más materiales de golpe',c:1,req:null,u:false},
   {id:'carp',n:'Carpintero',e:'🪚',d:'Construyes más rápido',c:1,req:null,u:false},
-  {id:'granj',n:'Granjero',e:'🌾',d:'Cultivos crecen más rápido',c:1,req:null,u:false},
-  {id:'caz',n:'Cazador',e:'🏹',d:'Más carne al cazar',c:2,req:'fuerza',u:false},
-  {id:'med',n:'Médico',e:'⚕️',d:'Las hierbas curan el doble',c:2,req:'granj',u:false},
-  {id:'arq',n:'Arquitecto',e:'🏛️',d:'Desbloquea partes del Arca',c:3,req:'carp',u:false},
-  {id:'prof',n:'Profeta',e:'📜',d:'Bonus XP al explorar',c:2,req:null,u:false},
-  {id:'past',n:'Pastor',e:'🐑',d:'Los animales se acercan',c:2,req:'granj',u:false},
-  {id:'guer',n:'Guerrero',e:'⚔️',d:'Doble daño a Nefilim',c:3,req:'caz',u:false},
+  {id:'granj',n:'Granjero',e:'🌾',d:'Los cultivos crecen más rápido',c:1,req:null,u:false},
+  {id:'caz',n:'Cazador',e:'🏹',d:'Obtienes más carne al cazar',c:2,req:'fuerza',u:false},
+  {id:'med',n:'Médico',e:'⚕️',d:'Las plantas curan el doble',c:2,req:'granj',u:false},
+  {id:'arq',n:'Arquitecto',e:'🏛️',d:'Puedes construir el Arca de Noé',c:3,req:'carp',u:false},
+  {id:'prof',n:'Profeta',e:'📜',d:'Ganas más experiencia explorando',c:2,req:null,u:false},
+  {id:'past',n:'Pastor',e:'🐑',d:'Los animales se acercan a ti',c:2,req:'granj',u:false},
+  {id:'guer',n:'Guerrero',e:'⚔️',d:'Haces el doble de daño a los gigantes',c:3,req:'caz',u:false},
 ];
 
 // ─── GENERACIÓN MUNDO ────────────────────────
@@ -1010,6 +1011,16 @@ function isSolid(tx,ty){
   return false;
 }
 
+function findNearestWater(px,py){
+  // Busca el tile de agua más cercano en rango 15
+  let best=null,bd=999;
+  for(let dy=-15;dy<=15;dy++)for(let dx=-15;dx<=15;dx++){
+    const t=wMap[py+dy]?.[px+dx];
+    if(t&&t.t===T.WATER){const d=Math.hypot(dx,dy);if(d<bd){bd=d;best={tx:px+dx,ty:py+dy};}}
+  }
+  return best;
+}
+
 function drawNearIndicator(cx,cy){
   const hint=document.getElementById('ihint');
   const px=Math.floor(P.x/TILE),py=Math.floor(P.y/TILE);
@@ -1017,14 +1028,68 @@ function drawNearIndicator(cx,cy){
   wObjs.forEach(o=>{const d=Math.hypot(o.tx-px,o.ty-py);if(d<minD){minD=d;nearObj=o;}});
   structs.forEach(s=>{const d=Math.hypot(s.tx-px,s.ty-py);if(d<minD){minD=d;nearObj=s;}});
   const waterNear=[-1,0,1].some(dy=>[-1,0,1].some(dx=>{const t=wMap[py+dy]?.[px+dx];return t&&t.t===T.WATER;}));
+
   if(nearObj){
     const sx=nearObj.tx*TILE-cx+TILE/2,sy=nearObj.ty*TILE-cy-10;
-    ctx.fillStyle='rgba(255,215,0,0.65)';ctx.font='15px serif';ctx.textAlign='center';ctx.fillText('⬆',sx,sy);ctx.textAlign='left';
-    const labs={arbol:'[E] Cortar árbol',roca:'[E] Picar piedra',arbusto:'[E] Recoger fibra',bayas:'[E] Recoger bayas',frutal:'[E] Recoger fruta',cana:'[E] Recoger fibra',fogon:'[E] Cocinar',cama:'[E] Dormir',cofre:'[E] Cofre',arca1:'⚓ Cimientos del Arca',arca2:'🏗️ Cubierta del Arca',arca3:'🛖 Tejado del Arca'};
-    hint.textContent=labs[nearObj.tipo]||'[E] Interactuar';hint.style.display='block';
-  } else if(waterNear&&hasItem('jarra')){
-    hint.textContent='[E] Llenar jarra';hint.style.display='block';nearObj={tipo:'agua'};
+    ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='16px serif';ctx.textAlign='center';
+    ctx.fillText('⬆',sx,sy);ctx.textAlign='left';
+    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Usar fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖'};
+    hint.textContent=labs[nearObj.tipo]||'[E] Interactuar';
+    hint.style.display='block';
+    hint.style.color='var(--gold)';
+  } else if(waterNear){
+    if(hasItem('jarra')){
+      hint.textContent='[E] Llenar jarra con agua 💧';hint.style.display='block';nearObj={tipo:'agua'};
+      hint.style.color='#5af';
+    } else {
+      hint.textContent='💧 Necesitas una jarra — créala con 3 barros de barro';hint.style.display='block';
+      hint.style.color='#5af';
+    }
   } else{hint.style.display='none';}
+
+  // ── Guía de supervivencia: flecha hacia agua si sed crítica y sin agua ──
+  if(P.thirst<25&&!hasItem('agua')){
+    const nw=findNearestWater(px,py);
+    if(nw){
+      const wx=nw.tx*TILE-cx+TILE/2, wy=nw.ty*TILE-cy+TILE/2;
+      const screenCx=canvas.width/2, screenCy=canvas.height/2;
+      const ang=Math.atan2(wy-screenCy,wx-screenCx);
+      const dist=Math.hypot(wx-screenCx,wy-screenCy);
+      // Si el agua NO está en pantalla, mostrar flecha en borde
+      if(dist>200){
+        const arrowR=Math.min(canvas.width,canvas.height)*0.38;
+        const ax=screenCx+Math.cos(ang)*arrowR;
+        const ay=screenCy+Math.sin(ang)*arrowR;
+        const pulse=0.6+Math.sin(Date.now()/300)*0.4;
+        ctx.save();ctx.translate(ax,ay);ctx.rotate(ang);
+        ctx.fillStyle=`rgba(80,170,255,${pulse})`;
+        ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(-10,-10);ctx.lineTo(-6,0);ctx.lineTo(-10,10);ctx.closePath();ctx.fill();
+        ctx.strokeStyle=`rgba(255,255,255,${pulse*0.7})`;ctx.lineWidth=1.5;ctx.stroke();
+        ctx.restore();
+        // Etiqueta
+        ctx.fillStyle=`rgba(80,170,255,${pulse})`;
+        ctx.font='bold 11px Cinzel,serif';ctx.textAlign='center';
+        ctx.fillText('💧 AGUA',ax,ay-18);ctx.textAlign='left';
+      }
+    }
+  }
+
+  // ── Guía: flecha hacia árbol si no tiene madera y necesita construir ──
+  if(!hasItem('madera')&&!hasItem('jarra')&&wDay<=2){
+    const nearTree=wObjs.find(o=>o.tipo==='arbol'&&Math.hypot(o.tx-px,o.ty-py)<20);
+    if(nearTree&&Math.hypot(nearTree.tx-px,nearTree.ty-py)>3){
+      const tx=nearTree.tx*TILE-cx+TILE/2,ty=nearTree.ty*TILE-cy+TILE/2;
+      const ang=Math.atan2(ty-canvas.height/2,tx-canvas.width/2);
+      if(Math.hypot(tx-canvas.width/2,ty-canvas.height/2)>80){
+        const ax=canvas.width/2+Math.cos(ang)*140,ay=canvas.height/2+Math.sin(ang)*140;
+        const p2=0.5+Math.sin(Date.now()/400)*0.5;
+        ctx.save();ctx.translate(ax,ay);ctx.rotate(ang);
+        ctx.fillStyle=`rgba(120,200,60,${p2})`;
+        ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-8);ctx.lineTo(-5,0);ctx.lineTo(-8,8);ctx.closePath();ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
 }
 
 window.doInteract=function(){
@@ -1047,9 +1112,9 @@ window.doInteract=function(){
   }else if(o.tipo==='frutal'){
     addItem('fruta',2+Math.floor(Math.random()*2));removeObj(o);notif('🍎 Fruta','');addXP(5);
   }else if(o.tipo==='agua'){
-    if(hasItem('jarra')){removeItem('jarra',1);addItem('agua',1);notif('🫙 Jarra llena','grn');}
+    if(hasItem('jarra')){removeItem('jarra',1);addItem('agua',1);notif('🫙 ¡Jarra llena de agua!','grn');}
   }else if(o.tipo==='fogon'){
-    toggleP('craft');notif('🔥 Abre el crafteo para cocinar','');
+    toggleP('craft');notif('🔥 Acércate al fogón para cocinar','');
   }else if(o.tipo==='cama'){doSleep();}
   else if(o.tipo==='cofre'){toggleP('inv');}
 };
@@ -1064,7 +1129,7 @@ function addItem(id,qty){
   if(!qty||qty<=0)return;
   for(let i=0;i<INV_SZ;i++){if(inv[i]&&inv[i].id===id){inv[i].qty+=qty;return;}}
   for(let i=0;i<INV_SZ;i++){if(!inv[i]){inv[i]={id,qty};return;}}
-  notif('🎒 Inventario lleno','red');
+  notif('🎒 ¡La bolsa está llena!','red');
 }
 function removeItem(id,qty){
   for(let i=0;i<INV_SZ;i++){if(inv[i]&&inv[i].id===id){inv[i].qty-=qty;if(inv[i].qty<=0)inv[i]=null;return true;}}
@@ -1080,7 +1145,7 @@ function renderInv(){
     sl.className='islot'+(inv[i]?' ok':'');
     if(inv[i]){
       const it=ITEMS[inv[i].id];
-      sl.innerHTML=`${it?it.e:'?'}<span class="iqty">${inv[i].qty}</span><span class="itip">${it?it.n:inv[i].id}</span>`;
+      sl.innerHTML=`${it?it.e:'?'}<span class="iqty">${inv[i].qty}</span><div class="iname">${it?it.n:inv[i].id}</div>`;
       sl.onclick=()=>useItem(i);
     }
     g.appendChild(sl);
@@ -1095,7 +1160,7 @@ function useItem(idx){
     if(it.fx.thirst)P.thirst=Math.min(100,P.thirst+it.fx.thirst);
     if(it.fx.energy)P.energy=Math.min(100,P.energy+it.fx.energy);
     if(it.fx.hp)P.hp=Math.min(P.mhp,P.hp+it.fx.hp);
-    notif(`${it.e} ${it.n} consumido`,'grn');removeItem(sl.id,1);addXP(3);
+    notif(`${it.e} ${it.n} usado`,'grn');removeItem(sl.id,1);addXP(3);
   }else if(it.t==='s'){placeSt(sl.id);}
   renderInv();
 }
@@ -1106,7 +1171,7 @@ function renderCraft(){
   RCATS.forEach(c=>{
     const b=document.createElement('div');
     b.className='ccat'+(c===cCat?' on':'');
-    b.textContent={herramientas:'🛠️ Herramientas',construccion:'🏗️ Construcción',comida:'🍖 Comida',estructuras:'🏠 Estructuras',arca:'⛵ El Arca'}[c];
+    b.textContent={herramientas:'🛠️ Útiles',construccion:'🏗️ Materiales',comida:'🍖 Alimentos',estructuras:'🏠 Construir',arca:'⛵ El Arca'}[c];
     b.onclick=()=>{cCat=c;renderCraft();};
     cc.appendChild(b);
   });
@@ -1118,20 +1183,20 @@ function renderCraft(){
     const div=document.createElement('div');
     div.className='citem'+((!can||!strOk)?' dis':'');
     const rh=Object.entries(r.req).map(([id,q])=>`<span class="creq ${cntItem(id)>=q?'ok':'no'}">${ITEMS[id]?.e||id} ${cntItem(id)}/${q}</span>`).join('');
-    const sw=r.str&&!strOk?`<span class="creq no">Req: ${ITEMS[r.str]?.n||r.str}</span>`:'';
-    div.innerHTML=`<div class="cemi">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Crear</button>`;
+    const sw=r.str&&!strOk?`<span class="creq no">Necesitas: ${ITEMS[r.str]?.n||r.str}</span>`:'';
+    div.innerHTML=`<div class="cemi">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Hacer</button>`;
     cl.appendChild(div);
   });
 }
 
 window.doCraft=function(id){
   const rc=RECETAS.find(r=>r.id===id);if(!rc)return;
-  if(!Object.entries(rc.req).every(([id2,q])=>cntItem(id2)>=q)){notif('❌ Materiales insuficientes','red');return;}
+  if(!Object.entries(rc.req).every(([id2,q])=>cntItem(id2)>=q)){notif('❌ Te faltan materiales','red');return;}
   Object.entries(rc.req).forEach(([id2,q])=>removeItem(id2,q));
   addItem(rc.r,rc.q);
-  const it=ITEMS[rc.r];notif(`${it?.e} ${rc.n} creado`,'grn');addXP(15);
+  const it=ITEMS[rc.r];notif(`${it?.e} ${rc.n} listo`,'grn');addXP(15);
   renderCraft();renderInv();
-  if(rc.cat==='arca')notif('⚓ Usa el inventario para colocar la parte del Arca','gld');
+  if(rc.cat==='arca')notif('⚓ Ve a tu bolsa y tócala para colocarla en el suelo','gld');
 };
 
 function placeSt(tipo){
@@ -1140,23 +1205,23 @@ function placeSt(tipo){
     const tx=px+dx,ty=py+dy;
     if(!isSolid(tx,ty)){
       structs.push({tx,ty,tipo});removeItem(tipo,1);
-      notif(`🏗️ ${ITEMS[tipo]?.n||tipo} colocado`,'grn');addXP(20);renderInv();return;
+      notif(`🏗️ ${ITEMS[tipo]?.n||tipo} colocado en el suelo`,'grn');addXP(20);renderInv();return;
     }
   }
-  notif('❌ Sin espacio','red');
+  notif('❌ No hay espacio para colocar esto','red');
 }
 
 function hasSkill(id){return SKILLS.find(s=>s.id===id)?.u||false;}
 
 function renderSkills(){
-  document.getElementById('sPts').textContent=`Puntos de habilidad: ${P.sp}`;
+  document.getElementById('sPts').textContent=`Puntos disponibles: ${P.sp}`;
   const t=document.getElementById('skillTree');t.innerHTML='';
   SKILLS.forEach(s=>{
     const ro=!s.req||hasSkill(s.req);
     const st=s.u?'unl':ro&&P.sp>=s.c?'avail':'lk';
     const div=document.createElement('div');
     div.className=`snode ${st}`;
-    div.innerHTML=`<div class="sicon">${s.e}</div><div class="sname">${s.n}</div><div class="sdesc">${s.d}</div><div class="scost">${s.u?'✅ Activo':`${s.c} pts${s.req?` · Req: ${SKILLS.find(sk=>sk.id===s.req)?.n||s.req}`:''}`}</div>`;
+    div.innerHTML=`<div class="sicon">${s.e}</div><div class="sname">${s.n}</div><div class="sdesc">${s.d}</div><div class="scost">${s.u?'✅ Ya aprendido':`${s.c} pts${s.req?` · Necesitas: ${SKILLS.find(sk=>sk.id===s.req)?.n||s.req}`:''}`}</div>`;
     if(st==='avail')div.onclick=()=>unlockSkill(s.id);
     t.appendChild(div);
   });
@@ -1172,7 +1237,7 @@ function unlockSkill(id){
 function addXP(n){
   P.xp+=n*(hasSkill('prof')?1.5:1);
   const need=P.lv*100;
-  if(P.xp>=need){P.xp-=need;P.lv++;P.sp++;P.mhp+=10;P.hp=Math.min(P.mhp,P.hp+20);notif(`⬆️ Nivel ${P.lv}! +1 punto habilidad`,'gld');}
+  if(P.xp>=need){P.xp-=need;P.lv++;P.sp++;P.mhp+=10;P.hp=Math.min(P.mhp,P.hp+20);notif(`⬆️ Nivel ${P.lv}! +1 punto de talento`,'gld');}
 }
 
 function doSleep(){
@@ -1275,7 +1340,7 @@ window.doJugar=function(){
     // Firebase aún verificando — esperar máx 4s
     const btn=document.getElementById('btnJugar');
     const orig=btn.innerHTML;
-    btn.innerHTML='⏳ Verificando...';
+    btn.innerHTML='⏳ Cargando...';
     btn.disabled=true;
     const t=setInterval(()=>{
       if(cu!==null){
@@ -1309,7 +1374,14 @@ window.doLogout=async function(){await signOut(auth);};
 
 function startGame(){
   genMundo();
-  addItem('madera',5);addItem('piedra',3);addItem('fibra',4);addItem('fruta',2);addItem('bayas',3);
+  // Items iniciales más útiles y orientadores
+  addItem('madera',5);
+  addItem('piedra',3);
+  addItem('fibra',4);
+  addItem('fruta',2);
+  addItem('bayas',3);
+  addItem('barro',3);   // para que puedan craftear jarra inmediatamente
+  addItem('jarra',1);   // jarra ya lista para recoger agua
   beginLoop();
 }
 async function loadAndPlay(){await loadGame();beginLoop();}
@@ -1321,8 +1393,12 @@ function beginLoop(){
   initCanvas();initNubes();
   if(afr)cancelAnimationFrame(afr);
   loop();
+  // Notificaciones de tutorial escalonadas
   notif(`🕊️ ¡Que Dios te guíe, ${nick}!`,'gld');
-  setTimeout(()=>notif('[E] para interactuar · [I] inventario · [C] crafteo',''),3200);
+  setTimeout(()=>notif('🌿 Acércate a un árbol y presiona [E] para cortarlo',''),2500);
+  setTimeout(()=>notif('🏺 Crea una Jarra de barro con 3 barros — para cargar agua',''),6000);
+  setTimeout(()=>notif('💧 Lleva la jarra al agua y presiona [E] para llenarla',''),9500);
+  setTimeout(()=>notif('🍎 Abre tu bolsa y toca una fruta para comerla',''),13000);
 }
 function gameOver(){gRun=false;showS('s-over');}
 
@@ -1364,7 +1440,7 @@ window.doLogin=async function(){
   const ps=document.getElementById('lPass').value;
   const er=document.getElementById('lErr');
   er.textContent='';
-  if(!em||!ps){er.textContent='Completa todos los campos.';return;}
+  if(!em||!ps){er.textContent='Debes ingresar tu correo y contraseña.';return;}
   try{
     await signInWithEmailAndPassword(auth,em,ps);
     // onAuthStateChanged actualizará cu automáticamente
@@ -1372,7 +1448,7 @@ window.doLogin=async function(){
     showS('s-menu');
     startGame();
   }catch(e){
-    er.textContent='Correo o contraseña incorrectos.';
+    er.textContent='El correo o la contraseña no son correctos.';
   }
 };
 
@@ -1386,8 +1462,8 @@ async function saveGame(){
       inventory:inv.filter(Boolean),structs:structs,
       px:Math.round(P.x),py:Math.round(P.y),savedAt:Date.now()
     });
-    notif('💾 Guardado','grn');
-  }catch(e){notif('Error al guardar','red');}
+    notif('💾 Progreso guardado','grn');
+  }catch(e){notif('No se pudo guardar','red');}
 }
 
 async function loadGame(){
@@ -1401,7 +1477,7 @@ async function loadGame(){
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
     if(d.structs)structs.push(...d.structs);
     if(d.px)P.x=d.px;if(d.py)P.y=d.py;
-    genMundo();notif('📜 Partida cargada','grn');
+    genMundo();notif('📜 ¡Bienvenido de vuelta!','grn');
   }catch(e){genMundo();}
 }
 
