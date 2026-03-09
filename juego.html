@@ -36,6 +36,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .screen.active{display:flex;}
 #s-menu{background:transparent;}
 #s-login,#s-pause,#s-over{background:rgba(0,0,0,0.72);backdrop-filter:blur(8px);z-index:100;}
+#s-tutorial{background:rgba(0,0,0,0.88);backdrop-filter:blur(10px);z-index:150;}
 .lbox{position:relative;z-index:101;}
 #bgc{position:fixed;inset:0;z-index:0;}
 
@@ -297,6 +298,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div class="mbtns">
       <button class="mbtn pri" id="btnJugar" onclick="doJugar()">⚔️  Jugar</button>
       <button class="mbtn" onclick="doContinuar()" id="btnCont" style="display:none">📜  Continuar partida</button>
+      <div id="saveInfo" style="display:none;font-size:0.62rem;color:var(--muted);text-align:center;line-height:1.6;margin-top:-4px"></div>
       <button class="mbtn" onclick="showS('s-login')" id="btnLogin" style="font-size:0.72rem;opacity:0.62">🔑  Ingresar con mi cuenta</button>
       <button class="mbtn" onclick="doLogout()" id="btnLogout" style="display:none;font-size:0.7rem;opacity:0.5">Salir de mi cuenta</button>
     </div>
@@ -404,11 +406,35 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 </div>
 
 <!-- PAUSA -->
+<!-- TUTORIAL GUIADO -->
+<div class="screen" id="s-tutorial" style="z-index:150;overflow-y:auto;align-items:center;justify-content:center;padding:20px 0;">
+  <div id="tut-box" style="background:linear-gradient(160deg,#06080f,#0d0a1e);border:2px solid rgba(201,168,76,0.5);border-radius:16px;padding:0;width:min(500px,94vw);max-height:94vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(201,168,76,0.2);">
+    <!-- Barra de progreso -->
+    <div style="height:3px;background:rgba(255,255,255,0.05);">
+      <div id="tut-progress" style="height:100%;background:linear-gradient(90deg,#c9a84c,#f0d080);transition:width 0.4s;width:0%"></div>
+    </div>
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(201,168,76,0.2)">
+      <div id="tut-step-label" style="font-family:Cinzel,serif;font-size:0.65rem;color:var(--muted);letter-spacing:0.1em">TUTORIAL — PASO 1 DE 9</div>
+      <button onclick="skipTutorial()" style="background:none;border:1px solid rgba(255,255,255,0.15);border-radius:4px;color:var(--muted);font-size:0.62rem;padding:3px 8px;cursor:pointer;font-family:Cinzel,serif">SALTAR</button>
+    </div>
+    <!-- Contenido scrollable -->
+    <div id="tut-content" style="padding:24px 24px 12px;overflow-y:auto;flex:1;"></div>
+    <!-- Navegación -->
+    <div style="display:flex;gap:10px;padding:14px 24px 18px;border-top:1px solid rgba(201,168,76,0.15)">
+      <button id="tut-prev" class="mbtn" style="flex:0 0 auto;min-width:80px;font-size:0.7rem;padding:9px 14px" onclick="tutStep(-1)">← Anterior</button>
+      <button id="tut-next" class="mbtn pri" style="flex:1;font-size:0.78rem" onclick="tutStep(1)">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="s-pause">
   <div class="pbox">
     <div class="ptit">⏸ Juego pausado</div><div class="divider"></div>
     <button class="mbtn pri" onclick="doResume()">▶ Seguir jugando</button>
-    <button class="mbtn" onclick="doSaveQuit()">💾 Guardar y salir</button>
+    <button class="mbtn" onclick="saveGame()">💾 Guardar</button>
+    <button class="mbtn" onclick="showTutorial()">📖 Ver Tutorial</button>
+    <button class="mbtn" onclick="doSaveQuit()">🏠 Guardar y salir</button>
   </div>
 </div>
 
@@ -1791,6 +1817,8 @@ function update(){
   if(P.moving){P.eT++;if(P.eT>110){P.eT=0;P.energy=Math.max(0,P.energy-1);}}
   if(P.inv>0)P.inv--;
   tickFamilia();
+  // Autoguardado cada 5 minutos
+  if(tick>0 && tick%18000===0) saveGame();
   wTime+=1/(60*60*3);
   if(wTime>=1){wTime=0;wDay++;sndNewDay();notif(`☀️ Día ${wDay}`,'gld');}
   climaT++;
@@ -2176,9 +2204,14 @@ function unlockSkill(id){
 }
 
 function addXP(n){
-  P.xp+=n*(hasSkill('prof')?1.5:1);
+  const mult=(hasSkill('prof')?1.5:1);
+  const gained=Math.round(n*mult);
+  P.xp+=gained;
+  // Mostrar XP ganado brevemente
+  const xpEl=document.getElementById('bXp');
+  if(xpEl){ xpEl.style.boxShadow='0 0 6px #f0d08088'; setTimeout(()=>{if(xpEl)xpEl.style.boxShadow='';},400); }
   const need=P.lv*100;
-  if(P.xp>=need){P.xp-=need;P.lv++;P.sp++;P.mhp+=10;P.hp=Math.min(P.mhp,P.hp+20);sndLevelUp();notif(`⬆️ Nivel ${P.lv}! +1 punto de talento`,'gld');}
+  if(P.xp>=need){P.xp-=need;P.lv++;P.sp++;P.mhp+=10;P.hp=Math.min(P.mhp,P.hp+20);sndLevelUp();notif(`⬆️ ¡Nivel ${P.lv}! +1 talento — SP disponibles`,'gld');}
 }
 
 function doOrar(){
@@ -2353,7 +2386,7 @@ window.showS=function(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   if(id){const el=document.getElementById(id);if(el)el.classList.add('active');}
 };
-window.doPause=function(){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));gPause=true;showS('s-pause');};
+window.doPause=function(){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));saveGame();gPause=true;showS('s-pause');};
 window.togglePause=function(){
   if(gPause){
     // Reanudar
@@ -2429,17 +2462,332 @@ window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales
 window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';showS('s-menu');};
 window.doLogout=async function(){await signOut(auth);};
 
+
+// ════════════════════════════════════════════════════════════
+//  TUTORIAL GUIADO — 9 pasos
+// ════════════════════════════════════════════════════════════
+const TUTORIAL_STEPS = [
+  {
+    icon:'📖',
+    title:'El Llamado de Dios',
+    color:'#c9a84c',
+    html:`
+      <p style="font-style:italic;color:#d4c090;line-height:1.8;margin-bottom:14px;font-size:0.9rem">
+        "Y dijo Dios a Noé: He decidido el fin de todo ser viviente... hazte un arca de madera de gofer."<br>
+        <span style="font-size:0.75rem;color:var(--muted)">— Génesis 6:13-14</span>
+      </p>
+      <p style="color:var(--text);font-size:0.82rem;line-height:1.7">
+        Eres <b style="color:#f0d080">Noé</b>, un hombre justo en un mundo corrompido. Dios te ha encomendado una misión imposible: 
+        construir un arca gigante antes del gran diluvio. 
+        Para lograrlo deberás <b>sobrevivir</b>, <b>recolectar materiales</b>, <b>crecer en sabiduría</b> y 
+        <b>cumplir las misiones de Dios</b>.
+      </p>`,
+  },
+  {
+    icon:'🕹️',
+    title:'Movimiento y controles',
+    color:'#60a0e0',
+    html:`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px">
+          <div style="font-family:Cinzel,serif;font-size:0.7rem;color:#60a0e0;margin-bottom:6px">💻 Teclado</div>
+          <div style="font-size:0.75rem;color:var(--text);line-height:1.8">
+            <b style="color:#f0d080">W A S D</b> o <b style="color:#f0d080">↑ ← ↓ →</b> para moverte<br>
+            <b style="color:#f0d080">E</b> — Interactuar / recolectar<br>
+            <b style="color:#f0d080">Escape</b> — Pausar / Reanudar<br>
+            <b style="color:#f0d080">I</b> — Abrir bolsa<br>
+            <b style="color:#f0d080">C</b> — Abrir taller
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px">
+          <div style="font-family:Cinzel,serif;font-size:0.7rem;color:#60a0e0;margin-bottom:6px">📱 Móvil</div>
+          <div style="font-size:0.75rem;color:var(--text);line-height:1.8">
+            <b style="color:#f0d080">D-pad</b> en pantalla para moverte<br>
+            <b style="color:#f0d080">Botón E</b> para interactuar<br>
+            <b style="color:#f0d080">⚔️</b> para atacar enemigos<br>
+            <b style="color:#f0d080">🎒 ⚒️</b> para abrir menús
+          </div>
+        </div>
+      </div>
+      <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#d4c090">
+        💡 Acércate a árboles, rocas y plantas — aparecerá un aviso en pantalla indicándote qué puedes hacer
+      </div>`,
+  },
+  {
+    icon:'❤️',
+    title:'Tu estado vital',
+    color:'#e74c3c',
+    html:`
+      <p style="font-size:0.8rem;color:var(--text);line-height:1.7;margin-bottom:12px">
+        En la esquina superior izquierda están tus <b style="color:#f0d080">4 barras vitales</b>. Si cualquiera llega a cero, Noé morirá.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px">
+          <span style="font-size:1.3rem">❤️</span>
+          <div><div style="font-size:0.78rem;color:#e74c3c;font-weight:bold">Vida (HP)</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Se recupera durmiendo o comiendo medicina</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px">
+          <span style="font-size:1.3rem">🍖</span>
+          <div><div style="font-size:0.78rem;color:#e08040;font-weight:bold">Hambre</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Come frutas, bayas, pez asado o pan</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px">
+          <span style="font-size:1.3rem">💧</span>
+          <div><div style="font-size:0.78rem;color:#4090e0;font-weight:bold">Sed</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Llena tu jarra en el agua o usa un pozo</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px">
+          <span style="font-size:1.3rem">⚡</span>
+          <div><div style="font-size:0.78rem;color:#f0d080;font-weight:bold">Energía</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Duerme en una cama para recuperarla</div></div>
+        </div>
+      </div>`,
+  },
+  {
+    icon:'🎒',
+    title:'Bolsa, Taller y Habilidades',
+    color:'#80c060',
+    html:`
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#80c060;margin-bottom:5px">🎒 Bolsa (I)</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Guarda todos los materiales que recolectas. Toca cualquier ítem para <b>usarlo o equiparlo</b>. 
+            Tienes <b style="color:#f0d080">20 espacios</b>.
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#80c060;margin-bottom:5px">⚒️ Taller (C)</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Combina materiales para crear <b>herramientas, comida, estructuras y piezas del Arca</b>. 
+            Primero construye un <b style="color:#f0d080">Fogón</b> (5🪨 + 2🪵) para cocinar.
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#80c060;margin-bottom:5px">✨ Talentos</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Al subir de nivel ganas <b style="color:#f0d080">puntos de talento (SP)</b>. Úsalos para desbloquear 
+            habilidades permanentes como <b>Fuerza</b>, <b>Carpintero</b>, <b>Pescador</b> y más.
+          </div>
+        </div>
+      </div>`,
+  },
+  {
+    icon:'⬆️',
+    title:'Subir de nivel — XP',
+    color:'#f0d080',
+    html:`
+      <p style="font-size:0.8rem;color:var(--text);line-height:1.7;margin-bottom:12px">
+        Toda acción que haces le da <b style="color:#f0d080">puntos de experiencia (XP)</b> a Noé. 
+        Al acumular suficiente XP subes de nivel, mejoras tus estadísticas y ganas <b>puntos de talento</b>.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.72rem">
+        ${[
+          ['🪵 Cortar árbol','10 XP'],['🪨 Golpear roca','8 XP'],
+          ['🐟 Pescar','8 XP'],['🌿 Recolectar','5 XP'],
+          ['⚒️ Fabricar','15 XP'],['🏗️ Construir','20 XP'],
+          ['🌾 Cosechar huerto','20 XP'],['⚔️ Vencer nefilim','30 XP'],
+        ].map(([a,x])=>`<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between">
+          <span style="color:var(--text)">${a}</span><b style="color:#f0d080">${x}</b></div>`).join('')}
+      </div>
+      <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.72rem;color:#d4c090">
+        💡 La barra amarilla debajo de las barras vitales muestra tu progreso de XP al siguiente nivel
+      </div>`,
+  },
+  {
+    icon:'👨‍👩‍👦',
+    title:'La familia de Noé',
+    color:'#c89060',
+    html:`
+      <p style="font-size:0.8rem;color:var(--text);line-height:1.7;margin-bottom:12px">
+        Al subir de nivel puedes reclutar a los hijos de Noé. Una vez activos, 
+        <b style="color:#f0d080">recolectan materiales automáticamente</b> mientras juegas.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:10px">
+          <span style="font-size:1.4rem">👦</span>
+          <div><div style="font-size:0.8rem;color:#f0d080;font-weight:bold">Sem — Nivel 3</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Recolecta 🪵 madera automáticamente</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:10px">
+          <span style="font-size:1.4rem">👦</span>
+          <div><div style="font-size:0.8rem;color:#f0d080;font-weight:bold">Cam — Nivel 5</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Recolecta 🪨 piedra automáticamente</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:10px">
+          <span style="font-size:1.4rem">👦</span>
+          <div><div style="font-size:0.8rem;color:#f0d080;font-weight:bold">Jafet — Nivel 8</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Recolecta 🌿 fibra automáticamente</div></div>
+        </div>
+      </div>
+      <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:0.72rem;color:#d4c090">
+        💡 Presiona el botón <b>👨‍👦</b> en el HUD para gestionar tu familia y subir su nivel
+      </div>`,
+  },
+  {
+    icon:'🏪',
+    title:'Tienda y Equipamiento',
+    color:'#aa60ee',
+    html:`
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#aa60ee;margin-bottom:5px">🏪 Tienda del Mercader</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Vende tus recursos por <b style="color:#f0d080">Siclos de Plata 🪙</b> y compra 
+            <b>bendiciones divinas, armas sagradas y secretos del Arca</b>. 
+            Las armas tienen 6 rarezas: Básico → Bendecido.
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#aa60ee;margin-bottom:5px">⚔️ Equipamiento activo</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Puedes equipar hasta <b style="color:#f0d080">2 armas</b> y 
+            <b style="color:#f0d080">3 habilidades</b> simultáneamente. 
+            Elige bien — no puedes llevar todo a la vez.
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#aa60ee;margin-bottom:5px">🏰 Edificios especiales</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Construye la <b>Forja Sagrada</b>, el <b>Granero</b>, la <b>Capilla</b> y más 
+            para potenciar a Noé y a su familia.
+          </div>
+        </div>
+      </div>`,
+  },
+  {
+    icon:'⛵',
+    title:'La misión del Arca',
+    color:'#4090e0',
+    html:`
+      <p style="font-size:0.8rem;color:var(--text);line-height:1.7;margin-bottom:12px">
+        Tu objetivo final es construir el <b style="color:#f0d080">Arca de Noé</b> en tres fases antes de que llegue el diluvio.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 14px;border-radius:8px">
+          <span style="font-size:1.3rem">⚓</span>
+          <div><div style="font-size:0.78rem;color:#f0d080;font-weight:bold">Fase 1 — Cimientos</div>
+          <div style="font-size:0.68rem;color:var(--muted)">20 Madera de Gofer + 10 Cuerdas + 5 Alquitrán</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 14px;border-radius:8px">
+          <span style="font-size:1.3rem">🏗️</span>
+          <div><div style="font-size:0.78rem;color:#f0d080;font-weight:bold">Fase 2 — Cubierta</div>
+          <div style="font-size:0.68rem;color:var(--muted)">30 Madera + 20 Cuerdas + 10 Alquitrán + 10 Metal</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);padding:8px 14px;border-radius:8px">
+          <span style="font-size:1.3rem">🛖</span>
+          <div><div style="font-size:0.78rem;color:#f0d080;font-weight:bold">Fase 3 — Tejado</div>
+          <div style="font-size:0.68rem;color:var(--muted)">40 Madera + 30 Cuerdas + 20 Alquitrán + 15 Metal</div></div>
+        </div>
+      </div>
+      <div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#f08080">
+        ⚠️ El diluvio avanza con el tiempo. También deberás reunir animales en el Arca para completar la misión
+      </div>`,
+  },
+  {
+    icon:'💾',
+    title:'Guardar tu progreso',
+    color:'#50c880',
+    html:`
+      <p style="font-size:0.8rem;color:var(--text);line-height:1.7;margin-bottom:12px">
+        Tu progreso se guarda automáticamente y puedes continuar desde donde lo dejaste.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#50c880;margin-bottom:5px">💾 Guardado automático</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            El juego guarda tu progreso al pausar y al salir al menú. 
+            También puedes guardar manualmente desde el menú de pausa.
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
+          <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#50c880;margin-bottom:5px">📜 Continuar partida</div>
+          <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
+            Inicia sesión con tu cuenta para que tu progreso se guarde en la nube y 
+            puedas continuar desde cualquier dispositivo. Sin cuenta, el progreso no se guarda entre sesiones.
+          </div>
+        </div>
+        <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:10px 14px;text-align:center">
+          <div style="font-family:Cinzel,serif;font-size:0.8rem;color:#f0d080;margin-bottom:4px">¡Ya estás listo para comenzar!</div>
+          <div style="font-size:0.72rem;color:var(--muted)">Dios te guíe, Noé. El arca te espera.</div>
+        </div>
+      </div>`,
+  },
+];
+
+let _tutIdx = 0;
+
+function showTutorial(){
+  _tutIdx = 0;
+  renderTutStep();
+  showS('s-tutorial');
+  gPause = true;
+}
+
+function renderTutStep(){
+  const s = TUTORIAL_STEPS[_tutIdx];
+  const total = TUTORIAL_STEPS.length;
+  const pct = ((_tutIdx) / (total-1) * 100).toFixed(1);
+
+  document.getElementById('tut-progress').style.width = pct + '%';
+  document.getElementById('tut-step-label').textContent = `TUTORIAL — PASO ${_tutIdx+1} DE ${total}`;
+
+  const isLast = _tutIdx === total - 1;
+  const nextBtn = document.getElementById('tut-next');
+  const prevBtn = document.getElementById('tut-prev');
+  nextBtn.textContent = isLast ? '¡Comenzar! ✝️' : 'Siguiente →';
+  nextBtn.className = isLast ? 'mbtn pri' : 'mbtn pri';
+  prevBtn.style.display = _tutIdx === 0 ? 'none' : 'block';
+
+  document.getElementById('tut-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <div style="font-size:2.4rem;filter:drop-shadow(0 0 12px ${s.color}88)">${s.icon}</div>
+      <div style="font-family:Cinzel,serif;font-size:1.05rem;color:${s.color};text-shadow:0 0 20px ${s.color}66;line-height:1.3">${s.title}</div>
+    </div>
+    ${s.html}
+  `;
+}
+
+window.tutStep = function(dir){
+  const last = TUTORIAL_STEPS.length - 1;
+  // Si estamos en el último paso y presionan "Siguiente" → terminar
+  if(dir > 0 && _tutIdx === last){
+    finishTutorial();
+    return;
+  }
+  _tutIdx = Math.max(0, Math.min(last, _tutIdx + dir));
+  renderTutStep();
+  // En el último paso, cambiar el onclick del botón a terminar
+  if(_tutIdx === last){
+    document.getElementById('tut-next').onclick = finishTutorial;
+  } else {
+    document.getElementById('tut-next').onclick = function(){ tutStep(1); };
+  }
+};
+
+function finishTutorial(){
+  localStorage.setItem('noe_tutorial_done','1');
+  document.getElementById('s-tutorial').classList.remove('active');
+  gPause = false;
+}
+
+window.skipTutorial = function(){
+  if(confirm('¿Saltar el tutorial? Puedes volver a verlo desde el menú de pausa.'))
+    finishTutorial();
+};
+
 function startGame(){
   genMundo();
-  // Items iniciales más útiles y orientadores
-  addItem('madera',5);
-  addItem('piedra',3);
-  addItem('fibra',4);
-  addItem('fruta',2);
-  addItem('bayas',3);
-  addItem('barro',3);   // para que puedan craftear jarra inmediatamente
-  addItem('jarra',1);   // jarra ya lista para recoger agua
+  addItem('madera',5); addItem('piedra',3); addItem('fibra',4);
+  addItem('fruta',2);  addItem('bayas',3);  addItem('barro',3);
+  addItem('jarra',1);
   beginLoop();
+  // Mostrar tutorial solo si es la primera vez
+  const done = localStorage.getItem('noe_tutorial_done');
+  if(!done){
+    setTimeout(showTutorial, 800);
+  }
 }
 async function loadAndPlay(){await loadGame();beginLoop();}
 // ════════════════════════════════════════════════════════════
@@ -2640,8 +2988,17 @@ onAuthStateChanged(auth,async u=>{
     document.getElementById('btnLogin').style.display='none';
     document.getElementById('btnLogout').style.display='block';
     try{
-      const s=await get(ref(db,`rpg2/${u.uid}/day`));
-      if((s.val()||0)>1)document.getElementById('btnCont').style.display='block';
+      const snap=await get(ref(db,`rpg2/${u.uid}`));
+      const sd=snap.val();
+      if(sd && (sd.day||0)>=1){
+        document.getElementById('btnCont').style.display='block';
+        const si=document.getElementById('saveInfo');
+        if(si){
+          const dt=sd.savedAt?new Date(sd.savedAt).toLocaleString('es','{hour12:false,month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}'):'';
+          si.style.display='block';
+          si.innerHTML=`Nv.${sd.lv||1} · Día ${sd.day||1} · Arca ${sd.arcaP||0}/3${dt?'<br>'+dt:''}`;
+        }
+      }
     }catch(e){}
   }else{
     nick='Noé';
@@ -3764,24 +4121,72 @@ function tickFamilia(){
 }
 
 function getFamiliaPanel(){
-  return `<div style="padding:16px">
-    <div style="font-family:Cinzel,serif;font-size:0.85rem;color:var(--gold);margin-bottom:12px">👨‍👩‍👦 Familia de Noé</div>
-    ${FAMILIA_DEFS.map(fd=>{
-      const m=familia.find(f=>f.id===fd.id);
-      return m
-        ? `<div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid rgba(201,168,76,0.3);border-radius:8px;margin-bottom:8px;background:rgba(201,168,76,0.06)">
-            <span style="font-size:1.3rem">${fd.e}</span>
-            <div style="flex:1"><div style="font-size:0.78rem;color:var(--text)">${fd.n} — Nv.${m.nivel}</div>
-            <div style="font-size:0.65rem;color:var(--muted)">Recolecta ${fd.emoji} cada ~${Math.round(fd.intervalo/60)}s</div></div>
-            <button class="sbtn" onclick="subirNivelFamilia('${fd.id}')">⬆️ Nv.</button>
-          </div>`
-        : `<div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px">
-            <span style="font-size:1.3rem;opacity:0.4">${fd.e}</span>
-            <div style="flex:1"><div style="font-size:0.78rem;color:var(--muted)">${fd.n} — Sin unirse</div>
-            <div style="font-size:0.65rem;color:var(--muted)">Requerido: Nivel ${fd.id==='shem'?3:fd.id==='cam'?5:8}</div></div>
-            <button class="sbtn" onclick="reclutarFamilia('${fd.id}')" ${P.lv<(fd.id==='shem'?3:fd.id==='cam'?5:8)?'disabled style="opacity:0.4"':''}>Reclutar</button>
-          </div>`;
-    }).join('')}
+  const lvReqs={shem:3,cam:5,jafet:8};
+  const xpPorNivel = P.lv*100;
+  const xpActual   = Math.floor(P.xp);
+  const xpFalta    = xpPorNivel - xpActual;
+
+  // Guía de cómo subir nivel
+  const guia=`
+    <div style="background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-family:Cinzel,serif;font-size:0.72rem;color:var(--gold);margin-bottom:6px">📖 ¿Cómo subir de nivel?</div>
+      <div style="font-size:0.68rem;color:#c8c0a8;line-height:1.7">
+        Cada acción da puntos de experiencia <span style="color:#f0d080">(XP)</span>:<br>
+        🪵 Cortar árbol <b style="color:#f0d080">+10 XP</b> &nbsp;·&nbsp;
+        🪨 Golpear roca <b style="color:#f0d080">+8 XP</b><br>
+        🐟 Pescar <b style="color:#f0d080">+8 XP</b> &nbsp;·&nbsp;
+        🌿 Recolectar <b style="color:#f0d080">+5 XP</b><br>
+        ⚔️ Vencer nefilim <b style="color:#f0d080">+30 XP</b> &nbsp;·&nbsp;
+        🏗️ Construir <b style="color:#f0d080">+20 XP</b><br>
+        🌾 Cosechar huerto <b style="color:#f0d080">+20 XP</b> &nbsp;·&nbsp;
+        ⚒️ Fabricar <b style="color:#f0d080">+15 XP</b>
+      </div>
+      <div style="margin-top:8px;background:rgba(0,0,0,0.3);border-radius:6px;overflow:hidden;height:8px">
+        <div style="height:100%;background:linear-gradient(90deg,#c9a84c,#f0d080);width:${Math.min(100,(xpActual/xpPorNivel*100)).toFixed(1)}%;transition:width 0.3s"></div>
+      </div>
+      <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;text-align:center">
+        Nv.${P.lv} — ${xpActual} / ${xpPorNivel} XP &nbsp;(faltan <b style="color:#f0d080">${xpFalta} XP</b> para Nv.${P.lv+1})
+      </div>
+    </div>`;
+
+  const miembros=FAMILIA_DEFS.map(fd=>{
+    const m=familia.find(f=>f.id===fd.id);
+    const lvReq=lvReqs[fd.id];
+    const puedeReclutar=P.lv>=lvReq;
+    const xpNecesario=lvReq<=P.lv?0:((lvReq-1)*100-Math.floor(P.xp));
+    if(m){
+      const costMad=10*m.nivel, costPied=5*m.nivel;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid rgba(201,168,76,0.35);border-radius:10px;margin-bottom:8px;background:rgba(201,168,76,0.06)">
+        <span style="font-size:1.5rem">${fd.e}</span>
+        <div style="flex:1">
+          <div style="font-size:0.8rem;color:var(--text);font-weight:bold">${fd.n} <span style="color:var(--gold);font-size:0.7rem">Nv.${m.nivel}</span></div>
+          <div style="font-size:0.65rem;color:#80c860">✅ Activo — recolecta ${fd.emoji} cada ~${Math.round((fd.intervalo*(hasSkill('veloc')?0.6:1))/60)}s</div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:2px">Subir nivel: ${costMad}🪵 + ${costPied}🪨</div>
+        </div>
+        <button class="sbtn" onclick="subirNivelFamilia('${fd.id}')" style="font-size:0.65rem">⬆️ Subir</button>
+      </div>`;
+    } else {
+      return `<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid rgba(255,255,255,0.09);border-radius:10px;margin-bottom:8px;background:rgba(0,0,0,0.2)">
+        <span style="font-size:1.5rem;opacity:${puedeReclutar?'0.9':'0.35'}">${fd.e}</span>
+        <div style="flex:1">
+          <div style="font-size:0.78rem;color:${puedeReclutar?'var(--text)':'var(--muted)'}">${fd.n}</div>
+          ${puedeReclutar
+            ? `<div style="font-size:0.65rem;color:#80c860">✅ ¡Ya puedes reclutarlo!</div>`
+            : `<div style="font-size:0.65rem;color:#f0a060">🔒 Requiere Nv.${lvReq} — recolecta y construye para subir</div>`
+          }
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:2px">Tarea: recolecta ${fd.emoji} automáticamente</div>
+        </div>
+        <button class="sbtn" onclick="reclutarFamilia('${fd.id}')"
+          ${puedeReclutar?'style="border-color:rgba(201,168,76,0.6)"':'disabled style="opacity:0.35;cursor:not-allowed"'}>
+          ${puedeReclutar?'Reclutar':'Nv.'+lvReq}
+        </button>
+      </div>`;
+    }
+  }).join('');
+
+  return `<div style="padding:16px">${guia}
+    <div style="font-family:Cinzel,serif;font-size:0.78rem;color:var(--gold);margin-bottom:10px">👨‍👩‍👦 Miembros de la familia</div>
+    ${miembros}
   </div>`;
 }
 
