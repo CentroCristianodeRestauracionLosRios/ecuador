@@ -1025,36 +1025,62 @@ function loadTilesets(callback){
 // ── Coordenadas dentro de cada tileset ───────────────────────
 // Analizando los PNG visualmente, cada tile es 32x32px base
 
-// Water_tiles.png layout (128x96, tiles 32x32):
-//   [0,0]=orilla-hierba-izq  [1,0]=orilla-hierba-mid  [2,0]=orilla-hierba-der  [3,0]=orilla-ext
-//   [0,1]=agua-clara         [1,1]=agua-media         [2,1]=agua-oscura        [3,1]=agua-ext
-//   [0,2]=agua-prof-izq      [1,2]=agua-prof-mid      [2,2]=agua-prof-der
+// ── UV COORDS con dimensiones REALES medidas ─────────────────
+//
+// Water_tiles.png: 400x400 → 5 cols x 5 filas = 80x80 por tile
+// Fila 0 (y=0):   orillas con hierba
+// Fila 1 (y=80):  agua azul clara
+// Fila 2 (y=160): agua media
+// Fila 3 (y=240): agua oscura
+// Fila 4 (y=320): agua profunda
+const TW=80; // tile water size
 const WATER_UV = {
-  shore:     {x:0,  y:0,  w:32, h:32},
-  shoreMid:  {x:32, y:0,  w:32, h:32},
-  water:     {x:0,  y:32, w:32, h:32},
-  waterMid:  {x:32, y:32, w:32, h:32},
-  waterDark: {x:64, y:32, w:32, h:32},
-  waterDeep: {x:0,  y:64, w:32, h:32},
+  shore:     {x:0,   y:0,   w:TW, h:TW},  // orilla col 0
+  shoreMid:  {x:TW,  y:0,   w:TW, h:TW},  // orilla col 1
+  shoreR:    {x:TW*2,y:0,   w:TW, h:TW},  // orilla col 2
+  water:     {x:0,   y:TW,  w:TW, h:TW},  // agua col 0 frame 1
+  waterMid:  {x:TW,  y:TW,  w:TW, h:TW},  // agua col 1 frame 2
+  waterDark: {x:TW*2,y:TW,  w:TW, h:TW},  // agua col 2 frame 3
+  waterDeep: {x:0,   y:TW*2,w:TW, h:TW},  // agua profunda
+  waterDeep2:{x:TW,  y:TW*2,w:TW, h:TW},
 };
 
-// Floors_Tiles.png layout (analizado visualmente ~400x400):
-// Tiles de piso con bordes redondeados, ~100x100px por bloque principal
-// Internamente subdivididos — usaremos el tile 2x2 completo escalado a 32x32
+// Floors_Tiles.png: 400x416
+// Analizando imagen: 4 tipos de suelo en columnas, con bordes redondeados
+// Cada tile ocupa ~100x104px (400/4 x 416/4)
+// Col 0 (x=0):   hierba verde con borde oscuro
+// Col 1 (x=100): tierra oscura/negra
+// Col 2 (x=200): tierra/arena naranja
+// Col 3 (x=300): piedra/ladrillo gris
+// Fila 0 (y=0):    tile completo con borde superior
+// Fila 1 (y=104):  tile interior sin borde superior  
+// Fila 2 (y=208):  variante plana/lisa
+// Fila 3 (y=312):  variante oscura/sombra
+const FW=100, FH=104; // floor tile size
 const FLOOR_UV = {
-  grass:  {x:0,   y:0,   w:100, h:100},
-  dirt:   {x:100, y:0,   w:100, h:100},
-  soil:   {x:200, y:0,   w:100, h:100},
-  stone:  {x:300, y:0,   w:100, h:100},
-  grassFlat: {x:0,   y:200, w:100, h:50},
-  dirtFlat:  {x:200, y:200, w:100, h:50},
+  grass:     {x:0,    y:0,   w:FW, h:FH},
+  grassB:    {x:0,    y:FH,  w:FW, h:FH},  // variante 2
+  dirt:      {x:FW,   y:0,   w:FW, h:FH},
+  dirtB:     {x:FW,   y:FH,  w:FW, h:FH},
+  soil:      {x:FW*2, y:0,   w:FW, h:FH},  // tierra naranja/arena
+  soilB:     {x:FW*2, y:FH,  w:FW, h:FH},
+  stone:     {x:FW*3, y:0,   w:FW, h:FH},
+  stoneB:    {x:FW*3, y:FH,  w:FW, h:FH},
+  // Filas inferiores: tiles planos/lisos
+  grassFlat: {x:0,    y:FH*2,w:FW, h:FH},
+  dirtFlat:  {x:FW*2, y:FH*2,w:FW, h:FH},
 };
 
-// Wall_Tiles.png (paredes con volumen ~256x400):
+// Wall_Tiles.png: 400x400 → 5 cols x 5 filas = 80x80 por tile
+// Paredes de tierra, piedra, marrón con hierba en la base
+const WW=80;
 const WALL_UV = {
-  dirt:   {x:0,   y:0,   w:80, h:120},
-  stone:  {x:80,  y:0,   w:80, h:120},
-  brown:  {x:160, y:0,   w:80, h:120},
+  dirt:    {x:0,    y:0,   w:WW*2, h:WW*3},  // pared tierra (ocupa 2x3 tiles)
+  stone:   {x:WW*2, y:0,   w:WW*2, h:WW*3},  // pared piedra
+  brown:   {x:WW*4, y:0,   w:WW,   h:WW*3},  // pared marrón
+  // Bases con hierba
+  dirtBase:  {x:0,    y:WW*3, w:WW*2, h:WW},
+  stoneBase: {x:WW*2, y:WW*3, w:WW*2, h:WW},
 };
 
 // ── FUNCIÓN PRINCIPAL: dibujar tile de terreno ───────────────
@@ -1075,8 +1101,16 @@ function drawTileSprite(tileType, wtx, wty, sx, sy, T2){
 
 function drawFloorTile(variant, sx, sy, T, rnd){
   if(TSHEETS.floor){
-    const uv = FLOOR_UV[variant] || FLOOR_UV.grass;
-    // Escalar el tile del tileset a TILE×TILE
+    // Alternar entre variante A y B según rnd para romper repetición
+    const useB = (rnd%3===0);
+    let uv;
+    switch(variant){
+      case 'grass': uv=useB?FLOOR_UV.grassB:FLOOR_UV.grass;  break;
+      case 'dirt':  uv=useB?FLOOR_UV.dirtB: FLOOR_UV.dirt;   break;
+      case 'stone': uv=useB?FLOOR_UV.stoneB:FLOOR_UV.stone;  break;
+      case 'soil':  uv=useB?FLOOR_UV.soilB: FLOOR_UV.soil;   break;
+      default:      uv=FLOOR_UV.grass;
+    }
     ctx.drawImage(TSHEETS.floor, uv.x, uv.y, uv.w, uv.h, sx, sy, T, T);
     return;
   }
@@ -1094,15 +1128,13 @@ function drawFloorTile(variant, sx, sy, T, rnd){
 
 function drawWaterTile(wtx, wty, sx, sy, T2, rnd){
   if(TSHEETS.water){
-    // Animar entre tiles de agua
-    const frame = Math.floor(T2/600)%3;
-    const uvs = [WATER_UV.water, WATER_UV.waterMid, WATER_UV.waterDark];
-    const uv = uvs[frame];
+    const frame=Math.floor(T2/500)%3;
+    const uvs=[WATER_UV.water, WATER_UV.waterMid, WATER_UV.waterDark];
+    const uv=uvs[frame];
     ctx.drawImage(TSHEETS.water, uv.x, uv.y, uv.w, uv.h, sx, sy, TILE, TILE);
     return;
   }
-  // Fallback: color sólido oscuro
-  ctx.fillStyle = '#1a3050';
+  ctx.fillStyle='#1a3050';
   ctx.fillRect(sx, sy, TILE, TILE);
 }
 
@@ -1223,24 +1255,24 @@ function drawWaterBlobs(cx,cy,T2){
     });
     // Gradiente radial Don't Starve: agua muy oscura en bordes
     if(TSHEETS.water){
-      // Rellenar con el tileset de agua animado tile por tile dentro del clip
+      // Rellenar cada tile de agua con el sprite animado
       const frame=Math.floor(T2/500)%3;
       const uvW=[WATER_UV.water,WATER_UV.waterMid,WATER_UV.waterDark][frame];
       blob.group.forEach(t=>{
-        let ox2=t.tx*TILE, oy2=t.ty*TILE;
+        let ox2=t.tx*TILE,oy2=t.ty*TILE;
         while(ox2-cx>MW*TILE/2)ox2-=MW*TILE;while(cx-ox2>MW*TILE/2)ox2+=MW*TILE;
         while(oy2-cy>MH*TILE/2)oy2-=MH*TILE;while(cy-oy2>MH*TILE/2)oy2+=MH*TILE;
         ctx.drawImage(TSHEETS.water,uvW.x,uvW.y,uvW.w,uvW.h,ox2-cx,oy2-cy,TILE,TILE);
       });
       ctx.restore();
     } else {
-      const grd = ctx.createRadialGradient(scx,scy,0,scx,scy,rad);
+      const grd=ctx.createRadialGradient(scx,scy,0,scx,scy,rad);
       if(blob.hasFish){
-        grd.addColorStop(0, '#1e3a5e'); grd.addColorStop(0.6,'#162e50'); grd.addColorStop(1,'#0e1e38');
+        grd.addColorStop(0,'#1e3a5e');grd.addColorStop(0.6,'#162e50');grd.addColorStop(1,'#0e1e38');
       } else {
-        grd.addColorStop(0, '#1a3050'); grd.addColorStop(0.6,'#142444'); grd.addColorStop(1,'#0a1828');
+        grd.addColorStop(0,'#1a3050');grd.addColorStop(0.6,'#142444');grd.addColorStop(1,'#0a1828');
       }
-      ctx.fillStyle=grd; ctx.fill(); ctx.restore();
+      ctx.fillStyle=grd;ctx.fill();ctx.restore();
     }
 
     // ── Borde orgánico suavizado ──────────────────────────────
@@ -1276,29 +1308,7 @@ function drawWaterBlobs(cx,cy,T2){
       ctx.stroke();
       ctx.restore();
 
-      // Orilla: dibujar shore tiles en bordes expuestos
-      if(TSHEETS.water){
-        blob.group.forEach(t=>{
-          [[0,-1],[1,0],[0,1],[-1,0]].forEach(([dx,dy])=>{
-            const nwtx=((( t.wtx+dx)%MW)+MW)%MW, nwty=((( t.wty+dy)%MH)+MH)%MH;
-            const nb=wMap[nwty]?.[nwtx];
-            if(!nb||nb.t===T.WATER) return;
-            let ox2=t.tx*TILE-cx, oy2=t.ty*TILE-cy;
-            while(ox2>MW*TILE/2)ox2-=MW*TILE;while(-ox2>MW*TILE/2)ox2+=MW*TILE;
-            while(oy2>MH*TILE/2)oy2-=MH*TILE;while(-oy2>MH*TILE/2)oy2+=MH*TILE;
-            // Shore tile en el borde correcto (rotar según dirección)
-            ctx.save();
-            ctx.translate(ox2+TILE/2, oy2+TILE/2);
-            if(dy===-1) ctx.rotate(0);
-            else if(dx===1) ctx.rotate(Math.PI/2);
-            else if(dy===1) ctx.rotate(Math.PI);
-            else ctx.rotate(-Math.PI/2);
-            ctx.drawImage(TSHEETS.water, WATER_UV.shore.x, WATER_UV.shore.y,
-              WATER_UV.shore.w, WATER_UV.shore.h, -TILE/2, -TILE/2, TILE, TILE/2);
-            ctx.restore();
-          });
-        });
-      }
+      // Shore tiles: pendiente hasta medir UV correctos
     }
 
     // ── Olas animadas — curvas suaves dentro del blob ─────────
@@ -1370,24 +1380,18 @@ function drawWorld(cx,cy){
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
       if(tile.t===T.WATER) continue; // agua: blob vectorial abajo
       const rnd=((wtx*17+wty*31)^(wtx*7))&0xff;
-      // Intentar usar tileset externo, fallback a sprite cacheado
+      // Usar tileset si está cargado, sino sprite programático
       if(TSHEETS.floor){
-        let uv;
+        let uv, useB=(rnd%3===0);
         switch(tile.t){
-          case T.GRASS: uv=FLOOR_UV.grass;  break;
-          case T.DIRT:  uv=FLOOR_UV.dirt;   break;
-          case T.STONE: uv=FLOOR_UV.stone;  break;
-          case T.SAND:  uv=FLOOR_UV.soil;   break;
+          case T.GRASS: uv=useB?FLOOR_UV.grassB:FLOOR_UV.grass; break;
+          case T.DIRT:  uv=useB?FLOOR_UV.dirtB: FLOOR_UV.dirt;  break;
+          case T.STONE: uv=useB?FLOOR_UV.stoneB:FLOOR_UV.stone; break;
+          case T.SAND:  uv=useB?FLOOR_UV.soilB: FLOOR_UV.soil;  break;
           default:      uv=FLOOR_UV.grass;
         }
-        // Variar subtile con rnd para romper la repetición
-        const subCols=4, subRows=4;
-        const subW=uv.w/subCols, subH=uv.h/subRows;
-        const subX=uv.x+(rnd%subCols)*subW;
-        const subY=uv.y+((rnd>>2)%subRows)*subH;
-        ctx.drawImage(TSHEETS.floor, subX, subY, subW, subH, sx, sy, TILE, TILE);
+        ctx.drawImage(TSHEETS.floor, uv.x, uv.y, uv.w, uv.h, sx, sy, TILE, TILE);
       } else {
-        // Fallback sprites cacheados
         let sprite;
         switch(tile.t){
           case T.GRASS: sprite=buildGrassSprite(rnd%8); break;
@@ -2556,12 +2560,12 @@ const SHEET_SIDE_B64 = null;   // reemplazar con "data:image/png;base64,..."
 // Frame 4 = luna decorativa (separador visual, NO animar)
 // Frames útiles: 0-3 caminar | 5-7 ataque/idle
 const NOAH_CFG = {
-  frameW:  64,    // ancho de 1 frame en píxeles
-  frameH:  64,    // alto  de 1 frame en píxeles
+  frameW:  64,         // confirmado: 512/8 = 64px
+  frameH:  64,         // confirmado: 64px de alto
   totalFrames: 8,
-  scale:   1.4,   // factor de escala al renderizar (tile=32 → sprite ~45px)
-  offsetY: 0.82,  // alineación vertical (base del sprite respecto a posición)
-  fps:     8,     // frames de animación por segundo (tick=60fps → cada 7-8 ticks)
+  scale:   1.5,        // escala para tile=32 → sprite ~48px visible
+  offsetY: 0.85,       // base del sprite alineada al suelo
+  fps:     8,
 };
 
 // Índices de frames por estado (frame 4 = luna, se salta)
