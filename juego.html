@@ -1204,16 +1204,14 @@ function drawWaterBlobs(cx,cy,T2){
       const tile=wMap[wty]?.[wtx];
       if(!tile||tile.t!==T.WATER) continue;
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
-      // Agua: frame animado pero estable (no depende de posición)
-      const wKey=`water${frame}_ts`;
-      const wSprite=SPRITE_CACHE[wKey];
-      if(wSprite){
-        ctx.drawImage(wSprite, sx, sy);
-      } else if(TSHEETS.water){
-        ctx.drawImage(TSHEETS.water, uvW.x, uvW.y, uvW.w, uvW.h, sx, sy, TILE, TILE);
-      } else {
-        ctx.fillStyle=tile.wt==='fish'?'#1a3050':'#1e3a5e';
-        ctx.fillRect(sx,sy,TILE,TILE);
+      // Agua: color sólido estable
+      ctx.fillStyle=tile.wt==='fish'?'#1a3060':'#1e3a6e';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      // Detalle de ola simple animada
+      if(((wtx*3+wty*7)&3)===0){
+        const wa=0.18+Math.sin(T2/900+wtx*0.5+wty*0.3)*0.07;
+        ctx.fillStyle=`rgba(60,110,200,${wa})`;
+        ctx.fillRect(sx+4,sy+8+(Math.floor(T2/600)%2)*6,TILE-8,2);
       }
     }
   }
@@ -1235,28 +1233,15 @@ function drawWorld(cx,cy){
       const tile=wMap[wty]?.[wtx]; if(!tile) continue;
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
       if(tile.t===T.WATER) continue; // agua dibujada aparte
-      // rnd determinista: depende SOLO de la posición del tile en el mapa
+      // rnd 100% determinista por posición del tile — nunca cambia
       const rnd=((wtx*17+wty*31)^(wtx*7))&0xff;
-      const useB=(rnd%3===0); // variante B — fijo por posición
       let sprite;
-      if(SPRITE_CACHE['grass_ts']){
-        // Tileset cacheado en offscreen — completamente estable
-        switch(tile.t){
-          case T.GRASS: sprite=SPRITE_CACHE[useB?'grassB_ts':'grass_ts']; break;
-          case T.DIRT:  sprite=SPRITE_CACHE[useB?'dirtB_ts': 'dirt_ts'];  break;
-          case T.STONE: sprite=SPRITE_CACHE[useB?'stoneB_ts':'stone_ts']; break;
-          case T.SAND:  sprite=SPRITE_CACHE[useB?'soilB_ts': 'soil_ts'];  break;
-          default:      sprite=SPRITE_CACHE['grass_ts'];
-        }
-      } else {
-        // Fallback programático — también estable por rnd
-        switch(tile.t){
-          case T.GRASS: sprite=buildGrassSprite(rnd%8); break;
-          case T.DIRT:  sprite=buildDirtSprite(rnd%4);  break;
-          case T.STONE: sprite=buildStoneSprite(rnd%4); break;
-          case T.SAND:  sprite=buildSandSprite(rnd%4);  break;
-          default:      sprite=buildGrassSprite(rnd%8);
-        }
+      switch(tile.t){
+        case T.GRASS: sprite=buildGrassSprite(rnd%8); break;
+        case T.DIRT:  sprite=buildDirtSprite(rnd%4);  break;
+        case T.STONE: sprite=buildStoneSprite(rnd%4); break;
+        case T.SAND:  sprite=buildSandSprite(rnd%4);  break;
+        default:      sprite=buildGrassSprite(rnd%8);
       }
       if(sprite) ctx.drawImage(sprite, sx, sy);
     }
@@ -1727,6 +1712,8 @@ function loop(){
   if(gPause){drawPortrait();return;}
   const W=canvas.width,H=canvas.height;
   const cx=P.x-W/2,cy=P.y-H/2;
+  // Limpiar canvas completo antes de cada frame — evita acumulación de tiles
+  ctx.clearRect(0,0,W,H);
   drawSky();
   drawWorld(cx,cy);
   drawObjs(cx,cy);
@@ -3796,3 +3783,6 @@ window.addEventListener('DOMContentLoaded',initBgMenu);
 </script>
 </body>
 </html>
+  // ── Paso 2: transiciones eliminadas para estabilidad ──
+
+  
