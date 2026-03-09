@@ -450,7 +450,7 @@ const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDo
 const auth=getAuth(app),db=getDatabase(app);
 
 // ─── CONSTANTES MUNDO ────────────────────────
-const TILE=40,MW=80,MH=80;
+const TILE=32,MW=80,MH=80;
 const T={GRASS:0,DIRT:1,WATER:2,SAND:3,STONE:4};
 
 // ─── ESTADO ──────────────────────────────────
@@ -759,6 +759,8 @@ function genMundo(){
   wObjs=wObjs.filter(o=>!(Math.abs(o.tx-cx)<=4&&Math.abs(o.ty-cy)<=4));
   P.x=cx*TILE+20;P.y=cy*TILE+20;
   initDrops();
+  initSprites();      // pre-generar sprites pixel art
+  buildWaterBlobs();  // pre-calcular contornos de agua
 }
 
 function addObj(tx,ty,tipo){
@@ -794,179 +796,458 @@ const TC={
 const ISO=0.14;
 
 
-// ═══════════════════════════════════════════
-//  PALETA DON'T STARVE — pixel art oscuro
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+//  SISTEMA DE SPRITES — Don't Starve pixel art 32px
+// ═══════════════════════════════════════════════════
+
+// Paleta Don't Starve: base casi sin color, alto contraste, outlines negros
 const PAL={
-  grass1:'#3d6b22', grass2:'#4a7f28', grassD:'#2a4d14', grassL:'#5a9a30',
-  dirt1:'#5a3d18', dirt2:'#6e4d22', dirtL:'#8a6030',
-  water1:'#1a3d6a', water2:'#1e4878', waterL:'#2a5c8a', waterF:'#3a7aaa',
-  stone1:'#4a4a4a', stone2:'#5a5a5a', stoneL:'#6a6a6a',
-  sand1:'#8a7030', sand2:'#a08040',
-  outline:'rgba(0,0,0,0.7)',
-  shadow:'rgba(0,0,0,0.45)',
-  white:'rgba(255,255,255,0.9)',
-  gold:'#c9a84c',
-  flash:'rgba(255,230,80,0.95)',
-  hit:'rgba(255,60,30,0.9)',
+  // Hierba — verde muy desaturado, casi gris-verde
+  grass1:'#3a4a2a', grass2:'#2e3d20', grassL:'#4a5e32', grassD:'#222e14',
+  grassBlade:'#506038', grassBladeL:'#667848',
+  // Tierra — marrón oscuro
+  dirt1:'#3a2a14', dirt2:'#2e2010', dirtL:'#4e3a1e', dirtCrack:'#1e1208',
+  // Agua — azul oscuro desaturado
+  water1:'#1a2e4a', water2:'#162440', waterL:'#223860', waterFoam:'#2a4866',
+  waterShine:'rgba(80,130,200,0.18)',
+  // Piedra — gris frío oscuro
+  stone1:'#2a2a30', stone2:'#222228', stoneL:'#36363e', stoneCrack:'#141418',
+  // Arena
+  sand1:'#4a3e20', sand2:'#3a3018',
+  // Outline universal
+  outline:'#0a0a08',
+  // UI
+  gold:'#c9a84c', white:'rgba(255,255,255,0.9)',
+  flash:'rgba(255,230,80,0.95)', hit:'rgba(255,60,30,0.9)',
 };
-// Cache de offscreen canvas para tiles frecuentes
-const TILE_CACHE={};
-function getTileCanvas(key, drawFn){
-  if(TILE_CACHE[key]) return TILE_CACHE[key];
-  const oc=document.createElement('canvas');
-  oc.width=TILE+2; oc.height=TILE+2;
-  const octx=oc.getContext('2d');
-  drawFn(octx);
-  TILE_CACHE[key]=oc;
+
+// ── Cache de sprites pre-dibujados ─────────────────────────
+// Clave: "tipo_variante" → offscreen canvas 32x32
+const SPRITE_CACHE = {};
+
+function getSprite(key, drawFn){
+  if(SPRITE_CACHE[key]) return SPRITE_CACHE[key];
+  const oc = document.createElement('canvas');
+  oc.width = TILE; oc.height = TILE;
+  const ox = oc.getContext('2d');
+  drawFn(ox, TILE);
+  SPRITE_CACHE[key] = oc;
   return oc;
 }
+
+// ── Función helper: línea de pixel art ─────────────────────
+function pxLine(ox, x1,y1,x2,y2, col){
+  ox.strokeStyle=col; ox.lineWidth=1;
+  ox.beginPath(); ox.moveTo(x1+0.5,y1+0.5); ox.lineTo(x2+0.5,y2+0.5); ox.stroke();
+}
+function pxRect(ox, x,y,w,h, col){ ox.fillStyle=col; ox.fillRect(x,y,w,h); }
+function pxDot(ox, x,y, col){ ox.fillStyle=col; ox.fillRect(x,y,1,1); }
+
+// ════════════════════════════════════════════════════════════
+//  DIBUJADORES DE SPRITES — cada uno produce un tile 32x32
+// ════════════════════════════════════════════════════════════
+
+function buildGrassSprite(variant){
+  return getSprite('grass_'+variant, (ox,T)=>{
+    const seed = variant;
+    // Base: fondo verde oscuro
+    ox.fillStyle = PAL.grass1; ox.fillRect(0,0,T,T);
+
+    // Variación tonal: manchas de tierra asomando (Don't Starve tiene suelo visible)
+    const patches = [[4,6,8,5],[16,3,7,4],[22,14,6,5],[8,20,9,4],[18,22,6,3]];
+    patches.forEach(([px,py,pw,ph],i)=>{
+      if(i%3===seed%3){
+        ox.fillStyle=PAL.grass2; ox.fillRect(px,py,pw,ph);
+      }
+    });
+
+    // Briznas de hierba — pixel art, 3-5 briznas por tile
+    const blades=[
+      [3,24],[7,22],[12,25],[17,23],[22,24],[27,22],[5,19],[15,21],[25,20]
+    ];
+    blades.forEach(([bx,by],i)=>{
+      if((i+seed)%3===0) return; // spacing aleatorio
+      const h = 4+(i+seed)%4;
+      const lean = (i+seed)%3-1; // -1,0,1
+      // Brizna pixel a pixel
+      ox.fillStyle=PAL.grassBlade;
+      ox.fillRect(bx,   by,   1, 2);
+      ox.fillRect(bx+lean>0?1:0, by-2, 1, 2);
+      ox.fillRect(bx+(lean>0?2:lean<0?-1:0), by-4, 1, 2);
+      // Punta más clara
+      ox.fillStyle=PAL.grassBladeL;
+      ox.fillRect(bx+(lean>0?3:lean<0?-2:0), by-5, 1, 1);
+    });
+
+    // Flores ocasionales (Don't Starve: flores pequeñas con borde negro)
+    if(seed%5===0){
+      const fx=10+(seed*7)%14, fy=8+(seed*11)%10;
+      // Pétalos 1px
+      const petal=['#7a6a8a','#6a5a7a'][seed%2];
+      ox.fillStyle=petal;
+      ox.fillRect(fx,fy-1,1,1); ox.fillRect(fx,fy+1,1,1);
+      ox.fillRect(fx-1,fy,1,1); ox.fillRect(fx+1,fy,1,1);
+      ox.fillStyle='#d4c050'; ox.fillRect(fx,fy,1,1); // centro amarillo
+      // Outline pétalo
+      ox.fillStyle=PAL.outline;
+      ox.fillRect(fx,fy-2,1,1); ox.fillRect(fx,fy+2,1,1);
+      ox.fillRect(fx-2,fy,1,1); ox.fillRect(fx+2,fy,1,1);
+    }
+
+    // Piedrecillas decorativas ocasionales
+    if(seed%7===2){
+      const rx=18+(seed*5)%10, ry=18+(seed*9)%10;
+      ox.fillStyle='#383830'; ox.fillRect(rx,ry,3,2);
+      ox.fillStyle='#4a4a40'; ox.fillRect(rx,ry,2,1);
+      ox.fillStyle=PAL.outline; ox.fillRect(rx-1,ry-1,5,4);
+      // quitar outline interior
+      ox.fillStyle='#383830'; ox.fillRect(rx,ry,3,2);
+    }
+  });
+}
+
+function buildDirtSprite(variant){
+  return getSprite('dirt_'+variant, (ox,T)=>{
+    ox.fillStyle=PAL.dirt1; ox.fillRect(0,0,T,T);
+    // Grietas
+    ox.fillStyle=PAL.dirtCrack;
+    const cracks=[
+      [[4,8],[10,12],[14,10]],
+      [[18,4],[22,8],[20,14]],
+      [[6,20],[12,24],[16,22]],
+      [[22,18],[26,22],[28,20]],
+    ];
+    cracks.forEach((pts,i)=>{
+      if(i%3!==variant%3) return;
+      ox.beginPath(); ox.moveTo(pts[0][0],pts[0][1]);
+      pts.slice(1).forEach(p=>ox.lineTo(p[0],p[1]));
+      ox.strokeStyle=PAL.dirtCrack; ox.lineWidth=1; ox.stroke();
+    });
+    // Terrones
+    [[5,5,4,3],[16,10,5,3],[8,18,4,4],[22,6,3,3],[20,20,5,3]].forEach(([tx,ty,tw,th],i)=>{
+      if(i%4!==variant%4) return;
+      ox.fillStyle=PAL.dirtL; ox.fillRect(tx,ty,tw,th);
+      ox.fillStyle=PAL.outline; ox.strokeRect(tx-0.5,ty-0.5,tw+1,th+1); ox.lineWidth=1; ox.stroke();
+    });
+  });
+}
+
+function buildStoneSprite(variant){
+  return getSprite('stone_'+variant, (ox,T)=>{
+    ox.fillStyle=PAL.stone1; ox.fillRect(0,0,T,T);
+    // Textura: rectángulos de "losas" con outline
+    const losas=[
+      [1,1,14,14],[17,1,14,14],[1,17,14,14],[17,17,14,14]
+    ];
+    losas.forEach(([lx,ly,lw,lh],i)=>{
+      const shade=(i+variant)%4;
+      ox.fillStyle=['#2a2a30','#282828','#2e2e36','#262630'][shade];
+      ox.fillRect(lx,ly,lw,lh);
+      // Borde interno
+      ox.strokeStyle=PAL.outline; ox.lineWidth=1;
+      ox.strokeRect(lx+0.5,ly+0.5,lw-1,lh-1);
+      // Highlight borde superior
+      ox.strokeStyle='rgba(80,80,90,0.6)'; ox.lineWidth=1;
+      ox.beginPath(); ox.moveTo(lx+1,ly+1); ox.lineTo(lx+lw-1,ly+1); ox.stroke();
+    });
+    // Fisura diagonal
+    if(variant%3===0){
+      ox.strokeStyle=PAL.stoneCrack; ox.lineWidth=1;
+      ox.beginPath(); ox.moveTo(8,4); ox.lineTo(14,18); ox.lineTo(20,22); ox.stroke();
+    }
+  });
+}
+
+function buildSandSprite(variant){
+  return getSprite('sand_'+variant, (ox,T)=>{
+    ox.fillStyle=PAL.sand1; ox.fillRect(0,0,T,T);
+    // Ondas de arena
+    ox.strokeStyle=PAL.sand2; ox.lineWidth=1;
+    [[4,8,12],[8,16,10],[14,6,14],[6,22,16],[20,14,8]].forEach(([sx,sy,sw],i)=>{
+      if(i%3!==variant%3) return;
+      ox.beginPath(); ox.moveTo(sx,sy); ox.quadraticCurveTo(sx+sw/2,sy-2,sx+sw,sy); ox.stroke();
+    });
+    // Piedrecillas
+    if(variant%4===1){
+      ox.fillStyle='#5a4a28'; ox.fillRect(20,8,2,2);
+      ox.fillStyle='#3a2e14'; ox.fillRect(20,8,1,1);
+    }
+  });
+}
+
+// ── Sprite de agua: NO tile por tile — se dibuja como blob ─
+// (manejado por drawWaterBlob, ver abajo)
+
+// ════════════════════════════════════════════════════════════
+//  PRE-GENERAR todos los sprites al iniciar
+// ════════════════════════════════════════════════════════════
+function initSprites(){
+  for(let v=0;v<8;v++) buildGrassSprite(v);
+  for(let v=0;v<4;v++) buildDirtSprite(v);
+  for(let v=0;v<4;v++) buildStoneSprite(v);
+  for(let v=0;v<4;v++) buildSandSprite(v);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  AGUA — blob orgánico vectorial Don't Starve
+// ════════════════════════════════════════════════════════════
+// Cache de grupos de agua ya calculados (se recalcula al generar mapa)
+let waterBlobCache = null;
+
+function buildWaterBlobs(){
+  waterBlobCache = [];
+  const visited = new Set();
+  const key = (x,y) => `${((x%MW)+MW)%MW},${((y%MH)+MH)%MH}`;
+
+  for(let y=0;y<MH;y++){
+    for(let x=0;x<MW;x++){
+      const k=key(x,y);
+      if(visited.has(k)) continue;
+      const tile=wMap[y]?.[x];
+      if(!tile||tile.t!==T.WATER) continue;
+      // BFS para agrupar tiles conectados
+      const group=[];
+      const queue=[{x,y}];
+      while(queue.length){
+        const cur=queue.shift();
+        const ck=key(cur.x,cur.y);
+        if(visited.has(ck)) continue;
+        visited.add(ck);
+        const wtx=((cur.x%MW)+MW)%MW, wty=((cur.y%MH)+MH)%MH;
+        const t=wMap[wty]?.[wtx];
+        if(!t||t.t!==T.WATER) continue;
+        group.push({tx:cur.x,ty:cur.y,wtx,wty,wt:t.wt});
+        [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>queue.push({x:cur.x+dx,y:cur.y+dy}));
+      }
+      if(group.length===0) continue;
+      // Calcular contorno exterior con offsets orgánicos
+      const blobPts = buildBlobContour(group);
+      const hasFish = group.some(g=>g.wt==='fish');
+      const cx2 = group.reduce((s,g)=>s+g.tx,0)/group.length;
+      const cy2 = group.reduce((s,g)=>s+g.ty,0)/group.length;
+      waterBlobCache.push({group, blobPts, hasFish, cx2, cy2, sz:group.length});
+    }
+  }
+}
+
+function buildBlobContour(group){
+  // Recolectar todos los segmentos de borde expuestos
+  const tileSet = new Set(group.map(t=>`${((t.tx%MW)+MW)%MW},${((t.ty%MH)+MH)%MH}`));
+  const segs = [];
+  group.forEach(t=>{
+    const bx=t.tx*TILE, by=t.ty*TILE;
+    // Para cada lado del tile, si el vecino NO es agua → es borde
+    [[0,-1, bx,by, bx+TILE,by],        // top
+     [1,0,  bx+TILE,by, bx+TILE,by+TILE], // right
+     [0,1,  bx+TILE,by+TILE, bx,by+TILE], // bottom
+     [-1,0, bx,by+TILE, bx,by]            // left
+    ].forEach(([dx,dy,x1,y1,x2,y2])=>{
+      const nk=`${((( t.tx+dx)%MW)+MW)%MW},${(((t.ty+dy)%MH)+MH)%MH}`;
+      if(!tileSet.has(nk)){
+        // Punto medio del segmento + offset orgánico
+        const mx=(x1+x2)/2, my=(y1+y2)/2;
+        const rnd=((t.tx*17+t.ty*31)^(t.tx*7+t.ty*13))&0xff;
+        // Normal hacia afuera
+        const nx2=dx, ny2=dy;
+        // Offset: ±30% del tile, determinista
+        const off = (rnd/255-0.5)*TILE*0.6;
+        segs.push({
+          p1:[x1,y1], p2:[x2,y2],
+          mid:[mx+ny2*off, my+nx2*off], // offset perpendicular al borde
+          tx:t.tx, ty:t.ty
+        });
+      }
+    });
+  });
+  return segs;
+}
+
+function drawWaterBlobs(cx,cy,T2){
+  if(!waterBlobCache) buildWaterBlobs();
+  const W=canvas.width, H=canvas.height;
+
+  waterBlobCache.forEach(blob=>{
+    // Visibilidad: ¿algún tile del grupo en pantalla?
+    const inView = blob.group.some(t=>{
+      let wx=t.tx*TILE-cx, wy=t.ty*TILE-cy;
+      return wx>-TILE*3&&wx<W+TILE*3&&wy>-TILE*3&&wy<H+TILE*3;
+    });
+    if(!inView) return;
+
+    const wSegs = blob.blobPts;
+    if(!wSegs.length) return;
+
+    // Centro en pantalla
+    const scx = blob.cx2*TILE - cx + TILE/2;
+    const scy = blob.cy2*TILE - cy + TILE/2;
+    const rad  = Math.sqrt(blob.sz)*TILE*0.7;
+
+    // ── Relleno: path de todos los tiles (sin clip costoso) ──
+    ctx.save();
+    ctx.beginPath();
+    blob.group.forEach(t=>{
+      let ox2=t.tx*TILE, oy2=t.ty*TILE;
+      // Wrap visual
+      while(ox2-cx > MW*TILE/2) ox2-=MW*TILE;
+      while(cx-ox2 > MW*TILE/2) ox2+=MW*TILE;
+      while(oy2-cy > MH*TILE/2) oy2-=MH*TILE;
+      while(cy-oy2 > MH*TILE/2) oy2+=MH*TILE;
+      ctx.rect(ox2-cx-1, oy2-cy-1, TILE+2, TILE+2);
+    });
+    // Gradiente radial Don't Starve: agua muy oscura en bordes
+    const grd = ctx.createRadialGradient(scx,scy,0,scx,scy,rad);
+    if(blob.hasFish){
+      grd.addColorStop(0, '#1e3a5e');
+      grd.addColorStop(0.6,'#162e50');
+      grd.addColorStop(1,  '#0e1e38');
+    } else {
+      grd.addColorStop(0, '#1a3050');
+      grd.addColorStop(0.6,'#142444');
+      grd.addColorStop(1,  '#0a1828');
+    }
+    ctx.fillStyle=grd;
+    ctx.fill();
+    ctx.restore();
+
+    // ── Borde orgánico suavizado ──────────────────────────────
+    // Construir cadena de puntos medios con offset
+    const pts = wSegs.map(s=>{
+      let ox2=s.mid[0]-cx, oy2=s.mid[1]-cy;
+      // wrap
+      while(ox2 > MW*TILE/2)  ox2-=MW*TILE;
+      while(-ox2 > MW*TILE/2) ox2+=MW*TILE;
+      while(oy2 > MH*TILE/2)  oy2-=MH*TILE;
+      while(-oy2 > MH*TILE/2) oy2+=MH*TILE;
+      return [ox2, oy2];
+    });
+
+    if(pts.length>=3){
+      // Smooth path: catmull-rom style con quadraticCurveTo
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo((pts[0][0]+pts[1][0])/2, (pts[0][1]+pts[1][1])/2);
+      for(let i=1;i<pts.length;i++){
+        const p=pts[i], pn=pts[(i+1)%pts.length];
+        ctx.quadraticCurveTo(p[0],p[1],(p[0]+pn[0])/2,(p[1]+pn[1])/2);
+      }
+      ctx.closePath();
+
+      // Outline exterior negro Don't Starve
+      ctx.strokeStyle='rgba(0,0,0,0.85)';
+      ctx.lineWidth=2.5;
+      ctx.stroke();
+
+      // Espuma interior — línea clara dentro del borde
+      ctx.strokeStyle=`rgba(60,110,180,${0.4+Math.sin(T2/600+blob.cx2)*0.1})`;
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Olas animadas — curvas suaves dentro del blob ─────────
+    const waveN = Math.min(3, Math.ceil(blob.sz/5));
+    for(let w=0;w<waveN;w++){
+      const ws = blob.cx2*11+blob.cy2*7+w*31;
+      const wx = scx + (((ws*17)&63)-32)/64*rad*0.5;
+      const wy = scy + (((ws*29)&63)-32)/64*rad*0.35;
+      const wlen = TILE*(0.5+(ws&7)/14);
+      const phase = T2/1000+w*1.6;
+      const wa = 0.18+Math.sin(phase)*0.07;
+      ctx.save();
+      ctx.translate(wx,wy);
+      ctx.rotate(((ws*3)&15)/15*Math.PI*0.5);
+      ctx.strokeStyle=`rgba(50,100,180,${wa})`;
+      ctx.lineWidth=1.2;
+      ctx.beginPath();
+      ctx.moveTo(-wlen/2, Math.sin(phase)*1.5);
+      ctx.quadraticCurveTo(0,-2.5+Math.sin(phase+1)*2, wlen/2, Math.sin(phase+0.6)*1.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Caustique (destello de luz en superficie) ─────────────
+    if(blob.sz>=2){
+      const ca = 0.05+Math.sin(T2/700+blob.cx2*0.4)*0.03;
+      const lg = ctx.createRadialGradient(scx-rad*0.25,scy-rad*0.25,0, scx,scy, rad*0.55);
+      lg.addColorStop(0,`rgba(80,140,220,${ca})`);
+      lg.addColorStop(1,'rgba(0,0,30,0)');
+      ctx.save();
+      ctx.beginPath();
+      blob.group.forEach(t=>{
+        let ox2=t.tx*TILE-cx, oy2=t.ty*TILE-cy;
+        ctx.rect(ox2,oy2,TILE,TILE);
+      });
+      ctx.clip();
+      ctx.fillStyle=lg;
+      ctx.fillRect(scx-rad,scy-rad,rad*2,rad*2);
+      ctx.restore();
+    }
+
+    // ── Ícono pez en agua profunda ────────────────────────────
+    if(blob.hasFish&&blob.sz>=2){
+      const fi=Math.floor(T2/1400)%Math.max(1,blob.group.length);
+      const ft=blob.group[Math.min(fi,blob.group.length-1)];
+      let fx=ft.tx*TILE-cx+TILE/2, fy=ft.ty*TILE-cy+TILE/2;
+      ctx.font='10px serif'; ctx.textAlign='center';
+      ctx.globalAlpha=0.28+Math.sin(T2/900+fi)*0.12;
+      ctx.fillText('🐟',fx,fy+4);
+      ctx.globalAlpha=1; ctx.textAlign='left';
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  DRAW WORLD — sprites cacheados + agua blob
+// ════════════════════════════════════════════════════════════
 function drawWorld(cx,cy){
   const W=canvas.width, H=canvas.height;
   const T2=Date.now();
   const tx0=Math.floor(cx/TILE)-1, ty0=Math.floor(cy/TILE)-1;
   const tx1=tx0+Math.ceil(W/TILE)+3, ty1=ty0+Math.ceil(H/TILE)+4;
 
-  // ── Paso 1: base sólida sin bordes ──────────────────────────
+  // ── Paso 1: sprites tile por tile (cacheados) ──────────────
   for(let ty=ty0;ty<=ty1;ty++){
     for(let tx=tx0;tx<=tx1;tx++){
       const wtx=((tx%MW)+MW)%MW, wty=((ty%MH)+MH)%MH;
       const tile=wMap[wty]?.[wtx]; if(!tile) continue;
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
+      if(tile.t===T.WATER) continue; // agua: blob vectorial
+      const rnd=((wtx*17+wty*31)^(wtx*7))&0xff;
+      let sprite;
       switch(tile.t){
-        case T.GRASS: ctx.fillStyle=PAL.grass1; break;
-        case T.DIRT:  ctx.fillStyle=PAL.dirt1;  break;
-        case T.WATER: ctx.fillStyle=PAL.water1; break;
-        case T.SAND:  ctx.fillStyle=PAL.sand1;  break;
-        case T.STONE: ctx.fillStyle=PAL.stone1; break;
-        default:      ctx.fillStyle=PAL.grass1;
+        case T.GRASS: sprite=buildGrassSprite(rnd%8); break;
+        case T.DIRT:  sprite=buildDirtSprite(rnd%4);  break;
+        case T.STONE: sprite=buildStoneSprite(rnd%4); break;
+        case T.SAND:  sprite=buildSandSprite(rnd%4);  break;
+        default:      sprite=buildGrassSprite(rnd%8);
       }
-      ctx.fillRect(sx-0.5, sy-0.5, TILE+1, TILE+1);
+      ctx.drawImage(sprite, sx, sy);
     }
   }
 
-  // ── Paso 2: transición suave entre biomas (una sola capa ligera) ──
-  for(let ty=ty0;ty<=ty1;ty++){
-    for(let tx=tx0;tx<=tx1;tx++){
+  // ── Paso 2: agua vectorial blob ───────────────────────────
+  drawWaterBlobs(cx,cy,T2);
+
+  // ── Paso 3: briznas animadas sobre hierba ─────────────────
+  // Solo animar cada 3er tile para rendimiento
+  for(let ty=ty0;ty<=ty1;ty+=1){
+    for(let tx=tx0;tx<=tx1;tx+=1){
       const wtx=((tx%MW)+MW)%MW, wty=((ty%MH)+MH)%MH;
-      const tile=wMap[wty]?.[wtx]; if(!tile||tile.t===T.WATER) continue;
+      const tile=wMap[wty]?.[wtx]; if(!tile||tile.t!==T.GRASS) continue;
+      const rnd=((wtx*17+wty*31)^(wtx*7))&0xff;
+      if(rnd%4!==0) continue; // solo 1 de 4 tiles tiene animación
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
-      [[1,0,sx+TILE*0.5,sy,sx+TILE,sy,'h'],[0,1,sx,sy+TILE*0.5,sx,sy+TILE,'v']].forEach(([ddx,ddy,,,,,axis])=>{
-        const nx=((((tx+ddx)%MW)+MW)%MW), ny=((((ty+ddy)%MH)+MH)%MH);
-        const nb=wMap[ny]?.[nx]; if(!nb||nb.t===tile.t) return;
-        let nc;
-        if(nb.t===T.DIRT)  nc='rgba(90,61,24,0.7)';
-        else if(nb.t===T.WATER) nc='rgba(26,61,106,0.75)';
-        else if(nb.t===T.GRASS) nc='rgba(61,107,34,0.7)';
-        else if(nb.t===T.SAND)  nc='rgba(138,112,48,0.6)';
-        else nc='rgba(74,74,74,0.6)';
-        const blend=TILE*0.6;
-        let gr;
-        if(axis==='h'){ gr=ctx.createLinearGradient(sx+TILE-blend,sy,sx+TILE+blend,sy); }
-        else          { gr=ctx.createLinearGradient(sx,sy+TILE-blend,sx,sy+TILE+blend); }
-        gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,nc);
-        ctx.fillStyle=gr;
-        if(axis==='h') ctx.fillRect(sx+TILE-blend,sy,blend*2,TILE+1);
-        else           ctx.fillRect(sx,sy+TILE-blend,TILE+1,blend*2);
-      });
-    }
-  }
-
-  // ── Paso 3: detalles orgánicos — MUY ligeros, sin gradientes por tile ──
-  for(let ty=ty0;ty<=ty1;ty++){
-    for(let tx=tx0;tx<=tx1;tx++){
-      const wtx=((tx%MW)+MW)%MW, wty=((ty%MH)+MH)%MH;
-      const tile=wMap[wty]?.[wtx]; if(!tile) continue;
-      const sx=tx*TILE-cx, sy=ty*TILE-cy;
-      const rnd=(wtx*17+wty*31+wtx*3)&0xff;
-
-      if(tile.t===T.GRASS){
-        // Manchas de pasto — solo puntos y líneas, sin gradientes
-        if(rnd%4===0){
-          ctx.fillStyle=PAL.grassD;
-          ctx.fillRect(sx+rnd%24, sy+rnd%28, 6, 4);
-          ctx.fillRect(sx+(rnd>>2)%28, sy+(rnd>>4)%26, 4, 3);
-        }
-        if(rnd%5===1){
-          ctx.fillStyle=PAL.grassL;
-          ctx.fillRect(sx+(rnd>>1)%26, sy+(rnd>>3)%24, 3, 3);
-        }
-        // Briznas pixel art — solo 2 líneas simples, sin quadraticCurveTo
-        if(rnd%3===0){
-          const bx=sx+4+(rnd&15)*2, by=sy+TILE-12;
-          const wnd=Math.sin(T2/1400+wtx*0.4)>0?1:-1;
-          ctx.fillStyle=PAL.grassL;
-          ctx.fillRect(bx,      by+4, 1, 6);
-          ctx.fillRect(bx+wnd,  by+1, 1, 4);
-          ctx.fillRect(bx+wnd*2,by-1, 1, 3);
-          ctx.fillRect(bx+8,    by+5, 1, 5);
-          ctx.fillRect(bx+8+wnd,by+2, 1, 4);
-        }
-        // Flor pixel — 3 píxeles
-        if(rnd%29===0){
-          const fx=sx+(rnd>>2)%30+4, fy=sy+(rnd>>5)%24+6;
-          const fc=[PAL.gold,'#d44444','#8844cc','#44aacc'][rnd%4];
-          ctx.fillStyle=fc;
-          ctx.fillRect(fx,fy,2,2);
-          ctx.fillStyle='rgba(255,255,200,0.8)';
-          ctx.fillRect(fx,fy,1,1);
-        }
-
-      } else if(tile.t===T.WATER){
-        // Detectar si es agua profunda (pescar) o superficial (beber)
-        const isFish=tile.wt==='fish';
-        const wCol=isFish?PAL.water1:PAL.water2; // más oscura = profunda
-        // Olas animadas simples
-        const frame=Math.floor(T2/450)%4;
-        if((rnd+frame)%3===0){
-          const wy=sy+(rnd&14)+5;
-          ctx.fillStyle=isFish?'rgba(30,80,160,0.7)':'rgba(40,100,180,0.6)';
-          ctx.fillRect(sx+3+(rnd&9)*3, wy, 7, 1);
-          ctx.fillRect(sx+12+(rnd&7)*3, wy+3, 5, 1);
-        }
-        // Destello
-        if(rnd%6===0&&Math.floor(T2/700)%2===0){
-          ctx.fillStyle=isFish?'rgba(120,180,255,0.4)':'rgba(160,220,255,0.5)';
-          ctx.fillRect(sx+(rnd&26)+4, sy+(rnd>>3&18)+5, 3, 1);
-        }
-        // Ícono pescado en agua profunda cada ~8 tiles
-        if(isFish&&rnd%11===0){
-          ctx.font='9px serif';ctx.textAlign='center';ctx.globalAlpha=0.4+Math.sin(T2/800+wtx)*0.2;
-          ctx.fillText('🐟',sx+TILE/2,sy+TILE/2+3);
-          ctx.globalAlpha=1;ctx.textAlign='left';
-        }
-        // Espuma borde orgánica
-        [[1,0],[0,1],[-1,0],[0,-1]].forEach(([ddx,ddy])=>{
-          const nx=((((tx+ddx)%MW)+MW)%MW), ny=((((ty+ddy)%MH)+MH)%MH);
-          const nb=wMap[ny]?.[nx];
-          if(nb&&nb.t!==T.WATER){
-            const foamA=0.22+Math.sin(T2/600+wtx*0.7+wty*0.5)*0.1;
-            ctx.fillStyle=`rgba(180,225,255,${foamA})`;
-            // Espuma irregular — variar grosor con rnd
-            const fw=2+(rnd&3);
-            if(ddx===1) ctx.fillRect(sx+TILE-fw,sy+2,fw,TILE-4);
-            else if(ddx===-1) ctx.fillRect(sx,sy+2,fw,TILE-4);
-            else if(ddy===1) ctx.fillRect(sx+2,sy+TILE-fw,TILE-4,fw);
-            else ctx.fillRect(sx+2,sy,TILE-4,fw);
-          }
-        });
-
-      } else if(tile.t===T.DIRT){
-        if(rnd%5===0){
-          ctx.fillStyle=PAL.dirtL;
-          ctx.fillRect(sx+(rnd&20)+4, sy+(rnd>>3&18)+4, 5, 3);
-        }
-
-      } else if(tile.t===T.STONE){
-        if(rnd%6===0){
-          ctx.fillStyle=PAL.stoneL;
-          ctx.fillRect(sx+(rnd&22)+2, sy+(rnd>>2&18)+4, 7, 4);
-          ctx.fillRect(sx+(rnd>>3&24)+1, sy+(rnd&16)+8, 4, 3);
-        }
-      }
+      const wnd=Math.sin(T2/1600+wtx*0.3+wty*0.2);
+      const bx=sx+4+(rnd&7)*3, by=sy+TILE-8;
+      ctx.fillStyle=PAL.grassBladeL;
+      ctx.fillRect(bx,               by+3, 1, 4);
+      ctx.fillRect(bx+(wnd>0?1:0),   by+1, 1, 3);
+      ctx.fillRect(bx+(wnd>0?2:-1),  by-1, 1, 2);
     }
   }
 }
+
 
 function drawObjs(cx,cy){
   const W=canvas.width,H=canvas.height;
@@ -2167,6 +2448,7 @@ async function loadGame(){
     if(d.skillsEstado) Object.assign(skillsEstado,d.skillsEstado);
     // Re-aplicar efectos de armas al cargar
     Object.keys(armasEstado).forEach(id=>aplicarEfectoArma(id,armasEstado[id].nivel));
+    waterBlobCache=null; // forzar recálculo al cargar
     P.hunger=d.hunger||100;P.thirst=d.thirst||100;P.energy=d.energy||100;P.sp=d.sp||0;
     if(d.skills)d.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk)sk.u=true;});
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
