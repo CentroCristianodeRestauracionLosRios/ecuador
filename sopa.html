@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>Sopa de Letras Bíblica — CCRLR</title>
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Uncial+Antiqua&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#060e1a;--bg2:#0a1628;--bg3:#0f1f38;
+  --blue:#1a3a6a;--blue2:#2a5298;--blue3:#4a7fd4;
+  --gold:#c9a84c;--gold2:#f0d080;--gold3:#8a6a1a;
+  --parch:#e8dfc8;--parch2:#d4c9a8;
+  --found:#27ae60;--found2:#52d68a;
+  --r:8px;
+  --cell:min(8.5vw,38px);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Crimson Text',Georgia,serif;color:var(--parch);}
+
+/* ── FONDO ── */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.bg-base{position:absolute;inset:0;
+  background:radial-gradient(ellipse 100% 70% at 50% 20%,#0a1f3a 0%,#050e1a 55%,#020608 100%);}
+.bg-stars{position:absolute;inset:0;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:var(--o1,.1);}50%{opacity:var(--o2,.6);}}
+.bg-cross-grid{position:absolute;inset:0;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 49px,rgba(74,127,212,0.04) 50px),
+                   repeating-linear-gradient(90deg,transparent,transparent 49px,rgba(74,127,212,0.04) 50px);}
+.bg-glow{position:absolute;border-radius:50%;filter:blur(90px);animation:drift 14s ease-in-out infinite;}
+.g1{width:600px;height:400px;top:-100px;left:-100px;background:rgba(26,58,106,0.12);animation-delay:0s;}
+.g2{width:400px;height:400px;bottom:-80px;right:-80px;background:rgba(201,168,76,0.06);animation-delay:-6s;}
+@keyframes drift{0%,100%{transform:translate(0,0);}50%{transform:translate(20px,-15px);}}
+
+/* ── PANTALLAS ── */
+.screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;
+  align-items:center;justify-content:flex-start;padding:10px 14px 14px;overflow-y:auto;}
+.screen.on{display:flex;}
+
+/* ── BARRA NAV ── */
+.game-topnav{position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 14px;background:rgba(3,8,18,0.82);
+  backdrop-filter:blur(10px);border-bottom:1px solid rgba(74,127,212,0.2);height:44px;}
+.topnav-btn{display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(74,127,212,0.3);
+  border-radius:20px;padding:5px 12px;color:rgba(232,223,200,0.7);
+  font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.06em;
+  cursor:pointer;text-decoration:none;transition:all 0.18s;}
+.topnav-btn:hover{border-color:var(--blue3);color:var(--parch);}
+.topnav-title{font-family:'Cinzel',serif;font-size:0.65rem;
+  letter-spacing:0.18em;color:rgba(74,127,212,0.5);text-transform:uppercase;}
+
+/* ── MENÚ ── */
+#s-menu{padding-top:54px;}
+.menu-wrap{display:flex;flex-direction:column;align-items:center;
+  gap:10px;max-width:420px;width:100%;margin:auto;padding:6px 0 12px;}
+.menu-img{animation:halo-blue 3s ease-in-out infinite;}
+@keyframes halo-blue{
+  0%,100%{filter:drop-shadow(0 0 10px rgba(74,127,212,0.5)) drop-shadow(0 0 30px rgba(74,127,212,0.2));}
+  50%{filter:drop-shadow(0 0 20px rgba(74,127,212,0.8)) drop-shadow(0 0 60px rgba(74,127,212,0.35));}}
+.menu-badge{font-family:'Cinzel',serif;font-size:0.52rem;letter-spacing:0.5em;
+  color:rgba(74,127,212,0.5);text-transform:uppercase;}
+.menu-title{font-family:'Cinzel',serif;font-size:clamp(1.4rem,5vw,2rem);
+  font-weight:700;color:var(--blue3);text-align:center;line-height:1.1;
+  text-shadow:0 0 40px rgba(74,127,212,0.6),0 3px 12px rgba(0,0,0,0.8);}
+.menu-sub{font-style:italic;font-size:0.82rem;color:rgba(232,223,200,0.45);text-align:center;}
+.menu-verse{background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.2);
+  border-radius:var(--r);padding:8px 14px;font-style:italic;font-size:0.78rem;
+  color:rgba(232,223,200,0.6);text-align:center;line-height:1.5;max-width:360px;}
+.tema-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;}
+.tema-card{background:rgba(255,255,255,0.02);border:1.5px solid rgba(74,127,212,0.2);
+  border-radius:10px;padding:12px 10px;text-align:center;cursor:pointer;
+  transition:all 0.22s;position:relative;overflow:hidden;}
+.tema-card:hover{border-color:var(--blue3);transform:translateY(-2px);
+  box-shadow:0 6px 24px rgba(0,0,0,0.4),0 0 16px rgba(74,127,212,0.15);}
+.tema-card::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(74,127,212,0.08),transparent);opacity:0;transition:opacity 0.2s;}
+.tema-card:hover::before{opacity:1;}
+.tema-icon{font-size:1.6rem;margin-bottom:5px;}
+.tema-name{font-family:'Cinzel',serif;font-size:0.72rem;font-weight:700;
+  color:var(--parch);letter-spacing:0.06em;}
+.tema-desc{font-size:0.62rem;color:rgba(232,223,200,0.4);margin-top:2px;}
+.tema-count{font-size:0.58rem;font-family:'Cinzel',serif;
+  color:rgba(74,127,212,0.6);margin-top:3px;}
+.btn-ranking-sopa{background:transparent;border:1.5px solid rgba(74,127,212,0.3);
+  border-radius:var(--r);padding:8px 16px;color:var(--blue3);
+  font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.08em;
+  cursor:pointer;transition:all 0.2s;width:100%;}
+.btn-ranking-sopa:hover{border-color:var(--blue3);background:rgba(74,127,212,0.07);}
+
+/* ── JUEGO ── */
+#s-game{padding-top:54px;}
+.game-wrap{width:100%;max-width:500px;display:flex;flex-direction:column;gap:8px;margin:auto;}
+.game-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px;}
+.game-tema{font-family:'Cinzel',serif;font-size:0.68rem;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--blue3);}
+.game-stats{display:flex;gap:8px;}
+.stat-pill{background:rgba(0,0,0,0.4);border:1px solid rgba(74,127,212,0.25);
+  border-radius:20px;padding:3px 10px;font-family:'Cinzel',serif;
+  font-size:0.68rem;color:var(--blue3);}
+.timer-pill{border-color:rgba(201,168,76,0.3);color:var(--gold);}
+.timer-pill.urgent{border-color:rgba(231,76,60,0.5);color:#e74c3c;
+  animation:pulse-urgent 0.5s ease-in-out infinite alternate;}
+@keyframes pulse-urgent{to{background:rgba(231,76,60,0.1);}}
+
+/* Lista de palabras */
+.words-bar{display:flex;flex-wrap:wrap;gap:5px;padding:6px 10px;
+  background:rgba(0,0,0,0.3);border:1px solid rgba(74,127,212,0.15);
+  border-radius:var(--r);min-height:36px;}
+.word-chip{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.08em;
+  padding:3px 9px;border-radius:20px;border:1px solid rgba(74,127,212,0.35);
+  color:rgba(232,223,200,0.7);transition:all 0.3s;text-transform:uppercase;}
+.word-chip.found{border-color:var(--found);color:var(--found2);
+  background:rgba(39,174,96,0.12);text-decoration:line-through;opacity:0.7;}
+
+/* Grilla */
+.grid-wrap{position:relative;display:flex;justify-content:center;}
+.sopa-grid{display:grid;gap:2px;user-select:none;touch-action:none;}
+.cell{width:var(--cell);height:var(--cell);display:flex;align-items:center;
+  justify-content:center;font-family:'Cinzel',serif;
+  font-size:clamp(0.65rem,2.2vw,0.9rem);font-weight:600;
+  border-radius:4px;cursor:pointer;transition:all 0.12s;
+  background:rgba(10,22,40,0.8);border:1px solid rgba(74,127,212,0.1);
+  color:rgba(232,223,200,0.75);position:relative;z-index:1;}
+.cell:hover{background:rgba(74,127,212,0.15);color:var(--parch);}
+.cell.selecting{background:rgba(201,168,76,0.2);border-color:rgba(201,168,76,0.5);
+  color:var(--gold2);transform:scale(1.08);}
+.cell.found-cell{background:rgba(39,174,96,0.15);border-color:rgba(39,174,96,0.4);
+  color:var(--found2);animation:cell-found 0.4s ease;}
+.cell.found-cell.multi{animation:cell-found-multi 0.4s ease;}
+@keyframes cell-found{0%{transform:scale(1.2);background:rgba(39,174,96,0.4);}100%{transform:scale(1);}}
+@keyframes cell-found-multi{0%{transform:scale(1.15) rotate(5deg);}50%{transform:scale(1.1) rotate(-3deg);}100%{transform:scale(1) rotate(0);}}
+
+/* SVG overlay para líneas de palabras encontradas */
+.grid-svg{position:absolute;top:0;left:0;pointer-events:none;z-index:2;}
+
+/* Pista */
+.hint-box{background:rgba(74,127,212,0.06);border:1px solid rgba(74,127,212,0.2);
+  border-radius:var(--r);padding:7px 12px;font-size:0.78rem;
+  color:rgba(232,223,200,0.65);font-style:italic;line-height:1.5;display:none;}
+.hint-box.show{display:block;}
+
+.btn-hint{background:transparent;border:1px solid rgba(74,127,212,0.3);
+  border-radius:20px;padding:5px 14px;color:rgba(74,127,212,0.7);
+  font-family:'Cinzel',serif;font-size:0.65rem;cursor:pointer;transition:all 0.18s;}
+.btn-hint:hover{border-color:var(--blue3);color:var(--blue3);}
+.btn-hint:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* ── RESULTADO ── */
+#s-result{padding-top:54px;}
+.result-wrap{width:100%;max-width:420px;display:flex;flex-direction:column;
+  align-items:center;gap:14px;text-align:center;margin:auto;}
+.result-medal{font-size:4.5rem;animation:medal-in 0.6s cubic-bezier(0.175,0.885,0.32,1.275) both;}
+@keyframes medal-in{from{transform:scale(0) rotate(-20deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+.result-title{font-family:'Cinzel',serif;font-size:clamp(1.4rem,5vw,2rem);
+  font-weight:700;color:var(--blue3);
+  text-shadow:0 0 40px rgba(74,127,212,0.5);}
+.result-score-box{background:rgba(74,127,212,0.06);border:2px solid rgba(74,127,212,0.3);
+  border-radius:12px;padding:16px 32px;}
+.result-pts{font-family:'Cinzel',serif;font-size:2.6rem;font-weight:700;
+  color:var(--blue3);line-height:1;}
+.result-pts-label{font-size:0.72rem;color:rgba(74,127,212,0.5);
+  letter-spacing:0.2em;text-transform:uppercase;font-family:'Cinzel',serif;}
+.result-stats{display:flex;gap:18px;justify-content:center;}
+.rst{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.rst-num{font-family:'Cinzel',serif;font-size:1.3rem;font-weight:700;color:var(--parch);}
+.rst-label{font-size:0.65rem;color:rgba(232,223,200,0.4);letter-spacing:0.1em;}
+.result-verse{font-style:italic;font-size:0.88rem;color:rgba(232,223,200,0.5);
+  line-height:1.7;max-width:320px;}
+.result-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.rbtn{border-radius:var(--r);padding:10px 20px;font-family:'Cinzel',serif;
+  font-size:0.75rem;font-weight:700;letter-spacing:0.08em;cursor:pointer;
+  transition:all 0.2s;border:1.5px solid rgba(74,127,212,0.35);
+  background:transparent;color:var(--blue3);}
+.rbtn:hover{border-color:var(--blue3);background:rgba(74,127,212,0.08);}
+.rbtn.pri{background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#e8f4ff;border-color:var(--blue3);}
+.rbtn.pri:hover{background:linear-gradient(135deg,var(--blue2),var(--blue3));}
+
+/* ── RANKING ── */
+#s-ranking{padding-top:54px;}
+.rank-wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:10px;margin:auto;}
+.rank-header{display:flex;align-items:center;justify-content:space-between;}
+.rank-title{font-family:'Cinzel',serif;font-size:1.2rem;color:var(--blue3);}
+.rank-back{background:transparent;border:1px solid rgba(74,127,212,0.3);
+  border-radius:var(--r);padding:5px 12px;color:var(--blue3);
+  font-family:'Cinzel',serif;font-size:0.68rem;cursor:pointer;}
+.rank-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.03);
+  border-radius:8px;padding:3px;flex-wrap:wrap;}
+.rtab{flex:1;min-width:60px;padding:6px 4px;text-align:center;font-family:'Cinzel',serif;
+  font-size:0.6rem;border-radius:5px;cursor:pointer;
+  color:rgba(232,223,200,0.4);transition:all 0.18s;letter-spacing:0.04em;}
+.rtab.on{background:rgba(74,127,212,0.15);color:var(--blue3);
+  border:1px solid rgba(74,127,212,0.35);}
+.rank-list{display:flex;flex-direction:column;gap:5px;max-height:52vh;overflow-y:auto;}
+.rank-item{display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;padding:10px 12px;animation:fadeUp 0.3s ease both;}
+.rank-item.top1{border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.05);}
+.rank-item.top2{border-color:rgba(192,192,192,0.3);}
+.rank-item.top3{border-color:rgba(180,120,60,0.3);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.rank-pos{font-family:'Cinzel',serif;font-size:0.8rem;font-weight:700;
+  width:22px;text-align:center;color:rgba(232,223,200,0.35);}
+.rank-pos.p1{color:#ffd700;font-size:1rem;}
+.rank-pos.p2{color:#c0c0c0;}.rank-pos.p3{color:#cd7f32;}
+.rank-name{flex:1;font-size:0.88rem;color:var(--parch);}
+.rank-score{font-family:'Cinzel',serif;font-size:0.82rem;font-weight:700;color:var(--blue3);}
+.rank-sub{font-size:0.65rem;color:rgba(232,223,200,0.3);}
+.rank-empty{text-align:center;color:rgba(232,223,200,0.3);font-style:italic;padding:20px;}
+.rank-loading{text-align:center;color:rgba(74,127,212,0.5);font-family:'Cinzel',serif;
+  font-size:0.78rem;padding:18px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:0.4;}50%{opacity:1;}}
+
+/* ── MINI MODAL JUEGOS ── */
+#mini-juegos{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.8);
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;}
+.mj-panel{background:linear-gradient(160deg,#0d1020,#0a1628);
+  border:1.5px solid rgba(74,127,212,0.35);border-radius:16px;
+  width:min(400px,100%);padding:18px;position:relative;
+  animation:panel-up 0.25s ease;}
+@keyframes panel-up{from{transform:scale(0.92) translateY(16px);opacity:0;}
+  to{transform:scale(1) translateY(0);opacity:1;}}
+.mj-close{position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);border-radius:50%;width:28px;height:28px;
+  color:rgba(255,255,255,0.45);font-size:0.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.mj-item{display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:10px;padding:10px 12px;text-decoration:none;color:inherit;
+  transition:all 0.18s;margin-bottom:6px;cursor:pointer;}
+.mj-item:hover:not(.mj-dis){border-color:rgba(74,127,212,0.5);}
+.mj-item.mj-dis{opacity:0.4;cursor:default;}
+.mj-item.mj-cur{border-color:rgba(74,127,212,0.4);background:rgba(74,127,212,0.06);opacity:0.6;}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-80px);
+  z-index:200;background:rgba(5,10,20,0.95);border:1.5px solid var(--blue3);
+  border-radius:8px;padding:8px 18px;font-family:'Cinzel',serif;font-size:0.75rem;
+  color:var(--blue3);white-space:nowrap;transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+  box-shadow:0 6px 24px rgba(0,0,0,0.6);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── FLOAT PTS ── */
+.float-pts{position:fixed;font-family:'Cinzel',serif;font-size:1rem;font-weight:700;
+  pointer-events:none;z-index:100;animation:float-up 1s ease forwards;}
+@keyframes float-up{0%{opacity:1;transform:translateY(0) scale(1);}
+  100%{opacity:0;transform:translateY(-50px) scale(1.2);}}
+
+/* ── MUTE BTN ── */
+#mute-btn{position:fixed;bottom:14px;right:14px;z-index:999;width:36px;height:36px;
+  border-radius:50%;background:rgba(0,0,0,0.5);border:1.5px solid rgba(74,127,212,0.3);
+  display:flex;align-items:center;justify-content:center;font-size:0.95rem;cursor:pointer;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:rgba(74,127,212,0.25);border-radius:2px;}
+@media(max-width:360px){:root{--cell:min(8vw,32px);}}
+</style>
+</head>
+<body>
+
+<!-- Fondo -->
+<div id="bg">
+  <div class="bg-base"></div>
+  <div class="bg-stars" id="stars"></div>
+  <div class="bg-cross-grid"></div>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+</div>
+
+<!-- Nav -->
+<nav class="game-topnav">
+  <a href="index.html" class="topnav-btn">🏠 Página</a>
+  <span class="topnav-title">Sopa de Letras</span>
+  <button class="topnav-btn" onclick="document.getElementById('mini-juegos').style.display='flex'">🎮 Juegos</button>
+</nav>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══ MENÚ ══ -->
+<div class="screen on" id="s-menu">
+  <div class="menu-wrap">
+    <div class="menu-img">
+      <img src="sopa1.png" alt="Sopa de Letras" style="width:min(120px,36vw);height:auto;border-radius:10px;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.7));"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none;font-size:3rem">📜</span>
+    </div>
+    <div class="menu-badge">Centro Cristiano de Restauración Los Ríos</div>
+    <div class="menu-title">Sopa de Letras</div>
+    <div class="menu-sub">Descubre las palabras ocultas de las Escrituras</div>
+    <div class="menu-verse">"Escudriñad las Escrituras, porque a vosotros os parece que en ellas tenéis la vida eterna." — Juan 5:39</div>
+    <div class="tema-grid" id="tema-grid"></div>
+    <button class="btn-ranking-sopa" onclick="showRanking()">🏆 &nbsp;Ver Tabla de Líderes</button>
+    <div id="user-status" style="font-size:0.68rem;color:rgba(74,127,212,0.4);text-align:center;font-family:'Cinzel',serif;"></div>
+  </div>
+</div>
+
+<!-- ══ JUEGO ══ -->
+<div class="screen" id="s-game">
+  <div class="game-wrap">
+    <div class="game-header">
+      <div id="g-tema" class="game-tema">📖 Tema</div>
+      <div class="game-stats">
+        <div class="stat-pill" id="g-found">0/0</div>
+        <div class="stat-pill timer-pill" id="g-timer">⏱ --:--</div>
+      </div>
+    </div>
+    <div class="words-bar" id="words-bar"></div>
+    <div class="grid-wrap" id="grid-wrap">
+      <div class="sopa-grid" id="sopa-grid"></div>
+      <svg class="grid-svg" id="grid-svg"></svg>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-hint" id="btn-hint" onclick="usarPista()">💡 Pista (3)</button>
+      <div class="hint-box" id="hint-box"></div>
+    </div>
+    <button style="background:transparent;border:none;color:rgba(232,223,200,0.2);
+      font-size:0.68rem;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:0.06em;"
+      onclick="abandonar()">Abandonar</button>
+  </div>
+</div>
+
+<!-- ══ RESULTADO ══ -->
+<div class="screen" id="s-result">
+  <div class="result-wrap">
+    <div class="result-medal" id="r-medal">🥇</div>
+    <div class="result-title" id="r-title">¡Excelente!</div>
+    <div class="result-score-box">
+      <div class="result-pts" id="r-pts">0</div>
+      <div class="result-pts-label">puntos</div>
+    </div>
+    <div class="result-stats">
+      <div class="rst"><div class="rst-num" id="r-found">0</div><div class="rst-label">Encontradas</div></div>
+      <div class="rst"><div class="rst-num" id="r-time">0s</div><div class="rst-label">Tiempo</div></div>
+      <div class="rst"><div class="rst-num" id="r-hints">0</div><div class="rst-label">Pistas usadas</div></div>
+    </div>
+    <div class="result-verse" id="r-verse"></div>
+    <div class="result-btns">
+      <button class="rbtn pri" onclick="iniciarJuego(temaActual)">🔄 Jugar de nuevo</button>
+      <button class="rbtn" onclick="showS('s-menu')">🏠 Menú</button>
+      <button class="rbtn" onclick="showRanking()">🏆 Ranking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RANKING ══ -->
+<div class="screen" id="s-ranking">
+  <div class="rank-wrap">
+    <div class="rank-header">
+      <div class="rank-title">🏆 Líderes</div>
+      <button class="rank-back" onclick="showS('s-menu')">← Volver</button>
+    </div>
+    <div class="rank-tabs" id="rank-tabs"></div>
+    <div class="rank-list" id="rank-list"><div class="rank-loading">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ══ MINI MODAL JUEGOS ══ -->
+<div id="mini-juegos" onclick="if(event.target===this)this.style.display='none'"
+  style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.8);
+    backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
+  <div class="mj-panel">
+    <button class="mj-close" onclick="document.getElementById('mini-juegos').style.display='none'">✕</button>
+    <div style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:700;color:#f0d080;margin-bottom:12px;">🎮 Juegos Bíblicos</div>
+    <a href="trivia.html" class="mj-item"><span style="font-size:1.4rem">🎯</span><div><div style="font-family:'Cinzel',serif;font-size:0.78rem;color:#f0e8d0;font-weight:700;">Trivia Bíblica</div><div style="font-size:0.65rem;color:rgba(255,255,255,0.35)">3 niveles · Ranking global</div></div></a>
+    <div class="mj-item mj-cur"><span style="font-size:1.4rem">🧩</span><div><div style="font-family:'Cinzel',serif;font-size:0.78rem;color:#f0e8d0;font-weight:700;">Sopa de Letras <span style="font-size:0.6rem;color:rgba(74,127,212,0.7)">(jugando ahora)</span></div></div></div>
+    <a href="juego.html" class="mj-item"><span style="font-size:1.4rem">⛵</span><div><div style="font-family:'Cinzel',serif;font-size:0.78rem;color:#f0e8d0;font-weight:700;">El Arca de Noé</div><div style="font-size:0.65rem;color:rgba(255,255,255,0.35)">RPG Survival</div></div></a>
+    <div class="mj-item mj-dis"><span style="font-size:1.4rem">🃏</span><div><div style="font-family:'Cinzel',serif;font-size:0.78rem;color:#f0e8d0;font-weight:700;">Memory de Versículos</div><div style="font-size:0.65rem;color:rgba(255,255,255,0.35)">Próximamente</div></div></div>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getDatabase,ref,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import{getAuth,onAuthStateChanged,signInAnonymously}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
+const db=getDatabase(app),auth=getAuth(app);
+let cu=null,userNick='Jugador';
+
+onAuthStateChanged(auth,async u=>{
+  if(u){
+    cu=u;
+    if(!u.isAnonymous){
+      try{const s=await get(ref(db,`usuarios/${u.uid}/nickname`));userNick=s.val()||(u.email?u.email.split('@')[0]:'Jugador');}
+      catch(e){userNick=u.email?u.email.split('@')[0]:'Jugador';}
+      document.getElementById('user-status').textContent=`✝ Jugando como ${userNick}`;
+    }
+  }else{
+    try{await signInAnonymously(auth);}catch(e){}
+  }
+});
+
+// ═══════════════════════════════════════
+//  BANCO DE TEMAS Y PALABRAS
+// ═══════════════════════════════════════
+const TEMAS={
+  personajes:{
+    nombre:'Personajes Bíblicos',icon:'👤',color:'#4a7fd4',
+    palabras:[
+      {w:'MOISES',pista:'Recibió los Diez Mandamientos en el Sinaí'},
+      {w:'DAVID',pista:'Venció a Goliat con una honda y una piedra'},
+      {w:'ABRAHAM',pista:'Padre de la fe, llamado por Dios a dejar su tierra'},
+      {w:'MARIA',pista:'Madre de Jesús, bendita entre las mujeres'},
+      {w:'PABLO',pista:'Apóstol que escribió la mayoría de las epístolas'},
+      {w:'JUAN',pista:'Escribió el Apocalipsis en la isla de Patmos'},
+      {w:'PEDRO',pista:'Primer apóstol en confesar a Jesús como el Cristo'},
+      {w:'SAMUEL',pista:'Profeta que ungió al primer rey de Israel'},
+      {w:'ESTER',pista:'Reina que salvó al pueblo judío del exterminio'},
+      {w:'ELIAS',pista:'Profeta que fue llevado al cielo en carro de fuego'},
+    ]
+  },
+  virtudes:{
+    nombre:'Virtudes Cristianas',icon:'✨',color:'#c9a84c',
+    palabras:[
+      {w:'FE',pista:'Certeza de lo que se espera, convicción de lo que no se ve (Hebreos 11:1)'},
+      {w:'AMOR',pista:'El mayor de los dones según 1 Corintios 13'},
+      {w:'PAZ',pista:'La dejó Jesús como su regalo de despedida (Juan 14:27)'},
+      {w:'GOZO',pista:'Fruto del Espíritu que no depende de circunstancias'},
+      {w:'GRACIA',pista:'Favor inmerecido de Dios hacia la humanidad'},
+      {w:'PERDON',pista:'Jesús nos enseñó a practicarlo hasta setenta veces siete'},
+      {w:'HUMILDAD',pista:'Virtud que Jesús demostró lavando los pies de sus discípulos'},
+      {w:'PACIENCIA',pista:'Job es el ejemplo bíblico más conocido de esta virtud'},
+      {w:'BONDAD',pista:'Fruto del Espíritu que se refleja en acciones hacia otros'},
+      {w:'ORACION',pista:'Comunicación directa con Dios, aliento del alma'},
+    ]
+  },
+  lugares:{
+    nombre:'Lugares Bíblicos',icon:'🗺️',color:'#27ae60',
+    palabras:[
+      {w:'BELEN',pista:'Ciudad donde nació Jesús, en Judea'},
+      {w:'SINAI',pista:'Monte donde Dios entregó los mandamientos a Moisés'},
+      {w:'JORDAN',pista:'Río donde Jesús fue bautizado por Juan'},
+      {w:'NAZARET',pista:'Ciudad donde Jesús creció y vivió su infancia'},
+      {w:'GALILEA',pista:'Región donde Jesús realizó la mayoría de sus milagros'},
+      {w:'EDEN',pista:'El jardín donde Dios colocó a Adán y Eva'},
+      {w:'CANAAN',pista:'La tierra prometida que Dios dio al pueblo de Israel'},
+      {w:'PATMOS',pista:'Isla donde Juan recibió la visión del Apocalipsis'},
+      {w:'CALVARIO',pista:'Lugar donde Jesús fue crucificado'},
+      {w:'SODOMA',pista:'Ciudad destruida por su maldad en tiempos de Abraham'},
+    ]
+  },
+  libros:{
+    nombre:'Libros de la Biblia',icon:'📖',color:'#8e44ad',
+    palabras:[
+      {w:'GENESIS',pista:'Primer libro de la Biblia — la creación y los orígenes'},
+      {w:'SALMOS',pista:'150 poemas y canciones de alabanza a Dios'},
+      {w:'PROVERBIOS',pista:'Libro de sabiduría atribuido principalmente a Salomón'},
+      {w:'ISAIAS',pista:'Profeta que predijo el nacimiento virginal del Mesías'},
+      {w:'MATEO',pista:'Primer evangelio del Nuevo Testamento'},
+      {w:'JUAN',pista:'Evangelio que comienza: "En el principio era el Verbo"'},
+      {w:'ROMANOS',pista:'Epístola de Pablo que explica la doctrina de la salvación'},
+      {w:'APOCALIPSIS',pista:'Último libro de la Biblia, escrito por Juan'},
+      {w:'RUTH',pista:'Libro sobre lealtad y redención, historia de una moabita'},
+      {w:'ESTER',pista:'Único libro bíblico que no menciona directamente a Dios'},
+    ]
+  },
+  navidad:{
+    nombre:'Navidad y Pascua',icon:'⭐',color:'#e74c3c',
+    palabras:[
+      {w:'BELEN',pista:'Lugar donde nació el niño Jesús'},
+      {w:'PESEBRE',pista:'Donde fue recostado el niño Jesús al nacer'},
+      {w:'HERODES',pista:'Rey que ordenó matar a los niños de Belén'},
+      {w:'GABRIEL',pista:'Ángel que anunció el nacimiento a María'},
+      {w:'MAGOS',pista:'Sabios de oriente que siguieron la estrella'},
+      {w:'RESURRECION',pista:'El triunfo de Jesús sobre la muerte al tercer día'},
+      {w:'CALVARIO',pista:'El monte donde Jesús fue crucificado'},
+      {w:'PILATO',pista:'Gobernador romano que ordenó la crucifixión de Jesús'},
+      {w:'TINIEBLAS',pista:'Oscuridad que cubrió la tierra durante la crucifixión'},
+      {w:'SEPULCRO',pista:'Donde fue colocado el cuerpo de Jesús y encontrado vacío'},
+    ]
+  },
+};
+
+const TSIZE=14; // tamaño de grilla 14×14
+const DIRS=[[0,1],[1,0],[0,-1],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]];
+const VERSOS=['La Palabra de Dios es viva y eficaz. — Hebreos 4:12',
+  'Tu palabra es lámpara a mis pies. — Salmos 119:105',
+  'El Señor es mi pastor, nada me faltará. — Salmos 23:1',
+  'Todo lo puedo en Cristo que me fortalece. — Filipenses 4:13'];
+
+// ═══════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════
+window.temaActual='personajes';
+let grid=[],placed=[],foundWords=[],selecting=false,startCell=null,currentPath=[];
+let timerInterval=null,elapsed=0,hintsLeft=3,hintsUsed=0,gameActive=false;
+let mutedSFX=false;
+
+// ═══════════════════════════════════════
+//  GENERAR ESTRELLAS DE FONDO
+// ═══════════════════════════════════════
+(()=>{
+  const c=document.getElementById('stars');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    const size=Math.random()*2+1;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--o1:${0.05+Math.random()*0.15};--o2:${0.3+Math.random()*0.5};animation-delay:${Math.random()*4}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ═══════════════════════════════════════
+//  RENDER MENÚ TEMAS
+// ═══════════════════════════════════════
+(()=>{
+  const grid2=document.getElementById('tema-grid');
+  Object.entries(TEMAS).forEach(([id,t])=>{
+    const d=document.createElement('div');
+    d.className='tema-card';
+    d.innerHTML=`<div class="tema-icon">${t.icon}</div>
+      <div class="tema-name">${t.nombre}</div>
+      <div class="tema-count">${t.palabras.length} palabras</div>`;
+    d.onclick=()=>iniciarJuego(id);
+    grid2.appendChild(d);
+  });
+  // Tabs ranking
+  const tabs=document.getElementById('rank-tabs');
+  Object.entries(TEMAS).forEach(([id,t],i)=>{
+    const d=document.createElement('div');
+    d.className='rtab'+(i===0?' on':'');
+    d.dataset.tema=id;
+    d.textContent=t.icon+' '+t.nombre.split(' ')[0];
+    d.onclick=()=>setRankTab(id,d);
+    tabs.appendChild(d);
+  });
+})();
+
+// ═══════════════════════════════════════
+//  PANTALLAS
+// ═══════════════════════════════════════
+window.showS=id=>{
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+};
+
+// ═══════════════════════════════════════
+//  GENERADOR DE SOPA
+// ═══════════════════════════════════════
+function crearGrid(){
+  return Array.from({length:TSIZE},()=>Array(TSIZE).fill(''));
+}
+
+function colocarPalabra(g,word){
+  const dirs=[...DIRS];
+  // barajar direcciones
+  for(let i=dirs.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[dirs[i],dirs[j]]=[dirs[j],dirs[i]];}
+  for(const [dr,dc] of dirs){
+    const maxR=dr===0?TSIZE:dr>0?TSIZE-word.length:TSIZE;
+    const maxC=dc===0?TSIZE:dc>0?TSIZE-word.length:TSIZE;
+    const minR=dr<0?word.length-1:0;
+    const minC=dc<0?word.length-1:0;
+    let intentos=20;
+    while(intentos-->0){
+      const r=minR+Math.floor(Math.random()*(maxR-minR));
+      const c=minC+Math.floor(Math.random()*(maxC-minC));
+      let ok=true;
+      const cells=[];
+      for(let i=0;i<word.length;i++){
+        const nr=r+dr*i,nc=c+dc*i;
+        if(nr<0||nr>=TSIZE||nc<0||nc>=TSIZE){ok=false;break;}
+        if(g[nr][nc]!==''&&g[nr][nc]!==word[i]){ok=false;break;}
+        cells.push([nr,nc]);
+      }
+      if(ok){
+        cells.forEach(([nr,nc],i)=>g[nr][nc]=word[i]);
+        return cells;
+      }
+    }
+  }
+  return null;
+}
+
+function rellenarGrid(g){
+  const letras='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(let r=0;r<TSIZE;r++)for(let c=0;c<TSIZE;c++)
+    if(g[r][c]==='')g[r][c]=letras[Math.floor(Math.random()*letras.length)];
+}
+
+// ═══════════════════════════════════════
+//  INICIAR JUEGO
+// ═══════════════════════════════════════
+window.iniciarJuego=id=>{
+  temaActual=id;
+  const tema=TEMAS[id];
+  grid=crearGrid();
+  placed=[];
+  foundWords=[];
+  hintsLeft=3;hintsUsed=0;gameActive=true;elapsed=0;
+  // Barajar y tomar todas las palabras
+  const pool=[...tema.palabras];
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  // Colocar palabras
+  for(const p of pool){
+    const cells=colocarPalabra(grid,p.w);
+    if(cells)placed.push({...p,cells,found:false});
+  }
+  rellenarGrid(grid);
+  // UI
+  document.getElementById('g-tema').textContent=`${tema.icon} ${tema.nombre}`;
+  document.getElementById('g-tema').style.color=tema.color;
+  renderWordBar();
+  renderGrid();
+  updateFoundCount();
+  document.getElementById('btn-hint').textContent=`💡 Pista (${hintsLeft})`;
+  document.getElementById('btn-hint').disabled=false;
+  document.getElementById('hint-box').className='hint-box';
+  showS('s-game');
+  startTimer();
+  sfxStart();
+};
+
+// ═══════════════════════════════════════
+//  RENDER GRILLA
+// ═══════════════════════════════════════
+function renderGrid(){
+  const g=document.getElementById('sopa-grid');
+  g.style.gridTemplateColumns=`repeat(${TSIZE},var(--cell))`;
+  g.innerHTML='';
+  for(let r=0;r<TSIZE;r++)for(let c=0;c<TSIZE;c++){
+    const d=document.createElement('div');
+    d.className='cell';
+    d.textContent=grid[r][c];
+    d.dataset.r=r;d.dataset.c=c;
+    d.addEventListener('pointerdown',e=>{e.preventDefault();startSelect(r,c);});
+    d.addEventListener('pointerenter',e=>{if(selecting)moveSelect(r,c);});
+    g.appendChild(d);
+  }
+  document.addEventListener('pointerup',endSelect,{once:false});
+  // Resize SVG
+  setTimeout(()=>{
+    const rect=g.getBoundingClientRect();
+    const svg=document.getElementById('grid-svg');
+    svg.style.width=rect.width+'px';svg.style.height=rect.height+'px';
+    svg.setAttribute('viewBox',`0 0 ${rect.width} ${rect.height}`);
+    // Re-dibujar palabras ya encontradas
+    placed.filter(p=>p.found).forEach(p=>drawLine(p));
+  },50);
+}
+
+function renderWordBar(){
+  const bar=document.getElementById('words-bar');
+  bar.innerHTML='';
+  placed.forEach(p=>{
+    const ch=document.createElement('div');
+    ch.className='word-chip'+(p.found?' found':'');
+    ch.id='chip-'+p.w;
+    ch.textContent=p.w;
+    bar.appendChild(ch);
+  });
+}
+
+function updateFoundCount(){
+  const total=placed.length,f=placed.filter(p=>p.found).length;
+  document.getElementById('g-found').textContent=`${f}/${total}`;
+  if(f===total&&total>0)finJuego();
+}
+
+// ═══════════════════════════════════════
+//  SELECCIÓN CON TOUCH Y MOUSE
+// ═══════════════════════════════════════
+function getCell(r,c){
+  return document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+}
+
+function startSelect(r,c){
+  selecting=true;startCell={r,c};currentPath=[{r,c}];
+  highlightPath([{r,c}]);
+}
+
+function moveSelect(r,c){
+  if(!selecting)return;
+  // Calcular dirección desde startCell
+  const dr=r-startCell.r,dc=c-startCell.c;
+  const len=Math.max(Math.abs(dr),Math.abs(dc));
+  if(len===0){currentPath=[startCell];highlightPath(currentPath);return;}
+  // Normalizar dirección
+  const nr=dr===0?0:dr/Math.abs(dr),nc=dc===0?0:dc/Math.abs(dc);
+  // Solo diagonal pura o recto
+  if(dr!==0&&dc!==0&&Math.abs(dr)!==Math.abs(dc))return;
+  const path=[];
+  for(let i=0;i<=len;i++)path.push({r:startCell.r+nr*i,c:startCell.c+nc*i});
+  currentPath=path;
+  highlightPath(path);
+}
+
+function endSelect(){
+  if(!selecting)return;
+  selecting=false;
+  checkWord(currentPath);
+  clearHighlight();
+  currentPath=[];
+}
+
+function highlightPath(path){
+  document.querySelectorAll('.cell.selecting').forEach(c=>c.classList.remove('selecting'));
+  path.forEach(({r,c})=>{const cell=getCell(r,c);if(cell)cell.classList.add('selecting');});
+}
+
+function clearHighlight(){
+  document.querySelectorAll('.cell.selecting').forEach(c=>c.classList.remove('selecting'));
+}
+
+// ═══════════════════════════════════════
+//  VERIFICAR PALABRA
+// ═══════════════════════════════════════
+function checkWord(path){
+  if(path.length<2)return;
+  const word=path.map(({r,c})=>grid[r][c]).join('');
+  const wordRev=word.split('').reverse().join('');
+  for(const p of placed){
+    if(p.found)continue;
+    if(p.w===word||p.w===wordRev){
+      p.found=true;
+      // Marcar celdas
+      p.cells.forEach(([r,c],i)=>{
+        const cell=getCell(r,c);
+        if(cell){cell.classList.add('found-cell');if(i>0)cell.classList.add('multi');}
+      });
+      // Chip
+      const chip=document.getElementById('chip-'+p.w);
+      if(chip)chip.className='word-chip found';
+      // Línea SVG
+      drawLine(p);
+      // Score
+      const pts=Math.max(100,300-elapsed*2);
+      floatPts(path[0],'+'+pts,'#52d68a');
+      sfxFound(placed.filter(x=>x.found).length);
+      showToast(`✅ ${p.w}`);
+      updateFoundCount();
+      return;
+    }
+  }
+  // No encontrada — pequeño flash rojo
+  sfxWrong();
+}
+
+// ═══════════════════════════════════════
+//  SVG LINE
+// ═══════════════════════════════════════
+function drawLine(p){
+  const g=document.getElementById('sopa-grid');
+  const gRect=g.getBoundingClientRect();
+  const svg=document.getElementById('grid-svg');
+  if(!p.cells||p.cells.length<2)return;
+  const first=p.cells[0],last=p.cells[p.cells.length-1];
+  const c1=getCell(first[0],first[1]),c2=getCell(last[0],last[1]);
+  if(!c1||!c2)return;
+  const r1=c1.getBoundingClientRect(),r2=c2.getBoundingClientRect();
+  const x1=r1.left-gRect.left+r1.width/2;
+  const y1=r1.top-gRect.top+r1.height/2;
+  const x2=r2.left-gRect.left+r2.width/2;
+  const y2=r2.top-gRect.top+r2.height/2;
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',x1);line.setAttribute('y1',y1);
+  line.setAttribute('x2',x2);line.setAttribute('y2',y2);
+  line.setAttribute('stroke',TEMAS[temaActual].color);
+  line.setAttribute('stroke-width','6');
+  line.setAttribute('stroke-linecap','round');
+  line.setAttribute('opacity','0.45');
+  svg.appendChild(line);
+}
+
+// ═══════════════════════════════════════
+//  TIMER
+// ═══════════════════════════════════════
+function startTimer(){
+  clearInterval(timerInterval);elapsed=0;
+  timerInterval=setInterval(()=>{
+    elapsed++;
+    const m=Math.floor(elapsed/60).toString().padStart(2,'0');
+    const s=(elapsed%60).toString().padStart(2,'0');
+    const pill=document.getElementById('g-timer');
+    pill.textContent=`⏱ ${m}:${s}`;
+    pill.className='stat-pill timer-pill'+(elapsed>180?' urgent':'');
+    if(!mutedSFX&&elapsed>0&&elapsed%30===0&&elapsed<=90)sfxTick();
+  },1000);
+}
+
+// ═══════════════════════════════════════
+//  PISTA
+// ═══════════════════════════════════════
+window.usarPista=()=>{
+  if(hintsLeft<=0)return;
+  const remaining=placed.filter(p=>!p.found);
+  if(remaining.length===0)return;
+  const p=remaining[Math.floor(Math.random()*remaining.length)];
+  hintsLeft--;hintsUsed++;
+  document.getElementById('btn-hint').textContent=`💡 Pista (${hintsLeft})`;
+  if(hintsLeft===0)document.getElementById('btn-hint').disabled=true;
+  const hint=document.getElementById('hint-box');
+  hint.textContent=`💡 "${p.w}" — ${p.pista}`;
+  hint.className='hint-box show';
+  sfxHint();
+};
+
+window.abandonar=()=>{clearInterval(timerInterval);gameActive=false;showS('s-menu');};
+
+// ═══════════════════════════════════════
+//  FIN DE JUEGO
+// ═══════════════════════════════════════
+async function finJuego(){
+  clearInterval(timerInterval);gameActive=false;
+  const total=placed.length,f=placed.filter(p=>p.found).length;
+  const pct=f/total;
+  const pts=Math.max(0,f*200-elapsed*3-hintsUsed*50);
+  let medal='🥉',title='¡Bien intentado!';
+  if(pct===1&&elapsed<120){medal='🏆';title='¡Maestro de la Palabra!';}
+  else if(pct===1){medal='🥇';title='¡Todas encontradas!';}
+  else if(pct>=0.7){medal='🥈';title='¡Muy bien!';}
+  document.getElementById('r-medal').textContent=medal;
+  document.getElementById('r-title').textContent=title;
+  document.getElementById('r-pts').textContent=pts;
+  document.getElementById('r-found').textContent=`${f}/${total}`;
+  const m=Math.floor(elapsed/60),s=elapsed%60;
+  document.getElementById('r-time').textContent=m>0?`${m}m${s}s`:`${s}s`;
+  document.getElementById('r-hints').textContent=hintsUsed;
+  document.getElementById('r-verse').textContent=VERSOS[Math.floor(Math.random()*VERSOS.length)];
+  showS('s-result');
+  if(pct>=0.7)setTimeout(sfxVictoria,200);else setTimeout(sfxDerrota,150);
+  // Guardar ranking
+  const guardar=async()=>{
+    if(!cu){await new Promise(r=>setTimeout(r,2000));}
+    if(!cu)return;
+    try{
+      const rk=ref(db,`sopa_ranking/${temaActual}/${cu.uid}`);
+      const snap=await get(rk);
+      const prev=snap.val()?.pts||0;
+      const nick=cu.isAnonymous?('J_'+cu.uid.slice(0,5)):userNick;
+      if(pts>=prev){
+        await set(rk,{pts,found:f,total,elapsed,hintsUsed,nick,tema:temaActual,ts:Date.now()});
+        if(pts>prev)showToast('🏆 ¡Nuevo récord guardado!');
+      }
+    }catch(e){console.error(e);}
+  };
+  guardar();
+}
+
+// ═══════════════════════════════════════
+//  RANKING
+// ═══════════════════════════════════════
+let rankTabActual=Object.keys(TEMAS)[0];
+
+window.showRanking=async()=>{showS('s-ranking');await loadRanking(rankTabActual);};
+window.setRankTab=async(id,el)=>{
+  rankTabActual=id;
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  await loadRanking(id);
+};
+
+async function loadRanking(tema){
+  const list=document.getElementById('rank-list');
+  list.innerHTML='<div class="rank-loading">Cargando...</div>';
+  try{
+    const snap=await get(ref(db,`sopa_ranking/${tema}`));
+    if(!snap.exists()){list.innerHTML='<div class="rank-empty">No hay puntajes aún.<br>¡Sé el primero!</div>';return;}
+    const data=[];
+    snap.forEach(c=>{const v=c.val();if(v&&v.pts!==undefined)data.push({uid:c.key,...v});});
+    data.sort((a,b)=>b.pts-a.pts);
+    const top=data.slice(0,15);
+    if(!top.length){list.innerHTML='<div class="rank-empty">¡Sé el primero!</div>';return;}
+    list.innerHTML='';
+    const medals=['🥇','🥈','🥉'];
+    top.forEach((d,i)=>{
+      const div=document.createElement('div');
+      div.className='rank-item'+(i<3?` top${i+1}`:'');
+      div.style.animationDelay=i*0.05+'s';
+      const pos=i<3?`<div class="rank-pos p${i+1}">${medals[i]}</div>`:`<div class="rank-pos">${i+1}</div>`;
+      const isMe=cu&&d.uid===cu.uid;
+      const displayNick=d.nick&&!d.nick.startsWith('J_')?d.nick:(isMe?'Tú':'Anónimo');
+      const m=Math.floor(d.elapsed/60),s=d.elapsed%60;
+      div.innerHTML=`${pos}<div class="rank-name">${isMe?'<span style="color:var(--blue3)">★ </span>':''}${displayNick}</div><div style="text-align:right"><div class="rank-score">${d.pts} pts</div><div class="rank-sub">${d.found}/${d.total} · ${m>0?m+'m':''}${s}s</div></div>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML=`<div class="rank-empty">❌ ${e.message}</div>`;}
+}
+
+// ═══════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════
+let AC2=null;
+function getAC(){if(!AC2)AC2=new(window.AudioContext||window.webkitAudioContext)();if(AC2.state==='suspended')AC2.resume();return AC2;}
+function tone(f,t2,d,v,type='sine'){const ctx=getAC(),t=t2??ctx.currentTime;const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v??0.2,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.start(t);o.stop(t+d+0.01);}
+function sfxStart(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;[[392,0],[523,0.08],[659,0.16]].forEach(([f,dt])=>tone(f,t+dt,0.18,0.15,'triangle'));}
+function sfxFound(n){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;const base=n>=5?784:523;tone(base,t,0.1,0.2,'triangle');tone(base*1.5,t+0.08,0.12,0.12,'sine');if(n%3===0){tone(base*2,t+0.16,0.18,0.1,'sine');}}
+function sfxWrong(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;tone(200,t,0.08,0.1,'sawtooth');tone(150,t+0.05,0.1,0.08,'sawtooth');}
+function sfxHint(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;tone(880,t,0.06,0.08,'sine');tone(1108,t+0.07,0.08,0.06,'sine');}
+function sfxTick(){if(mutedSFX)return;tone(660,null,0.05,0.06,'square');}
+function sfxVictoria(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;[[523,0],[659,0.1],[784,0.2],[1047,0.3],[784,0.45],[1047,0.55],[1319,0.65]].forEach(([f,dt])=>tone(f,t+dt,0.18,0.18,'triangle'));}
+function sfxDerrota(){if(mutedSFX)return;const ctx=getAC(),t=ctx.currentTime;[[440,0],[392,0.2],[349,0.4],[294,0.6]].forEach(([f,dt])=>tone(f,t+dt,0.22,0.14,'sine'));}
+
+// Mute btn
+const muteBtn=document.createElement('div');
+muteBtn.id='mute-btn';muteBtn.innerHTML='🔊';
+muteBtn.onclick=()=>{mutedSFX=!mutedSFX;muteBtn.innerHTML=mutedSFX?'🔇':'🔊';muteBtn.style.opacity=mutedSFX?'0.4':'1';};
+document.body.appendChild(muteBtn);
+
+// ═══════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function floatPts(cell,txt,color){
+  const cellEl=getCell(cell.r,cell.c);if(!cellEl)return;
+  const rect=cellEl.getBoundingClientRect();
+  const el=document.createElement('div');el.className='float-pts';
+  el.style.cssText=`left:${rect.left+rect.width/2}px;top:${rect.top}px;color:${color};`;
+  el.textContent=txt;document.body.appendChild(el);setTimeout(()=>el.remove(),1000);
+}
+</script>
+</body>
+</html>

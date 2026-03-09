@@ -20,7 +20,9 @@
     "eventos": {
       ".read": true,
       ".write": "auth != null && auth.token.email === 'haroldolmedoanchundia@gmail.com'",
-      "$id": { "rsvp": { "$uid": { ".write": "auth != null && auth.uid === $uid" } } }
+      "$id": {
+        "rsvp": { "$uid": { ".write": "auth != null && auth.uid === $uid" } }
+      }
     },
     "fcm_tokens": {
       ".read": "auth != null && auth.token.email === 'haroldolmedoanchundia@gmail.com'",
@@ -39,7 +41,12 @@
     "trivia_ranking": {
       ".read": true,
       "$nivel": {
-        ".indexOn": ["score"],
+        "$uid": { ".write": "auth != null && auth.uid === $uid" }
+      }
+    },
+    "sopa_ranking": {
+      ".read": true,
+      "$tema": {
         "$uid": { ".write": "auth != null && auth.uid === $uid" }
       }
     },
