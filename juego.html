@@ -3675,7 +3675,8 @@ function loadSettings(){
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
     Object.assign(gameSettings, s);
   }catch(e){}
-  applyAllSettings();
+  // No llamar applyAllSettings aquí — el canvas no existe aún
+  // Se aplica cuando el juego arranca (beginLoop)
 }
 
 function saveSettings(){
@@ -3691,8 +3692,9 @@ function saveSettings(){
 }
 
 function applyAllSettings(){
-  applyBrightness(gameSettings.brightness, false);
-  applyVolume(gameSettings.volume, false);
+  // Solo aplicar si el canvas ya existe (juego iniciado)
+  const gc = document.getElementById('gameCanvas');
+  if(gc) gc.style.filter = `brightness(${gameSettings.brightness/100})`;
   soundEnabled = gameSettings.soundOn;
   if(masterGain) masterGain.gain.value = gameSettings.soundOn ? gameSettings.volume/100 : 0;
 }
@@ -3717,7 +3719,8 @@ function syncSettingsUI(){
 
 window.applyBrightness = function(val, doSave=true){
   const pct = parseInt(val);
-  document.getElementById('gameCanvas').style.filter = `brightness(${pct/100})`;
+  const gc = document.getElementById('gameCanvas');
+  if(gc) gc.style.filter = `brightness(${pct/100})`;
   const bd = document.getElementById('brightness-desc');
   if(bd) bd.textContent = pct + '%';
   gameSettings.brightness = pct;
@@ -3824,7 +3827,8 @@ window.addEventListener('orientationchange', ()=>{
 });
 
 // ── Notificaciones filtradas ──────────────
-const _origNotif = window.notif;
+// Capturar la función original de forma segura
+const _origNotif = typeof notif === 'function' ? notif : (m,t)=>{};
 window.notif = function(msg, tipo){
   // Filtrar según configuración
   const m = msg.toLowerCase();
@@ -3837,7 +3841,7 @@ window.notif = function(msg, tipo){
 };
 
 // Cargar ajustes al iniciar
-document.addEventListener('DOMContentLoaded', loadSettings);
+document.addEventListener('DOMContentLoaded', ()=>{ try{ loadSettings(); }catch(e){} });
 
 function startGame(){
   genMundo();
@@ -4002,6 +4006,8 @@ function beginLoop(){
   document.getElementById('hud').style.display='flex';
   document.getElementById('mpad').style.display='flex';
   const fb=document.getElementById('hud-float-btns'); if(fb) fb.style.display='flex';
+  // Aplicar ajustes guardados ahora que el canvas existe
+  try{ applyAllSettings(); }catch(e){}
   gRun=true;gPause=false;godVoiceActive=false;
   // Cargar sprites solo si no se han cargado antes
   if(!noahLoaded) loadNoahSprites(()=>{console.log('🎨 Sprites Noé cargados');});
