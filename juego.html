@@ -149,6 +149,134 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 /* Login */
 .lbox{background:linear-gradient(160deg,#0d1530,#1a0d30);border:1.5px solid var(--border);border-radius:14px;padding:32px 28px;width:min(340px,90vw);display:flex;flex-direction:column;align-items:center;gap:12px;animation:pi 0.3s ease;}
 @keyframes pi{from{transform:scale(0.88);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ── Panel de Ajustes ───────────────────── */
+#s-settings{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,0.92);
+  backdrop-filter:blur(12px) brightness(0.4);
+  display:none;flex-direction:column;
+  overflow-y:auto;
+}
+#s-settings.active{display:flex;}
+.settings-wrap{
+  width:min(520px,96vw);
+  margin:0 auto;
+  padding:20px 16px 40px;
+  flex:1;
+}
+.settings-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 0 14px;
+  border-bottom:1px solid rgba(201,168,76,0.25);
+  margin-bottom:20px;
+  position:sticky;top:0;
+  background:rgba(0,0,0,0.85);
+  backdrop-filter:blur(8px);
+  z-index:2;
+}
+.settings-title{
+  font-family:Cinzel,serif;font-size:1.15rem;
+  color:var(--gold);letter-spacing:0.08em;
+}
+.settings-close{
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,0.07);
+  border:1.5px solid rgba(255,255,255,0.18);
+  color:#fff;font-size:1.1rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;touch-action:manipulation;
+}
+.settings-close:hover{background:rgba(231,76,60,0.3);border-color:rgba(231,76,60,0.6);}
+.stg-section{margin-bottom:22px;}
+.stg-section-title{
+  font-family:Cinzel,serif;font-size:0.65rem;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:rgba(201,168,76,0.55);
+  margin-bottom:10px;
+  padding-left:2px;
+}
+.stg-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  padding:12px 16px;
+  margin-bottom:8px;
+  gap:12px;
+}
+.stg-row:hover{background:rgba(255,255,255,0.07);border-color:rgba(201,168,76,0.2);}
+.stg-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0;}
+.stg-icon{font-size:1.3rem;flex-shrink:0;}
+.stg-info{flex:1;min-width:0;}
+.stg-label{font-size:0.82rem;color:var(--text);font-weight:600;}
+.stg-desc{font-size:0.66rem;color:var(--muted);margin-top:1px;line-height:1.4;}
+/* Toggle switch */
+.stg-toggle{
+  position:relative;width:46px;height:26px;flex-shrink:0;cursor:pointer;
+}
+.stg-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.stg-track{
+  position:absolute;inset:0;border-radius:13px;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.15);
+  transition:all 0.25s;
+}
+.stg-toggle input:checked ~ .stg-track{
+  background:linear-gradient(90deg,#c9a84c,#f0d080);
+  border-color:transparent;
+}
+.stg-knob{
+  position:absolute;top:3px;left:3px;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);
+  transition:transform 0.25s;
+}
+.stg-toggle input:checked ~ .stg-track .stg-knob{transform:translateX(20px);}
+/* Slider */
+.stg-slider{
+  -webkit-appearance:none;appearance:none;
+  width:130px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,0.15);
+  outline:none;cursor:pointer;flex-shrink:0;
+}
+.stg-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(135deg,#c9a84c,#f0d080);
+  cursor:pointer;box-shadow:0 0 8px rgba(201,168,76,0.5);
+}
+.stg-slider::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,#c9a84c,#f0d080);
+}
+/* Botón acción */
+.stg-btn{
+  background:rgba(201,168,76,0.1);
+  border:1.5px solid rgba(201,168,76,0.4);
+  border-radius:8px;
+  color:var(--gold-l);
+  font-family:Cinzel,serif;font-size:0.68rem;
+  font-weight:700;letter-spacing:0.06em;
+  padding:8px 14px;cursor:pointer;
+  transition:all 0.2s;white-space:nowrap;
+  touch-action:manipulation;
+}
+.stg-btn:hover,.stg-btn:active{
+  background:rgba(201,168,76,0.25);
+  border-color:var(--gold);color:#fff;
+}
+.stg-btn.danger{border-color:rgba(231,76,60,0.4);color:#ff8080;}
+.stg-btn.danger:hover{background:rgba(231,76,60,0.2);border-color:#e74c3c;}
+/* Orientación forzada */
+#rotate-reminder{
+  display:none;
+  position:fixed;inset:0;z-index:900;
+  background:#000;
+  flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  color:#fff;font-family:Cinzel,serif;text-align:center;
+}
+#rotate-reminder.show{display:flex;}
+#rotate-reminder .rotate-icon{font-size:4rem;animation:spin 2s linear infinite;}
 .ltitle{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold-l);}
 .lsub{font-size:0.78rem;color:var(--muted);text-align:center;line-height:1.5;}
 .linput{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:7px;padding:10px 13px;color:var(--text);font-size:0.88rem;outline:none;transition:border-color 0.2s;pointer-events:all;position:relative;z-index:102;}
@@ -432,17 +560,202 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <button class="hbtn"            onclick="toggleFamiliaPanel()"      title="Familia" id="hudFamilia">👨‍👦</button>
       <button class="hbtn"            onclick="toggleP('shop')"           title="Tienda">🏪</button>
       <button class="hbtn"            onclick="toggleP('equip')"          title="Equipo">⚔️</button>
-      <button class="hbtn"            id="soundBtn" onclick="toggleSound()" title="Sonido">🔊</button>
+      <button class="hbtn"            onclick="openSettings()" title="Ajustes">⚙️</button>
       <button class="hbtn"            onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
     </div>
     <div id="hud-row2" style="display:none"></div>
   </div>
 </div>
 
+<!-- Pantalla de Ajustes -->
+<div id="s-settings">
+  <div class="settings-wrap">
+    <div class="settings-header">
+      <div class="settings-title">⚙️ Ajustes</div>
+      <button class="settings-close" onclick="closeSettings()" title="Cerrar">✕</button>
+    </div>
+
+    <!-- SECCIÓN: PANTALLA -->
+    <div class="stg-section">
+      <div class="stg-section-title">🖥️ Pantalla</div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">☀️</span>
+          <div class="stg-info">
+            <div class="stg-label">Brillo del juego</div>
+            <div class="stg-desc" id="brightness-desc">100%</div>
+          </div>
+        </div>
+        <input type="range" class="stg-slider" id="brightness-slider" min="30" max="130" value="100"
+          oninput="applyBrightness(this.value)">
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">📱</span>
+          <div class="stg-info">
+            <div class="stg-label">Orientación de pantalla</div>
+            <div class="stg-desc" id="orient-desc">Automático (según el dispositivo)</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="stg-btn" id="btn-portrait"  onclick="setOrientation('portrait')"  style="font-size:0.62rem;padding:6px 10px">📱 Vertical</button>
+          <button class="stg-btn" id="btn-landscape" onclick="setOrientation('landscape')" style="font-size:0.62rem;padding:6px 10px">🖥️ Horizontal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: SONIDO -->
+    <div class="stg-section">
+      <div class="stg-section-title">🔊 Sonido</div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">🔊</span>
+          <div class="stg-info">
+            <div class="stg-label">Sonido del juego</div>
+            <div class="stg-desc">Efectos, ambiente y música</div>
+          </div>
+        </div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="stg-sound" checked onchange="stgToggleSound(this.checked)">
+          <div class="stg-track"><div class="stg-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">🎚️</span>
+          <div class="stg-info">
+            <div class="stg-label">Volumen</div>
+            <div class="stg-desc" id="volume-desc">70%</div>
+          </div>
+        </div>
+        <input type="range" class="stg-slider" id="volume-slider" min="0" max="100" value="70"
+          oninput="applyVolume(this.value)">
+      </div>
+    </div>
+
+    <!-- SECCIÓN: NOTIFICACIONES -->
+    <div class="stg-section">
+      <div class="stg-section-title">🔔 Notificaciones</div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">🌿</span>
+          <div class="stg-info">
+            <div class="stg-label">Notificaciones de recolección</div>
+            <div class="stg-desc">Madera, piedra, fibra, agua...</div>
+          </div>
+        </div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="notif-collect" checked onchange="saveSettings()">
+          <div class="stg-track"><div class="stg-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">📜</span>
+          <div class="stg-info">
+            <div class="stg-label">Notificaciones de misión</div>
+            <div class="stg-desc">Progreso y cumplimiento de misiones</div>
+          </div>
+        </div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="notif-mision" checked onchange="saveSettings()">
+          <div class="stg-track"><div class="stg-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">⚔️</span>
+          <div class="stg-info">
+            <div class="stg-label">Notificaciones de combate</div>
+            <div class="stg-desc">Ataques de nefilim y daño recibido</div>
+          </div>
+        </div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="notif-combat" checked onchange="saveSettings()">
+          <div class="stg-track"><div class="stg-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">⬆️</span>
+          <div class="stg-info">
+            <div class="stg-label">Notificaciones de nivel</div>
+            <div class="stg-desc">XP ganado y subidas de nivel</div>
+          </div>
+        </div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="notif-level" checked onchange="saveSettings()">
+          <div class="stg-track"><div class="stg-knob"></div></div>
+        </label>
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">👨‍👦</span>
+          <div class="stg-info">
+            <div class="stg-label">Notificaciones de familia</div>
+            <div class="stg-desc">Recolección automática de la familia</div>
+          </div>
+        </div>
+        <label class="stg-toggle">
+          <input type="checkbox" id="notif-familia" checked onchange="saveSettings()">
+          <div class="stg-track"><div class="stg-knob"></div></div>
+        </label>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: PARTIDA -->
+    <div class="stg-section">
+      <div class="stg-section-title">💾 Partida</div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">💾</span>
+          <div class="stg-info">
+            <div class="stg-label">Guardar progreso</div>
+            <div class="stg-desc" id="save-status">Guardado automático cada 5 min</div>
+          </div>
+        </div>
+        <button class="stg-btn" onclick="stgSave()">Guardar ahora</button>
+      </div>
+
+      <div class="stg-row">
+        <div class="stg-left">
+          <span class="stg-icon">🚪</span>
+          <div class="stg-info">
+            <div class="stg-label">Salir al menú principal</div>
+            <div class="stg-desc">Guarda y vuelve a la pantalla de inicio</div>
+          </div>
+        </div>
+        <button class="stg-btn danger" onclick="stgQuit()">Salir</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Aviso de rotación forzada -->
+<div id="rotate-reminder">
+  <div class="rotate-icon">🔄</div>
+  <div style="font-size:1.1rem;color:var(--gold)">Gira tu dispositivo</div>
+  <div style="font-size:0.8rem;color:var(--muted);max-width:260px;line-height:1.6">
+    Modo horizontal activado.<br>Por favor gira tu dispositivo para continuar.
+  </div>
+  <button class="mbtn" onclick="cancelOrientation()" style="margin-top:8px;font-size:0.72rem">Cancelar</button>
+</div>
+
 <div id="nstack"></div>
 <div id="ihint"></div>
 
-<!-- Botones flotantes: guardar y salir -->
+<!-- Botones flotantes: guardar y salir (opción en Ajustes) -->
 <div id="hud-float-btns" style="display:none">
   <button class="hfloat" onclick="doManualSave()" title="Guardar progreso">
     <span class="hfloat-icon">💾</span><span class="hfloat-label">Guardar</span>
@@ -3339,6 +3652,192 @@ function tickDivine(){
   [1,2].forEach(n=>{ if(DIVINE[n].timer>0){ DIVINE[n].timer--; changed=true; }});
   if(changed) updateDivineCooldowns();
 }
+
+
+// ════════════════════════════════════════════════════════════
+//  SISTEMA DE AJUSTES
+// ════════════════════════════════════════════════════════════
+const SETTINGS_KEY = 'noe_settings';
+let gameSettings = {
+  brightness: 100,
+  volume: 70,
+  soundOn: true,
+  orientation: 'auto',
+  notifCollect: true,
+  notifMision:  true,
+  notifCombat:  true,
+  notifLevel:   true,
+  notifFamilia: true,
+};
+
+function loadSettings(){
+  try{
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}');
+    Object.assign(gameSettings, s);
+  }catch(e){}
+  applyAllSettings();
+}
+
+function saveSettings(){
+  gameSettings.brightness  = parseInt(document.getElementById('brightness-slider')?.value||100);
+  gameSettings.volume      = parseInt(document.getElementById('volume-slider')?.value||70);
+  gameSettings.soundOn     = document.getElementById('stg-sound')?.checked ?? true;
+  gameSettings.notifCollect= document.getElementById('notif-collect')?.checked ?? true;
+  gameSettings.notifMision = document.getElementById('notif-mision')?.checked ?? true;
+  gameSettings.notifCombat = document.getElementById('notif-combat')?.checked ?? true;
+  gameSettings.notifLevel  = document.getElementById('notif-level')?.checked ?? true;
+  gameSettings.notifFamilia= document.getElementById('notif-familia')?.checked ?? true;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(gameSettings));
+}
+
+function applyAllSettings(){
+  applyBrightness(gameSettings.brightness, false);
+  applyVolume(gameSettings.volume, false);
+  soundEnabled = gameSettings.soundOn;
+  if(masterGain) masterGain.gain.value = gameSettings.soundOn ? gameSettings.volume/100 : 0;
+}
+
+function syncSettingsUI(){
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  const chk = (id, val) => { const el=document.getElementById(id); if(el) el.checked=val; };
+  set('brightness-slider', gameSettings.brightness);
+  set('volume-slider',     gameSettings.volume);
+  chk('stg-sound',         gameSettings.soundOn);
+  chk('notif-collect',     gameSettings.notifCollect);
+  chk('notif-mision',      gameSettings.notifMision);
+  chk('notif-combat',      gameSettings.notifCombat);
+  chk('notif-level',       gameSettings.notifLevel);
+  chk('notif-familia',     gameSettings.notifFamilia);
+  const bd = document.getElementById('brightness-desc');
+  if(bd) bd.textContent = gameSettings.brightness + '%';
+  const vd = document.getElementById('volume-desc');
+  if(vd) vd.textContent = gameSettings.volume + '%';
+  updateOrientBtns(gameSettings.orientation);
+}
+
+window.applyBrightness = function(val, doSave=true){
+  const pct = parseInt(val);
+  document.getElementById('gameCanvas').style.filter = `brightness(${pct/100})`;
+  const bd = document.getElementById('brightness-desc');
+  if(bd) bd.textContent = pct + '%';
+  gameSettings.brightness = pct;
+  if(doSave) saveSettings();
+};
+
+window.applyVolume = function(val, doSave=true){
+  const pct = parseInt(val);
+  gameSettings.volume = pct;
+  soundEnabled = gameSettings.soundOn && pct > 0;
+  if(masterGain) masterGain.gain.value = gameSettings.soundOn ? pct/100 : 0;
+  const vd = document.getElementById('volume-desc');
+  if(vd) vd.textContent = pct + '%';
+  if(doSave) saveSettings();
+};
+
+window.stgToggleSound = function(on){
+  gameSettings.soundOn = on;
+  soundEnabled = on;
+  if(masterGain) masterGain.gain.value = on ? gameSettings.volume/100 : 0;
+  saveSettings();
+};
+
+window.openSettings = function(){
+  syncSettingsUI();
+  document.getElementById('s-settings').classList.add('active');
+  const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='-1';
+  const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='-1';
+  gPause = true;
+};
+
+window.closeSettings = function(){
+  saveSettings();
+  document.getElementById('s-settings').classList.remove('active');
+  const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='';
+  const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='';
+  gPause = false;
+};
+
+window.stgSave = async function(){
+  const btn = document.querySelector('#s-settings .stg-btn');
+  const sd = document.getElementById('save-status');
+  if(sd) sd.textContent = 'Guardando...';
+  await saveGame();
+  const now = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  if(sd) sd.textContent = `Último guardado: ${now}`;
+};
+
+window.stgQuit = async function(){
+  if(!confirm('¿Guardar y salir al menú principal?')) return;
+  closeSettings();
+  await doSaveQuit();
+};
+
+// ── Orientación ───────────────────────────
+let _forcedOrientation = 'auto';
+
+function updateOrientBtns(mode){
+  document.getElementById('btn-portrait') ?.classList.toggle('pri', mode==='portrait');
+  document.getElementById('btn-landscape')?.classList.toggle('pri', mode==='landscape');
+  const d = document.getElementById('orient-desc');
+  if(d) d.textContent = mode==='portrait' ? 'Vertical (portrait)' : mode==='landscape' ? 'Horizontal (landscape)' : 'Automático';
+}
+
+window.setOrientation = function(mode){
+  _forcedOrientation = mode;
+  gameSettings.orientation = mode;
+  updateOrientBtns(mode);
+  saveSettings();
+  if(mode==='landscape'){
+    // Intentar API de bloqueo de orientación
+    try{
+      screen.orientation.lock('landscape').catch(()=>{});
+    }catch(e){}
+    // Detectar si ya está en landscape
+    if(window.innerWidth < window.innerHeight){
+      document.getElementById('rotate-reminder').classList.add('show');
+    }
+  } else if(mode==='portrait'){
+    try{ screen.orientation.lock('portrait').catch(()=>{}); }catch(e){}
+    document.getElementById('rotate-reminder').classList.remove('show');
+  } else {
+    try{ screen.orientation.unlock(); }catch(e){}
+    document.getElementById('rotate-reminder').classList.remove('show');
+  }
+};
+
+window.cancelOrientation = function(){
+  _forcedOrientation = 'auto';
+  gameSettings.orientation = 'auto';
+  updateOrientBtns('auto');
+  try{ screen.orientation.unlock(); }catch(e){}
+  document.getElementById('rotate-reminder').classList.remove('show');
+  saveSettings();
+};
+
+// Escuchar cambios de orientación para ocultar aviso
+window.addEventListener('orientationchange', ()=>{
+  setTimeout(()=>{
+    if(_forcedOrientation==='landscape' && window.innerWidth > window.innerHeight){
+      document.getElementById('rotate-reminder').classList.remove('show');
+    }
+  }, 400);
+});
+
+// ── Notificaciones filtradas ──────────────
+const _origNotif = window.notif;
+window.notif = function(msg, tipo){
+  // Filtrar según configuración
+  const m = msg.toLowerCase();
+  if(!gameSettings.notifCollect && (m.includes('cortaste') || m.includes('recolect') || m.includes('madera') || m.includes('piedra') || m.includes('fibra') || m.includes('agua'))) return;
+  if(!gameSettings.notifMision  && (m.includes('misión') || m.includes('mision') || m.includes('dios') || m.includes('cumplida'))) return;
+  if(!gameSettings.notifCombat  && (m.includes('gigante') || m.includes('nefilim') || m.includes('golpe') || m.includes('daño'))) return;
+  if(!gameSettings.notifLevel   && (m.includes('nivel') || m.includes('xp') || m.includes('talento'))) return;
+  if(!gameSettings.notifFamilia && (m.includes('sem') || m.includes('cam') || m.includes('jafet') || m.includes('recolect') || m.includes('familia'))) return;
+  _origNotif(msg, tipo);
+};
+
+// Cargar ajustes al iniciar
+document.addEventListener('DOMContentLoaded', loadSettings);
 
 function startGame(){
   genMundo();
