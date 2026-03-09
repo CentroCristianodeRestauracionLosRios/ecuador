@@ -152,13 +152,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 /* ── Panel de Ajustes ───────────────────── */
 #s-settings{
-  position:fixed;inset:0;z-index:800;
+  position:fixed;inset:0;z-index:900;
   background:rgba(0,0,0,0.92);
   display:none;flex-direction:column;
   overflow-y:auto;
 }
 #s-settings.active{
-  display:flex;
+  display:flex !important;
   backdrop-filter:blur(12px) brightness(0.4);
 }
 .settings-wrap{
@@ -528,6 +528,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   <div class="load-spin"></div>
   <div class="load-txt">Cargando el juego...</div>
 </div>
+<script>
+// Ocultar overlay como máximo en 3s sin importar qué pase
+(function(){
+  var MAX_WAIT = 3000;
+  function hideOverlay(){
+    var el = document.getElementById('loadOverlay');
+    if(el) el.classList.add('hidden');
+  }
+  // Fallback timer siempre activo
+  setTimeout(hideOverlay, MAX_WAIT);
+  // Si Firebase responde antes, onAuthStateChanged lo oculta igual
+})();
+</script>
 
 <canvas id="bgc"></canvas>
 <canvas id="gameCanvas"></canvas>
@@ -570,7 +583,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 </div>
 
 <!-- Pantalla de Ajustes -->
-<div id="s-settings">
+<div id="s-settings" style="display:none">
   <div class="settings-wrap">
     <div class="settings-header">
       <div class="settings-title">⚙️ Ajustes</div>
@@ -3759,7 +3772,9 @@ window.stgToggleSound = function(on){
 
 window.openSettings = function(){
   syncSettingsUI();
-  document.getElementById('s-settings').classList.add('active');
+  const ss = document.getElementById('s-settings');
+  ss.style.display = 'flex';
+  ss.classList.add('active');
   const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='-1';
   const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='-1';
   gPause = true;
@@ -3767,7 +3782,9 @@ window.openSettings = function(){
 
 window.closeSettings = function(){
   saveSettings();
-  document.getElementById('s-settings').classList.remove('active');
+  const ss = document.getElementById('s-settings');
+  ss.classList.remove('active');
+  ss.style.display = 'none';
   const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='';
   const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='';
   gPause = false;
