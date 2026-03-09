@@ -174,13 +174,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 <!-- HUD -->
 <div id="hud" style="display:none">
+  <!-- Retrato del personaje -->
+  <div style="position:relative;flex-shrink:0">
+    <canvas id="portraitCanvas" width="54" height="54" style="border:2px solid rgba(201,168,76,0.6);border-radius:8px;background:rgba(0,0,0,0.5);image-rendering:pixelated;"></canvas>
+    <div style="position:absolute;bottom:-2px;left:0;right:0;text-align:center;font-family:'Cinzel',serif;font-size:0.55rem;color:var(--gold);background:rgba(0,0,0,0.6);border-radius:0 0 6px 6px;padding:1px 0;" id="hudLv">Nv.1</div>
+  </div>
   <div class="hud-stats">
     <div class="hud-row">❤️<div class="hud-bg"><div class="hud-fill b-hp" id="bHp" style="width:100%"></div></div><span id="vHp" style="font-size:0.65rem;color:#e74c3c">100</span></div>
     <div class="hud-row">🍖<div class="hud-bg"><div class="hud-fill b-hu" id="bHu" style="width:100%"></div></div></div>
     <div class="hud-row">💧<div class="hud-bg"><div class="hud-fill b-th" id="bTh" style="width:100%"></div></div></div>
     <div class="hud-row">⚡<div class="hud-bg"><div class="hud-fill b-en" id="bEn" style="width:100%"></div></div></div>
     <div class="hud-bg" style="margin-top:2px"><div class="hud-fill b-xp" id="bXp" style="width:0%"></div></div>
-    <div class="hud-lv" id="hudLv">Nv.1 Noé</div>
   </div>
   <div class="hud-mid">
     <div class="hud-day" id="hudDay">Día 1 — Amanecer</div>
@@ -459,11 +463,11 @@ function onresize(){
 }
 
 const TC={
-  [T.GRASS]:['#3a7828','#4a8835','#2d6020'],
-  [T.DIRT]:['#7a5230','#8a6040','#6a4220'],
-  [T.WATER]:['#1a4a8a','#2a5a9a','#1a3a7a'],
-  [T.SAND]:['#c8a870','#d8b880','#b89860'],
-  [T.STONE]:['#6a6a6a','#7a7a7a','#5a5a5a'],
+  [T.GRASS]:['#3d7a28','#3d7a28','#48872e'],
+  [T.DIRT]: ['#3d7a28','#48872e','#3d7a28'],
+  [T.WATER]:['#1e5fa8','#2468b5','#1a5299'],
+  [T.SAND]: ['#3d7a28','#48872e','#3d7a28'],
+  [T.STONE]:['#5a5a5a','#666666','#505050'],
 };
 
 const ISO=0.14;
@@ -490,10 +494,20 @@ function drawWorld(cx,cy){
         ctx.beginPath();ctx.moveTo(sx+4,sy+TILE*0.5);
         ctx.bezierCurveTo(sx+TILE*0.3,sy+TILE*0.4,sx+TILE*0.6,sy+TILE*0.6,sx+TILE-4,sy+TILE*0.5);ctx.stroke();
       }
-      if(tile.t===T.GRASS&&(tx+ty)%5===0){
-        ctx.fillStyle='rgba(70,150,35,0.35)';
-        ctx.fillRect(sx+TILE*0.2,sy+TILE*0.6,2,7);
-        ctx.fillRect(sx+TILE*0.55,sy+TILE*0.5,2,9);
+      // Subtle grass variation - lighter green patches
+      if((tx+ty)%7===0){
+        ctx.fillStyle='rgba(90,170,45,0.18)';
+        ctx.fillRect(sx+3,sy+3,TILE-6,TILE-6);
+      } else if((tx*2+ty)%11===0){
+        ctx.fillStyle='rgba(55,120,25,0.12)';
+        ctx.fillRect(sx+5,sy+5,TILE-10,TILE-10);
+      }
+      // Tiny grass blades on some tiles
+      if(tile.t===T.GRASS&&(tx*7+ty*3)%13===0){
+        ctx.fillStyle='rgba(100,185,50,0.32)';
+        ctx.fillRect(sx+TILE*0.18,sy+TILE*0.55,2,6);
+        ctx.fillRect(sx+TILE*0.5,sy+TILE*0.45,2,8);
+        ctx.fillRect(sx+TILE*0.75,sy+TILE*0.6,2,5);
       }
     }
   }
@@ -518,23 +532,58 @@ function drawObjAt(o,sx,sy){
   const sw=Math.sin(Date.now()/1200+o.tx)*1.5;
   switch(o.tipo){
     case'arbol':
-      ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(0,8,15,6,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#5a3010';ctx.fillRect(-4,0,8,16);ctx.fillStyle='#7a4a20';ctx.fillRect(-3,0,3,16);
-      ctx.fillStyle='#1a5a10';ctx.beginPath();ctx.arc(sw,-14,14,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#2a7a18';ctx.beginPath();ctx.arc(sw-3,-20,11,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#3a8a22';ctx.beginPath();ctx.arc(sw+2,-17,9,0,Math.PI*2);ctx.fill();
-      if(o.hp<o.mhp)hpBar(o,-20);break;
+      // Sombra
+      ctx.fillStyle='rgba(0,0,0,0.22)';ctx.beginPath();ctx.ellipse(0,10,18,6,0,0,Math.PI*2);ctx.fill();
+      // Tronco grueso con textura
+      ctx.fillStyle='#4a2808';ctx.fillRect(-5,0,10,18);
+      ctx.fillStyle='#6a3c14';ctx.fillRect(-4,0,4,18);
+      ctx.fillStyle='#3a1e04';ctx.fillRect(3,2,2,14);
+      // Raíces
+      ctx.fillStyle='#4a2808';
+      ctx.beginPath();ctx.moveTo(-5,14);ctx.lineTo(-11,20);ctx.lineTo(-8,14);ctx.fill();
+      ctx.beginPath();ctx.moveTo(5,14);ctx.lineTo(11,20);ctx.lineTo(8,14);ctx.fill();
+      // Copa oscura (base)
+      ctx.fillStyle='#1a4a0e';ctx.beginPath();ctx.arc(sw,-12,17,0,Math.PI*2);ctx.fill();
+      // Copa media
+      ctx.fillStyle='#266018';ctx.beginPath();ctx.arc(sw-2,-18,14,0,Math.PI*2);ctx.fill();
+      // Copa clara (luz)
+      ctx.fillStyle='#3a8020';ctx.beginPath();ctx.arc(sw+1,-21,11,0,Math.PI*2);ctx.fill();
+      // Brillo superior
+      ctx.fillStyle='#4a9828';ctx.beginPath();ctx.arc(sw-1,-24,7,0,Math.PI*2);ctx.fill();
+      // Detalle hojas
+      ctx.fillStyle='rgba(80,160,30,0.35)';
+      for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(sw-8+i*4,-16+Math.sin(i)*4,3,0,Math.PI*2);ctx.fill();}
+      if(o.hp<o.mhp)hpBar(o,-28);break;
     case'roca':
-      ctx.fillStyle='rgba(0,0,0,0.22)';ctx.beginPath();ctx.ellipse(0,10,18,7,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#5a5a5a';ctx.beginPath();ctx.moveTo(-15,8);ctx.lineTo(-9,-8);ctx.lineTo(5,-13);ctx.lineTo(15,-4);ctx.lineTo(13,8);ctx.closePath();ctx.fill();
-      ctx.fillStyle='#787878';ctx.beginPath();ctx.moveTo(-9,-8);ctx.lineTo(5,-13);ctx.lineTo(4,-4);ctx.lineTo(-7,-2);ctx.closePath();ctx.fill();
-      ctx.fillStyle='#484848';ctx.beginPath();ctx.moveTo(5,-13);ctx.lineTo(15,-4);ctx.lineTo(13,8);ctx.lineTo(4,-4);ctx.closePath();ctx.fill();
-      if(o.hp<o.mhp)hpBar(o,-18);break;
+      // Sombra
+      ctx.fillStyle='rgba(0,0,0,0.28)';ctx.beginPath();ctx.ellipse(2,12,20,7,0,0,Math.PI*2);ctx.fill();
+      // Roca principal (cara oscura)
+      ctx.fillStyle='#4a4a4a';
+      ctx.beginPath();ctx.moveTo(-16,10);ctx.lineTo(-10,-6);ctx.lineTo(4,-14);ctx.lineTo(16,-5);ctx.lineTo(14,10);ctx.closePath();ctx.fill();
+      // Cara iluminada (arriba-izquierda)
+      ctx.fillStyle='#828282';
+      ctx.beginPath();ctx.moveTo(-10,-6);ctx.lineTo(4,-14);ctx.lineTo(3,-5);ctx.lineTo(-8,-1);ctx.closePath();ctx.fill();
+      // Cara lateral (arriba-derecha)
+      ctx.fillStyle='#5c5c5c';
+      ctx.beginPath();ctx.moveTo(4,-14);ctx.lineTo(16,-5);ctx.lineTo(14,2);ctx.lineTo(3,-5);ctx.closePath();ctx.fill();
+      // Grietas
+      ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(-1,0);ctx.lineTo(2,-3);ctx.stroke();
+      // Musgo
+      ctx.fillStyle='rgba(50,120,30,0.3)';ctx.beginPath();ctx.ellipse(-8,4,5,3,0.3,0,Math.PI*2);ctx.fill();
+      if(o.hp<o.mhp)hpBar(o,-20);break;
     case'arbusto':
-      ctx.fillStyle='rgba(0,0,0,0.12)';ctx.beginPath();ctx.ellipse(0,4,11,4,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#2a6018';ctx.beginPath();ctx.arc(-5,-2,9,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#3a7022';ctx.beginPath();ctx.arc(4,-4,10,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#4a8028';ctx.beginPath();ctx.arc(-1,-8,7,0,Math.PI*2);ctx.fill();break;
+      ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(0,5,13,5,0,0,Math.PI*2);ctx.fill();
+      // Base oscura
+      ctx.fillStyle='#1e5010';ctx.beginPath();ctx.arc(-4,0,10,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#1e5010';ctx.beginPath();ctx.arc(5,-1,10,0,Math.PI*2);ctx.fill();
+      // Capas medias
+      ctx.fillStyle='#2e6a18';ctx.beginPath();ctx.arc(-5,-4,8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#2e6a18';ctx.beginPath();ctx.arc(4,-5,9,0,Math.PI*2);ctx.fill();
+      // Capa superior brillante
+      ctx.fillStyle='#3e7c22';ctx.beginPath();ctx.arc(-1,-7,7,0,Math.PI*2);ctx.fill();
+      // Brillo
+      ctx.fillStyle='rgba(80,160,35,0.3)';ctx.beginPath();ctx.arc(-2,-9,4,0,Math.PI*2);ctx.fill();break;
     case'bayas':
       ctx.fillStyle='#2a6018';ctx.beginPath();ctx.arc(0,-4,8,0,Math.PI*2);ctx.fill();
       [['#cc2244',-5,-2],['#aa1133',2,-6],['#ee3355',-1,0]].forEach(([c,bx,by])=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(bx,by,3,0,Math.PI*2);ctx.fill();});break;
@@ -983,6 +1032,47 @@ function doSleep(){
   },2000);
 }
 
+function drawPortrait(){
+  const pc=document.getElementById('portraitCanvas');
+  if(!pc)return;
+  const px=pc.getContext('2d');
+  const W=54,H=54;
+  // Fondo degradado
+  const bg=px.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0a1520');bg.addColorStop(1,'#1a0d28');
+  px.fillStyle=bg;px.fillRect(0,0,W,H);
+  // Borde interior dorado
+  px.strokeStyle='rgba(201,168,76,0.3)';px.lineWidth=1;px.strokeRect(2,2,W-4,H-4);
+  px.save();px.translate(W/2,H*0.78);
+  // Sombra personaje
+  px.fillStyle='rgba(0,0,0,0.35)';px.beginPath();px.ellipse(0,4,10,3,0,0,Math.PI*2);px.fill();
+  // Piernas
+  const leg=P.moving?Math.sin(P.animF*Math.PI/2)*3:0;
+  px.fillStyle='#4a2808';px.fillRect(-6,2,5,7+leg);px.fillRect(2,2,5,7-leg);
+  // Cuerpo - túnica
+  px.fillStyle='#6a4a10';px.fillRect(-7,-8,14,12);
+  px.fillStyle='#8a6214';px.fillRect(-7,-8,14,3);
+  px.fillStyle='#7a5212';px.fillRect(-7,-2,14,2);
+  // Brazos
+  const arm=P.moving?Math.sin(P.animF*Math.PI/2)*3:0;
+  px.fillStyle='#5a3810';px.fillRect(-10,-7,4,9+arm);px.fillRect(7,-7,4,9-arm);
+  // Cabeza
+  px.fillStyle='#c07848';px.beginPath();px.arc(0,-14,8,0,Math.PI*2);px.fill();
+  // Cara
+  px.fillStyle='#e8e8e8';px.beginPath();px.arc(0,-11,5,0,Math.PI,false);px.fill();
+  px.fillStyle='#1a0a00';px.fillRect(-2,-15,2,2);px.fillRect(2,-15,2,2);
+  // Sombrero/turbante
+  px.fillStyle='#3a2060';px.fillRect(-8,-22,16,6);px.fillRect(-9,-18,18,4);
+  // Barba
+  px.fillStyle='#8a6030';px.beginPath();px.arc(0,-9,4,0,Math.PI,true);px.fill();
+  px.restore();
+  // HP indicator en retrato - brillo rojo si bajo
+  if(P.hp/P.mhp < 0.3){
+    px.fillStyle=`rgba(200,20,20,${0.15+Math.sin(Date.now()/300)*0.1})`;
+    px.fillRect(0,0,W,H);
+  }
+}
+
 function updateHUD(){
   document.getElementById('bHp').style.width=P.hp/P.mhp*100+'%';
   document.getElementById('vHp').textContent=Math.ceil(P.hp);
@@ -990,12 +1080,13 @@ function updateHUD(){
   document.getElementById('bTh').style.width=P.thirst+'%';
   document.getElementById('bEn').style.width=P.energy+'%';
   document.getElementById('bXp').style.width=(P.xp/(P.lv*100))*100+'%';
-  document.getElementById('hudLv').textContent=`Nv.${P.lv} ${nick}`;
+  document.getElementById('hudLv').textContent=`Nv.${P.lv}`;
   const tl=wTime<0.2?'🌙 Noche':wTime<0.3?'🌅 Amanecer':wTime<0.5?'☀️ Mañana':wTime<0.7?'☀️ Tarde':wTime<0.8?'🌇 Atardecer':'🌙 Noche';
   document.getElementById('hudDay').textContent=`Día ${wDay} — ${tl}`;
   document.getElementById('bTime').style.width=(wTime*100)+'%';
   const tc=wTime<0.25||wTime>0.75?'#8888ff':wTime<0.35?'#ffaa44':'#ffdd44';
   document.getElementById('bTime').style.background=`linear-gradient(90deg,${tc}88,${tc})`;
+  drawPortrait();
 }
 
 function notif(msg,tipo){
