@@ -12,9 +12,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 #gameCanvas{display:block;position:fixed;inset:0;width:100%;height:100%;}
 
 /* HUD */
-#hud{position:fixed;top:0;left:0;right:0;z-index:20;pointer-events:none;padding:8px 12px;display:flex;align-items:flex-start;gap:8px;background:linear-gradient(to bottom,rgba(0,0,0,0.72),transparent);}
-.hud-stats{display:flex;flex-direction:column;gap:3px;min-width:120px;}
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;pointer-events:none;padding:6px 10px;display:flex;align-items:flex-start;gap:6px;background:linear-gradient(to bottom,rgba(0,0,0,0.75),transparent);}
+.hud-stats{display:flex;flex-direction:column;gap:3px;min-width:110px;}
 .hud-row{display:flex;align-items:center;gap:5px;font-size:0.72rem;}
+/* Botones de acción — en móvil vertical se mueven abajo */
+#hud-actions{display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-left:auto;pointer-events:all;}
+#hud-row1{display:flex;gap:5px;align-items:center;}
+#hud-row2{display:flex;gap:5px;align-items:center;}
 .hud-bg{flex:1;height:7px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;}
 .hud-fill{height:100%;border-radius:4px;transition:width 0.3s;}
 .b-hp{background:linear-gradient(90deg,#a02020,#e74c3c);}
@@ -27,9 +31,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .hud-tbar{width:130px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;}
 .hud-tf{height:100%;border-radius:3px;}
 .hud-lv{font-family:'Cinzel',serif;font-size:0.65rem;color:var(--gold-l);margin-top:1px;}
-.hud-btns{display:flex;gap:6px;pointer-events:all;}
-.hbtn{background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.7rem;padding:5px 9px;cursor:pointer;font-family:'Cinzel',serif;transition:all 0.15s;white-space:nowrap;}
-.hbtn:hover{border-color:var(--gold);color:#fff;}
+.hud-btns{display:flex;gap:5px;pointer-events:all;flex-wrap:wrap;justify-content:flex-end;}
+.hbtn{background:rgba(0,0,0,0.65);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.72rem;padding:5px 8px;cursor:pointer;font-family:'Cinzel',serif;transition:all 0.15s;white-space:nowrap;touch-action:manipulation;}
+.hbtn:hover,.hbtn:active{border-color:var(--gold);color:#fff;}
 
 /* SCREENS */
 .screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:50;}
@@ -97,6 +101,54 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 /* Inventario */
 .igrid{display:grid;grid-template-columns:repeat(5,56px);gap:5px;}
 @media(max-width:380px){.igrid{grid-template-columns:repeat(4,56px);}}
+/* HUD responsivo — pantalla vertical (móvil portrait) */
+@media(orientation:portrait),(max-width:520px){
+  /* HUD superior: solo retrato + barras */
+  #hud{background:none;padding:5px 8px;}
+  .hud-mid{display:none;}
+
+  /* Panel lateral derecho con los botones en 2 columnas */
+  #hud-actions{
+    position:fixed;
+    top:50%;
+    right:0;
+    transform:translateY(-50%);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
+    gap:4px;
+    padding:6px 4px 6px 6px;
+    margin:0;
+    background:rgba(0,0,0,0.55);
+    border-radius:10px 0 0 10px;
+    border:1px solid rgba(201,168,76,0.2);
+    border-right:none;
+    z-index:21;
+    pointer-events:all;
+  }
+  /* Siclos ocupa las 2 columnas arriba */
+  #hudSiclos{
+    grid-column:1/3;
+    text-align:center;
+    font-size:0.7rem;
+    padding:2px 0 4px;
+    border-bottom:1px solid rgba(201,168,76,0.2);
+    margin-bottom:2px;
+  }
+  #hud-row1,#hud-row2{display:contents;}
+  .hbtn{
+    font-size:1rem;
+    padding:7px 0;
+    width:38px;
+    text-align:center;
+    border-radius:7px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  /* En portrait 🎒 y ⚒️ SÍ se muestran en el panel lateral */
+  .hbtn-inv,.hbtn-craft{display:flex;}
+}
 .islot{width:56px;height:64px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:1.2rem;cursor:pointer;position:relative;transition:all 0.15s;}
 .islot:hover,.islot:active{border-color:var(--gold);background:rgba(201,168,76,0.12);}
 .islot.ok{border-color:rgba(201,168,76,0.35);}
@@ -251,16 +303,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div id="buff-bar" style="display:flex;gap:3px;justify-content:center;min-height:14px;margin-top:1px;"></div>
     <div class="hud-tbar"><div class="hud-tf" id="bTime" style="width:0%"></div></div>
   </div>
-  <div class="hud-btns">
+  <!-- Botones HUD: fila en landscape, 2 columnas en portrait -->
+  <div id="hud-actions">
     <div class="hud-siclos" id="hudSiclos">🪙 0</div>
-    <button class="hbtn" onclick="toggleP('inv')">🎒</button>
-    <button class="hbtn" onclick="toggleP('craft')">⚒️</button>
-    <button class="hbtn" onclick="toggleP('skills')">✨</button>
-    <button class="hbtn" onclick="toggleFamiliaPanel()" title="Familia de Noé" id="hudFamilia">👨‍👦 0</button>
-    <button class="hbtn" onclick="toggleP('shop')" title="Tienda">🏪</button>
-    <button class="hbtn" onclick="toggleP('equip')" title="Equipamiento">⚔️</button>
-    <button class="hbtn" id="soundBtn" onclick="toggleSound()">🔊</button>
-    <button class="hbtn" onclick="togglePause()" id="pauseBtn">⏸</button>
+    <div id="hud-row1" class="hud-btns">
+      <button class="hbtn hbtn-inv"  onclick="toggleP('inv')"          title="Bolsa (I)">🎒</button>
+      <button class="hbtn hbtn-craft" onclick="toggleP('craft')"        title="Taller (C)">⚒️</button>
+      <button class="hbtn"           onclick="toggleP('skills')"        title="Talentos">✨</button>
+      <button class="hbtn"           onclick="toggleFamiliaPanel()"     title="Familia" id="hudFamilia">👨‍👦</button>
+      <button class="hbtn"           onclick="toggleP('shop')"          title="Tienda">🏪</button>
+      <button class="hbtn"           onclick="toggleP('equip')"         title="Equipo">⚔️</button>
+      <button class="hbtn"           id="soundBtn" onclick="toggleSound()" title="Sonido">🔊</button>
+      <button class="hbtn"           onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
+    </div>
+    <div id="hud-row2" style="display:none"></div>
   </div>
 </div>
 
@@ -277,10 +333,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div></div><div class="dp" ontouchstart="mk.d=true" ontouchend="mk.d=false">▼</div><div></div>
   </div>
   <div class="abtns">
-    <button class="abtn" onclick="toggleP('inv')">🎒</button>
-    <button class="abtn" style="border-color:rgba(201,168,76,0.5)" onclick="doInteract()">E</button>
-    <button class="abtn" style="border-color:rgba(231,76,60,0.6);font-size:0.75rem" onclick="attackNefilim()">⚔️</button>
-    <button class="abtn" onclick="toggleP('craft')">⚒️</button>
+    <button class="abtn" onclick="toggleP('inv')" title="Bolsa" style="font-size:1.1rem">🎒</button>
+    <button class="abtn" style="border-color:rgba(201,168,76,0.5);font-family:Cinzel,serif;font-weight:bold" onclick="doInteract()">E</button>
+    <button class="abtn" style="border-color:rgba(231,76,60,0.6);font-size:0.9rem" onclick="attackNefilim()">⚔</button>
+    <button class="abtn" onclick="toggleP('craft')" title="Taller" style="font-size:1.1rem">⚒️</button>
   </div>
 </div>
 
