@@ -531,59 +531,109 @@ function drawObjAt(o,sx,sy){
   ctx.save();ctx.translate(sx+TILE/2,sy+TILE*0.72);
   const sw=Math.sin(Date.now()/1200+o.tx)*1.5;
   switch(o.tipo){
-    case'arbol':
-      // Sombra
-      ctx.fillStyle='rgba(0,0,0,0.22)';ctx.beginPath();ctx.ellipse(0,10,18,6,0,0,Math.PI*2);ctx.fill();
-      // Tronco grueso con textura
-      ctx.fillStyle='#4a2808';ctx.fillRect(-5,0,10,18);
-      ctx.fillStyle='#6a3c14';ctx.fillRect(-4,0,4,18);
-      ctx.fillStyle='#3a1e04';ctx.fillRect(3,2,2,14);
+    case'arbol':{
+      const sc=1+(o.tx%3)*0.15; // variación de tamaño entre árboles
+      ctx.scale(sc,sc);
+      // Sombra alargada
+      ctx.fillStyle='rgba(0,0,0,0.25)';ctx.beginPath();ctx.ellipse(4,12,22,7,0.2,0,Math.PI*2);ctx.fill();
+      // Tronco con corteza
+      const tg=ctx.createLinearGradient(-6,0,6,0);
+      tg.addColorStop(0,'#3a1c04');tg.addColorStop(0.35,'#6a3c14');tg.addColorStop(0.6,'#5a2e0e');tg.addColorStop(1,'#2e1402');
+      ctx.fillStyle=tg;
+      ctx.beginPath();ctx.moveTo(-6,20);ctx.lineTo(-5,0);ctx.lineTo(5,0);ctx.lineTo(6,20);ctx.closePath();ctx.fill();
+      // Líneas de corteza
+      ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=0.8;
+      for(let i=3;i<18;i+=5){ctx.beginPath();ctx.moveTo(-4,i);ctx.lineTo(-2,i+2);ctx.lineTo(0,i);ctx.stroke();}
       // Raíces
       ctx.fillStyle='#4a2808';
-      ctx.beginPath();ctx.moveTo(-5,14);ctx.lineTo(-11,20);ctx.lineTo(-8,14);ctx.fill();
-      ctx.beginPath();ctx.moveTo(5,14);ctx.lineTo(11,20);ctx.lineTo(8,14);ctx.fill();
-      // Copa oscura (base)
-      ctx.fillStyle='#1a4a0e';ctx.beginPath();ctx.arc(sw,-12,17,0,Math.PI*2);ctx.fill();
-      // Copa media
-      ctx.fillStyle='#266018';ctx.beginPath();ctx.arc(sw-2,-18,14,0,Math.PI*2);ctx.fill();
-      // Copa clara (luz)
-      ctx.fillStyle='#3a8020';ctx.beginPath();ctx.arc(sw+1,-21,11,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.moveTo(-5,16);ctx.quadraticCurveTo(-12,22,-14,26);ctx.lineTo(-10,20);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(5,16);ctx.quadraticCurveTo(12,22,14,26);ctx.lineTo(10,20);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(0,18);ctx.quadraticCurveTo(-2,24,0,28);ctx.lineTo(2,22);ctx.closePath();ctx.fill();
+      // Copa — 4 capas con gradiente
+      const layers=[
+        {r:20,ox:sw,oy:-10,c:'#0e3808'},
+        {r:17,ox:sw-3,oy:-17,c:'#1a5210'},
+        {r:14,ox:sw+2,oy:-23,c:'#2a7018'},
+        {r:11,ox:sw-1,oy:-28,c:'#3a8c20'},
+        {r:7, ox:sw,  oy:-33,c:'#4ea828'},
+      ];
+      layers.forEach(l=>{
+        const cg=ctx.createRadialGradient(l.ox-3,l.oy-3,1,l.ox,l.oy,l.r);
+        cg.addColorStop(0,l.c+'ee');cg.addColorStop(0.7,l.c+'bb');cg.addColorStop(1,l.c+'44');
+        ctx.fillStyle=cg;ctx.beginPath();ctx.arc(l.ox,l.oy,l.r,0,Math.PI*2);ctx.fill();
+      });
+      // Hojas sueltas en borde
+      ctx.fillStyle='rgba(60,140,25,0.4)';
+      for(let i=0;i<8;i++){
+        const a=i/8*Math.PI*2+sw*0.3;
+        const rx=Math.cos(a)*19+sw,ry=Math.sin(a)*12-20;
+        ctx.beginPath();ctx.arc(rx,ry,3.5,0,Math.PI*2);ctx.fill();
+      }
+      // Brillo de sol en copa
+      ctx.fillStyle='rgba(120,220,50,0.12)';ctx.beginPath();ctx.arc(sw-4,-32,8,0,Math.PI*2);ctx.fill();
+      if(o.hp<o.mhp)hpBar(o,-38);
+      ctx.scale(1/sc,1/sc);break;}
+    case'roca':{
+      const rs=0.9+(o.ty%4)*0.12;
+      ctx.scale(rs,rs);
+      // Sombra grande
+      ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(3,13,22,8,0.15,0,Math.PI*2);ctx.fill();
+      // Cara frontal (oscura)
+      const rfg=ctx.createLinearGradient(-16,10,16,-14);
+      rfg.addColorStop(0,'#383838');rfg.addColorStop(1,'#585858');
+      ctx.fillStyle=rfg;
+      ctx.beginPath();ctx.moveTo(-17,11);ctx.lineTo(-11,-7);ctx.lineTo(3,-15);ctx.lineTo(17,-6);ctx.lineTo(15,11);ctx.closePath();ctx.fill();
+      // Cara superior iluminada
+      const rtg=ctx.createLinearGradient(-11,-7,4,-15);
+      rtg.addColorStop(0,'#909090');rtg.addColorStop(1,'#b0b0b0');
+      ctx.fillStyle=rtg;
+      ctx.beginPath();ctx.moveTo(-11,-7);ctx.lineTo(3,-15);ctx.lineTo(5,-6);ctx.lineTo(-8,-2);ctx.closePath();ctx.fill();
+      // Cara derecha semi-iluminada
+      ctx.fillStyle='#636363';
+      ctx.beginPath();ctx.moveTo(3,-15);ctx.lineTo(17,-6);ctx.lineTo(15,3);ctx.lineTo(5,-6);ctx.closePath();ctx.fill();
+      // Detalle: piedrecillas pequeñas alrededor
+      ctx.fillStyle='#525252';
+      ctx.beginPath();ctx.ellipse(-14,8,4,3,0.4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(14,7,3,2,-.3,0,Math.PI*2);ctx.fill();
+      // Grietas con grosor variable
+      ctx.strokeStyle='rgba(20,20,20,0.55)';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(-5,-9);ctx.lineTo(-2,-1);ctx.lineTo(1,-4);ctx.stroke();
+      ctx.lineWidth=0.7;
+      ctx.beginPath();ctx.moveTo(5,-12);ctx.lineTo(7,-5);ctx.stroke();
+      // Musgo húmedo
+      ctx.fillStyle='rgba(40,110,25,0.38)';
+      ctx.beginPath();ctx.ellipse(-9,5,6,3.5,0.3,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(60,140,30,0.22)';
+      ctx.beginPath();ctx.ellipse(-9,3,4,2,0.3,0,Math.PI*2);ctx.fill();
+      // Brillo húmedo
+      ctx.fillStyle='rgba(255,255,255,0.07)';
+      ctx.beginPath();ctx.ellipse(-4,-11,5,2,-.5,0,Math.PI*2);ctx.fill();
+      if(o.hp<o.mhp)hpBar(o,-22);
+      ctx.scale(1/rs,1/rs);break;}
+    case'arbusto':{
+      ctx.fillStyle='rgba(0,0,0,0.2)';ctx.beginPath();ctx.ellipse(0,6,14,5,0,0,Math.PI*2);ctx.fill();
+      // Sección izquierda
+      const bg1=ctx.createRadialGradient(-5,-2,1,-4,0,11);
+      bg1.addColorStop(0,'#2e7018');bg1.addColorStop(1,'#1a4a0c');
+      ctx.fillStyle=bg1;ctx.beginPath();ctx.arc(-4,0,11,0,Math.PI*2);ctx.fill();
+      // Sección derecha
+      const bg2=ctx.createRadialGradient(5,-3,1,5,-1,11);
+      bg2.addColorStop(0,'#348020');bg2.addColorStop(1,'#1c520e');
+      ctx.fillStyle=bg2;ctx.beginPath();ctx.arc(5,-1,11,0,Math.PI*2);ctx.fill();
+      // Centro superior
+      const bg3=ctx.createRadialGradient(-1,-8,1,-1,-6,8);
+      bg3.addColorStop(0,'#42922a');bg3.addColorStop(1,'#267016');
+      ctx.fillStyle=bg3;ctx.beginPath();ctx.arc(-1,-6,8,0,Math.PI*2);ctx.fill();
+      // Flores pequeñas aleatorias
+      const flrs=[['-6','-4','#ffdd44'],[4,-7,'#ff8844'],[0,-10,'#ffffff'],[7,-2,'#ffaa44']];
+      flrs.forEach(([fx,fy,fc])=>{
+        ctx.fillStyle=fc;
+        ctx.beginPath();ctx.arc(+fx,+fy,2,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffee88';ctx.beginPath();ctx.arc(+fx,+fy,1,0,Math.PI*2);ctx.fill();
+      });
       // Brillo superior
-      ctx.fillStyle='#4a9828';ctx.beginPath();ctx.arc(sw-1,-24,7,0,Math.PI*2);ctx.fill();
-      // Detalle hojas
-      ctx.fillStyle='rgba(80,160,30,0.35)';
-      for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(sw-8+i*4,-16+Math.sin(i)*4,3,0,Math.PI*2);ctx.fill();}
-      if(o.hp<o.mhp)hpBar(o,-28);break;
-    case'roca':
-      // Sombra
-      ctx.fillStyle='rgba(0,0,0,0.28)';ctx.beginPath();ctx.ellipse(2,12,20,7,0,0,Math.PI*2);ctx.fill();
-      // Roca principal (cara oscura)
-      ctx.fillStyle='#4a4a4a';
-      ctx.beginPath();ctx.moveTo(-16,10);ctx.lineTo(-10,-6);ctx.lineTo(4,-14);ctx.lineTo(16,-5);ctx.lineTo(14,10);ctx.closePath();ctx.fill();
-      // Cara iluminada (arriba-izquierda)
-      ctx.fillStyle='#828282';
-      ctx.beginPath();ctx.moveTo(-10,-6);ctx.lineTo(4,-14);ctx.lineTo(3,-5);ctx.lineTo(-8,-1);ctx.closePath();ctx.fill();
-      // Cara lateral (arriba-derecha)
-      ctx.fillStyle='#5c5c5c';
-      ctx.beginPath();ctx.moveTo(4,-14);ctx.lineTo(16,-5);ctx.lineTo(14,2);ctx.lineTo(3,-5);ctx.closePath();ctx.fill();
-      // Grietas
-      ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(-1,0);ctx.lineTo(2,-3);ctx.stroke();
-      // Musgo
-      ctx.fillStyle='rgba(50,120,30,0.3)';ctx.beginPath();ctx.ellipse(-8,4,5,3,0.3,0,Math.PI*2);ctx.fill();
-      if(o.hp<o.mhp)hpBar(o,-20);break;
-    case'arbusto':
-      ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(0,5,13,5,0,0,Math.PI*2);ctx.fill();
-      // Base oscura
-      ctx.fillStyle='#1e5010';ctx.beginPath();ctx.arc(-4,0,10,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#1e5010';ctx.beginPath();ctx.arc(5,-1,10,0,Math.PI*2);ctx.fill();
-      // Capas medias
-      ctx.fillStyle='#2e6a18';ctx.beginPath();ctx.arc(-5,-4,8,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#2e6a18';ctx.beginPath();ctx.arc(4,-5,9,0,Math.PI*2);ctx.fill();
-      // Capa superior brillante
-      ctx.fillStyle='#3e7c22';ctx.beginPath();ctx.arc(-1,-7,7,0,Math.PI*2);ctx.fill();
-      // Brillo
-      ctx.fillStyle='rgba(80,160,35,0.3)';ctx.beginPath();ctx.arc(-2,-9,4,0,Math.PI*2);ctx.fill();break;
+      ctx.fillStyle='rgba(100,200,50,0.2)';ctx.beginPath();ctx.arc(-2,-9,5,0,Math.PI*2);ctx.fill();
+      break;}
     case'bayas':
       ctx.fillStyle='#2a6018';ctx.beginPath();ctx.arc(0,-4,8,0,Math.PI*2);ctx.fill();
       [['#cc2244',-5,-2],['#aa1133',2,-6],['#ee3355',-1,0]].forEach(([c,bx,by])=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(bx,by,3,0,Math.PI*2);ctx.fill();});break;
@@ -642,27 +692,94 @@ function hpBar(o,oy){
 
 function drawPlayer(cx,cy){
   const sx=P.x-cx,sy=P.y-cy+(P.y/TILE-MH/2)*TILE*ISO*0.12;
-  ctx.fillStyle='rgba(0,0,0,0.28)';ctx.beginPath();ctx.ellipse(sx,sy+10,10,4,0,0,Math.PI*2);ctx.fill();
+  // Sombra suave
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(sx+1,sy+11,12,5,0,0,Math.PI*2);ctx.fill();
   if(P.inv>0&&Math.floor(Date.now()/110)%2===0)return;
   ctx.save();ctx.translate(sx,sy);
-  const leg=P.moving?Math.sin(P.animF*Math.PI/2)*5:0;
-  const arm=P.moving?Math.sin(P.animF*Math.PI/2)*4:0;
-  ctx.fillStyle='#5a3810';ctx.fillRect(-5,2,8,8+leg);ctx.fillRect(1,2,8,8-leg);
-  ctx.fillStyle='#8a6214';ctx.fillRect(-8,-10,20,16);
-  ctx.fillStyle='#c9a84c';ctx.fillRect(-8,-10,20,3);ctx.fillRect(-8,4,20,2);
-  if(P.dir===2){ctx.fillStyle='#6a4a10';ctx.fillRect(-11,-10,6,14);}
-  else if(P.dir===3){ctx.fillStyle='#6a4a10';ctx.fillRect(7,-10,6,14);}
-  ctx.fillStyle='#c87848';ctx.beginPath();ctx.arc(2,-16,9,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#e8e8e8';ctx.beginPath();ctx.arc(2,-12,6,0,Math.PI,false);ctx.fill();
-  ctx.fillStyle='#1a0a00';
-  if(P.dir===0){ctx.fillRect(-1,-18,3,3);ctx.fillRect(4,-18,3,3);}
-  else if(P.dir===2){ctx.fillRect(-4,-18,3,3);ctx.fillRect(1,-18,3,3);}
-  else if(P.dir===3){ctx.fillRect(2,-18,3,3);ctx.fillRect(7,-18,3,3);}
-  ctx.fillStyle='#4a2a7a';ctx.fillRect(-7,-24,18,7);ctx.fillRect(-9,-20,22,5);
-  ctx.strokeStyle='#7a4a1a';ctx.lineWidth=3;
-  const bx=P.dir===2?-13:13;
-  ctx.beginPath();ctx.moveTo(bx,-21+arm);ctx.lineTo(bx+1,11);ctx.stroke();
-  ctx.fillStyle='#c87848';ctx.fillRect(-12,-8,6,10+arm);ctx.fillRect(10,-8,6,10-arm);
+  const t=Date.now();
+  const leg=P.moving?Math.sin(P.animF*Math.PI/2)*6:0;
+  const arm=P.moving?Math.sin(P.animF*Math.PI/2)*5:0;
+  const bob=P.moving?Math.sin(t/120)*1.2:0; // rebote vertical
+
+  ctx.translate(0,bob);
+
+  // ── Piernas con túnica ──
+  ctx.fillStyle='#3a2008';
+  ctx.beginPath();ctx.moveTo(-5,2);ctx.lineTo(-7,14+leg);ctx.lineTo(-1,14+leg);ctx.lineTo(1,2);ctx.fill();
+  ctx.beginPath();ctx.moveTo(1,2);ctx.lineTo(-1,14-leg);ctx.lineTo(5,14-leg);ctx.lineTo(7,2);ctx.fill();
+  // Sandalias
+  ctx.fillStyle='#8a5a20';
+  ctx.fillRect(-8,12+leg,8,3);ctx.fillRect(-2,12-leg,8,3);
+
+  // ── Cuerpo - túnica con detalles ──
+  const bg=ctx.createLinearGradient(-9,-11,9,-11);
+  bg.addColorStop(0,'#7a5818');bg.addColorStop(0.4,'#9a7222');bg.addColorStop(1,'#6a4810');
+  ctx.fillStyle=bg;
+  ctx.beginPath();ctx.moveTo(-9,2);ctx.lineTo(-10,-10);ctx.lineTo(10,-10);ctx.lineTo(9,2);ctx.closePath();ctx.fill();
+  // Franja dorada en túnica
+  ctx.fillStyle='#c9a84c';ctx.fillRect(-10,-10,20,3);ctx.fillRect(-10,2,20,2);
+  // Pliegues de tela
+  ctx.strokeStyle='rgba(0,0,0,0.18)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(-5,2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(3,-8);ctx.lineTo(4,2);ctx.stroke();
+
+  // ── Brazos ──
+  const armColor='#c07848';
+  // Brazo izquierdo
+  if(P.dir===2){
+    const ag=ctx.createLinearGradient(-14,-9,-8,-9);
+    ag.addColorStop(0,'#8a5818');ag.addColorStop(1,'#6a4010');
+    ctx.fillStyle=ag;ctx.fillRect(-14,-10,6,12+arm);
+    ctx.fillStyle=armColor;ctx.fillRect(-14,2+arm,6,5);
+  } else {
+    ctx.fillStyle='#8a5818';ctx.fillRect(-14,-9,6,11+arm);
+    ctx.fillStyle=armColor;ctx.fillRect(-14,2+arm,6,4);
+  }
+  // Brazo derecho
+  if(P.dir===3){
+    ctx.fillStyle='#8a5818';ctx.fillRect(8,-10,6,12-arm);
+    ctx.fillStyle=armColor;ctx.fillRect(8,2-arm,6,5);
+  } else {
+    ctx.fillStyle='#8a5818';ctx.fillRect(8,-9,6,11-arm);
+    ctx.fillStyle=armColor;ctx.fillRect(8,2-arm,6,4);
+  }
+
+  // ── Bastón (vara del profeta) ──
+  ctx.strokeStyle='#7a4a1a';ctx.lineWidth=2.5;
+  const bx=P.dir===2?-16:14;
+  ctx.beginPath();ctx.moveTo(bx,-22+arm);ctx.bezierCurveTo(bx-1,-10,bx+1,0,bx,12);ctx.stroke();
+  // Nudo del bastón
+  ctx.fillStyle='#9a6a2a';ctx.beginPath();ctx.arc(bx,-22+arm,3,0,Math.PI*2);ctx.fill();
+
+  // ── Cabeza ──
+  const hg=ctx.createRadialGradient(-1,-17,2,1,-16,10);
+  hg.addColorStop(0,'#d08050');hg.addColorStop(1,'#a86030');
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(1,-17,10,0,Math.PI*2);ctx.fill();
+  // Barba
+  ctx.fillStyle='#7a5a30';
+  ctx.beginPath();ctx.moveTo(-7,-12);ctx.quadraticCurveTo(-8,-5,0,-4);ctx.quadraticCurveTo(8,-5,7,-12);ctx.fill();
+  ctx.fillStyle='#9a7840';
+  ctx.beginPath();ctx.moveTo(-5,-11);ctx.quadraticCurveTo(-5,-6,0,-5);ctx.quadraticCurveTo(5,-6,5,-11);ctx.fill();
+  // Ojos
+  ctx.fillStyle='#fff';
+  if(P.dir!==0&&P.dir!==1){
+    const eo=P.dir===2?-3:3;
+    ctx.fillRect(eo-2,-19,4,3);ctx.fillStyle='#1a0a00';ctx.fillRect(eo-1,-18,2,2);
+  } else {
+    ctx.fillRect(-4,-19,4,3);ctx.fillRect(3,-19,4,3);
+    ctx.fillStyle='#1a0a00';ctx.fillRect(-3,-18,2,2);ctx.fillRect(4,-18,2,2);
+  }
+  // Nariz
+  ctx.fillStyle='#b06840';ctx.beginPath();ctx.arc(P.dir===2?-2:P.dir===3?3:1,-16,1.5,0,Math.PI*2);ctx.fill();
+  // Turbante / tocado
+  ctx.fillStyle='#3a1858';
+  ctx.beginPath();ctx.arc(1,-23,9,Math.PI,0);ctx.fill();
+  ctx.fillRect(-9,-24,18,5);
+  ctx.fillStyle='#5a2888';ctx.fillRect(-10,-21,20,4);
+  // Joya del turbante
+  ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(1,-22,2.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(0,-23,1.5,0,Math.PI*2);ctx.fill();
+
   ctx.restore();
 }
 
@@ -695,10 +812,28 @@ function drawSky(){
   }
   if(t>0.28&&t<0.72){
     const sp=(t-0.28)/0.44;
-    const sunX=W*0.15+W*0.7*sp,sunY=H*0.08-H*0.04*Math.sin(sp*Math.PI);
+    const sunX=W*0.15+W*0.7*sp,sunY=H*0.09-H*0.05*Math.sin(sp*Math.PI);
     const sa=Math.min(1,Math.min(sp/0.08,(1-sp)/0.08)*2);
-    ctx.fillStyle=`rgba(255,220,80,${sa})`;ctx.beginPath();ctx.arc(sunX,sunY,20,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=`rgba(255,240,120,${sa*0.45})`;ctx.beginPath();ctx.arc(sunX,sunY,32,0,Math.PI*2);ctx.fill();
+    // Halo exterior
+    const hg=ctx.createRadialGradient(sunX,sunY,18,sunX,sunY,80);
+    hg.addColorStop(0,`rgba(255,200,50,${sa*0.25})`);
+    hg.addColorStop(1,`rgba(255,200,50,0)`);
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(sunX,sunY,80,0,Math.PI*2);ctx.fill();
+    // Rayos del sol
+    ctx.save();ctx.translate(sunX,sunY);
+    const rotSun=Date.now()/8000;
+    for(let i=0;i<12;i++){
+      const a=i/12*Math.PI*2+rotSun;
+      ctx.strokeStyle=`rgba(255,230,80,${sa*0.35})`;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(Math.cos(a)*26,Math.sin(a)*26);ctx.lineTo(Math.cos(a)*44,Math.sin(a)*44);ctx.stroke();
+    }
+    ctx.restore();
+    // Sol principal
+    const sg=ctx.createRadialGradient(sunX-4,sunY-4,2,sunX,sunY,24);
+    sg.addColorStop(0,`rgba(255,255,180,${sa})`);
+    sg.addColorStop(0.5,`rgba(255,220,60,${sa})`);
+    sg.addColorStop(1,`rgba(255,170,20,${sa*0.8})`);
+    ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sunX,sunY,24,0,Math.PI*2);ctx.fill();
   }
   drawNubes();
   if(t<0.25||t>0.78){const na=t<0.25?Math.min(0.58,(0.25-t)/0.1*0.58):Math.min(0.58,(t-0.78)/0.1*0.58);ctx.fillStyle=`rgba(0,0,15,${na})`;ctx.fillRect(0,0,W,H);}
@@ -706,12 +841,29 @@ function drawSky(){
 
 function initNubes(){nubes=Array.from({length:10},()=>({x:Math.random()*2400,y:18+Math.random()*55,w:70+Math.random()*110,spd:0.08+Math.random()*0.13,op:0.35+Math.random()*0.28}));}
 function drawNubes(){
-  if(clima==='soleado')return;
-  const al=clima==='nublado'?0.55:clima==='lluvia'?0.78:0.92;
-  const cr=clima==='tormenta'?'40,40,60':'170,170,190';
-  nubes.forEach(n=>{n.x-=n.spd;if(n.x<-n.w)n.x=canvas.width+80;
-    ctx.fillStyle=`rgba(${cr},${n.op*al})`;ctx.beginPath();
-    ctx.ellipse(n.x,n.y,n.w/2,20,0,0,Math.PI*2);ctx.ellipse(n.x-n.w*0.28,n.y+7,n.w*0.33,16,0,0,Math.PI*2);ctx.ellipse(n.x+n.w*0.26,n.y+5,n.w*0.28,14,0,0,Math.PI*2);ctx.fill();
+  const al=clima==='soleado'?0.28:clima==='nublado'?0.65:clima==='lluvia'?0.85:0.95;
+  const cr=clima==='tormenta'?'35,35,55':clima==='soleado'?'230,240,255':'185,195,210';
+  nubes.forEach(n=>{
+    n.x-=n.spd*(clima==='tormenta'?2.5:1);
+    if(n.x<-n.w)n.x=canvas.width+100;
+    // Sombra de nube en suelo (solo diurno)
+    if(clima==='soleado'||clima==='nublado'){
+      ctx.fillStyle=`rgba(0,0,0,${0.04*al})`;
+      ctx.beginPath();ctx.ellipse(n.x,canvas.height*0.55,n.w*0.45,8,0,0,Math.PI*2);ctx.fill();
+    }
+    // Cuerpo de nube con 3 capas
+    ctx.fillStyle=`rgba(${cr},${n.op*al*0.6})`;
+    ctx.beginPath();
+    ctx.ellipse(n.x-n.w*0.22,n.y+9,n.w*0.3,14,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(n.x+n.w*0.2,n.y+8,n.w*0.28,13,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`rgba(${cr},${n.op*al})`;
+    ctx.beginPath();
+    ctx.ellipse(n.x,n.y,n.w*0.48,18,0,0,Math.PI*2);ctx.fill();
+    // Borde luminoso superior
+    ctx.fillStyle=`rgba(255,255,255,${n.op*al*0.4})`;
+    ctx.beginPath();
+    ctx.ellipse(n.x-3,n.y-4,n.w*0.32,10,0,0,Math.PI*2);ctx.fill();
   });
 }
 
