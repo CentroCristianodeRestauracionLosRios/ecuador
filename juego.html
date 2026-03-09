@@ -255,6 +255,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <button class="hbtn" onclick="toggleP('inv')">🎒</button>
     <button class="hbtn" onclick="toggleP('craft')">⚒️</button>
     <button class="hbtn" onclick="toggleP('skills')">✨</button>
+    <button class="hbtn" onclick="toggleFamiliaPanel()" title="Familia de Noé" id="hudFamilia">👨‍👦 0</button>
     <button class="hbtn" onclick="toggleP('shop')" title="Tienda">🏪</button>
     <button class="hbtn" onclick="toggleP('equip')" title="Equipamiento">⚔️</button>
     <button class="hbtn" id="soundBtn" onclick="toggleSound()">🔊</button>
@@ -292,8 +293,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <div class="gt-verse">"Juego de supervivencia · Génesis 6—9"</div>
     </div>
     <div class="ark-icon">⛵</div>
-    <div class="ubadge" id="ubadge" style="display:none"><div class="gdot"></div><span id="unick">Jugador</span>
-    <span style="font-size:0.65rem;color:#c9a84c;cursor:pointer" id="hudFamilia" onclick="toggleFamiliaPanel()" title="Familia de Noé">👨‍👦 0</span></div>
+    <div class="ubadge" id="ubadge" style="display:none"><div class="gdot"></div><span id="unick">Jugador</span></div>
     <div class="mbtns">
       <button class="mbtn pri" id="btnJugar" onclick="doJugar()">⚔️  Jugar</button>
       <button class="mbtn" onclick="doContinuar()" id="btnCont" style="display:none">📜  Continuar partida</button>
@@ -2307,6 +2307,7 @@ function updateHUD(){
   document.getElementById('bXp').style.width=(P.xp/(P.lv*100))*100+'%';
   document.getElementById('hudLv').textContent=`Nv.${P.lv}`;
   document.getElementById('hudSiclos').textContent=`🪙 ${siclos}`;
+  const hfBtn=document.getElementById('hudFamilia'); if(hfBtn) hfBtn.textContent=`👨‍👦 ${familia.length||0}`;
   // Mostrar buffs activos en HUD como pequeñas pastillas
   const buffBar=document.getElementById('buff-bar');
   if(buffBar){
@@ -2345,7 +2346,6 @@ window.toggleP=function(w){
       if(w==='craft') renderCraft();
       if(w==='skills')renderSkills();
       if(w==='shop')  renderShop();
-      if(w==='equip') renderEquip();
       if(w==='equip') renderEquip();
     }catch(e){ console.error('Error al renderizar panel',w,e); }
   } else {
@@ -2492,7 +2492,13 @@ function tickNoahAnim(){
   // Reducir timer de acción
   if(noahActionTimer > 0){
     noahActionTimer--;
-    if(noahActionTimer === 0) noahAction = P.moving ? 'walk' : 'idle';
+    if(noahActionTimer === 0){
+      if(noahAction==='death' && P._dying){
+        P._dying=false; gRun=false; sndGameOver(); showS('s-over');
+      } else {
+        noahAction = P.moving ? 'walk' : 'idle';
+      }
+    }
   }
 }
 
@@ -2602,16 +2608,11 @@ function beginLoop(){
   setTimeout(()=>notif('🍎 Abre tu bolsa y toca una fruta para comerla',''),13000);
 }
 function gameOver(){
-  if(P._dying) return; // evitar doble llamada
+  if(P._dying) return;
   P._dying = true;
   triggerNoahAction('death');
-  gPause = false; // asegurar que el loop siga corriendo para ver animación
-  setTimeout(()=>{
-    gRun=false;
-    P._dying=false;
-    sndGameOver();
-    showS('s-over');
-  }, 1500);
+  gPause = false;
+  // La pantalla sale cuando termina la animación de muerte (ver tickNoahAnim)
 }
 
 // ─── FIREBASE AUTH ────────────────────────────
@@ -3660,7 +3661,10 @@ function renderEquip(){
   const wEl=document.getElementById('equip-weapons');
   const sEl=document.getElementById('equip-skills');
   const aEl=document.getElementById('equip-available');
-  if(!wEl||!sEl||!aEl) return;
+  if(!wEl||!sEl||!aEl){
+    console.error('renderEquip: elementos faltantes — panel p-equip no encontrado');
+    return;
+  }
 
   const slotStyle=(filled)=>`display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid ${filled?'rgba(201,168,76,0.5)':'rgba(255,255,255,0.1)'};background:${filled?'rgba(201,168,76,0.08)':'rgba(255,255,255,0.03)'}`;
 
@@ -3673,7 +3677,7 @@ function renderEquip(){
     if(id){
       const est=armasEstado[id]||{nivel:1,rareza:0};
       const arma=SHOP_WEAPONS.find(w=>w.id===id)||{n:id,e:'⚔️'};
-      const rar=RAREZAS[est.rareza]||RAREZAS[0];
+      const rar=(typeof RAREZAS!=='undefined'&&RAREZAS[est.rareza])||{color:'#aaa',nombre:'Básico'};
       div.innerHTML=`<span style="font-size:1.2rem">${arma.e||'⚔️'}</span>
         <span style="flex:1;font-size:0.75rem;color:var(--text)">${arma.n}<br><span style="color:${rar.color||'#aaa'};font-size:0.65rem">Nv.${est.nivel} · ${rar.nombre}</span></span>
         <button class="sbtn" style="font-size:0.65rem;padding:2px 7px" onclick="desequiparArma('${id}')">Quitar</button>`;
@@ -3802,7 +3806,9 @@ function renderShop(){
   const catsEl=document.getElementById('shopCats');
   const grid=document.getElementById('shop-grid');
   if(!sg||!catsEl||!grid){
-    console.error('renderShop: elementos no encontrados',{sg:!!sg,catsEl:!!catsEl,grid:!!grid});
+    console.error('renderShop: elementos faltantes',{sg:!!sg,catsEl:!!catsEl,grid:!!grid});
+    // Intentar re-render en siguiente frame
+    setTimeout(renderShop, 100);
     return;
   }
 
