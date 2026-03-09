@@ -1476,9 +1476,12 @@ function drawPlayer(cx,cy){
       const srcX     = frame * fw;
       const srcY     = 0;
 
-      // Posición destino: centrado en sx,sy
+      // Anclar el pie del personaje siempre al mismo punto en pantalla.
+      // bottom_anchor = posición del pie en el frame de 64px (medido con medir_offset.py)
+      // Todos usan 46/64 para que stop/run/acción no se desplacen entre sí.
+      const FOOT_ANCHOR = 46 / 64;  // pie siempre a este % del alto del frame
       const dx = sx - dw/2;
-      const dy = sy - dh * NOAH_CFG.offsetY;
+      const dy = sy - dh * FOOT_ANCHOR;
 
       ctx.save();
       if(flipX){
