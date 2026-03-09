@@ -111,7 +111,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .clist{display:flex;flex-direction:column;gap:5px;}
 .citem{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:9px 11px;cursor:pointer;transition:all 0.15s;}
 .citem:hover{border-color:var(--gold);background:rgba(201,168,76,0.05);}
-.citem.dis{opacity:0.4;cursor:not-allowed;}
+.citem.dis{cursor:default;} /* item visible, solo botón oscuro */
 .cemi{font-size:1.5rem;flex-shrink:0;}
 .cinfo{flex:1;}
 .cname{font-family:'Cinzel',serif;font-size:0.78rem;color:var(--text);margin-bottom:2px;}
@@ -341,7 +341,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   </div>
 
 <!-- TIENDA — Siclos de Plata -->
-<div class="panel" id="p-shop" style="width:min(520px,96vw)">
+<div class="panel" id="p-shop">
   <div class="ph">
     <span class="ptitle">🏪 Tienda del Mercader</span>
     <div class="ph-rar" style="flex:1;justify-content:center;gap:3px;flex-wrap:wrap">
@@ -371,7 +371,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div class="scats" id="shopCats"></div>
     <div id="shop-grid" class="shop-grid"></div>
   </div>
-</div>
 </div>
 
 <!-- PAUSA -->
@@ -515,7 +514,7 @@ const ITEMS={
   cuerda:{n:'Cuerda',e:'〰️',t:'b',d:'Material flexible'},
   tabla:{n:'Tabla',e:'📋',t:'b',d:'Madera procesada'},
   ladrillo:{n:'Ladrillo',e:'🧱',t:'b',d:'Barro cocido'},
-  brea:{n:'Brea',e:'⬛',t:'b',d:'Impermeabiliza el Arca'},
+  brea:{n:'Brea (corazón negro)',e:'🫀',t:'b',d:'Corazón negro — impermeabiliza el Arca. Se hace con 3 resinas + 1 madera'},
   carne_a:{n:'Carne asada',e:'🍖',t:'c',d:'+40 hambre +10 energía',fx:{hunger:40,energy:10}},
   pan:{n:'Pan',e:'🍞',t:'c',d:'+30 hambre',fx:{hunger:30}},
   estofado:{n:'Estofado',e:'🍲',t:'c',d:'+50 hambre +20 energía',fx:{hunger:50,energy:20}},
@@ -731,11 +730,13 @@ function genMundo(){
     for(let x=0;x<MW;x++){
       const n=n2d(x*0.08,y*0.08),n2=n2d(x*0.03+99,y*0.03+99);
       let t=T.GRASS;
-      if(n2<-0.38)t=T.WATER;
+      if(n2<-0.52)t=T.WATER;  // menos agua en el mapa
       else if(n2<-0.18)t=T.SAND;
       else if(n>0.28&&n<0.45)t=T.STONE;
       else if(n>0.55)t=T.DIRT;
-      wMap[y][x]={t,obj:null};
+      // agua profunda (n2 muy bajo) = pescar; agua superficial = beber
+      const waterType=(t===T.WATER&&n2<-0.70)?'fish':'drink';
+      wMap[y][x]={t,obj:null,wt:(t===T.WATER?waterType:null)};
     }
   }
   for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){
@@ -912,29 +913,41 @@ function drawWorld(cx,cy){
         }
 
       } else if(tile.t===T.WATER){
-        // Agua: crests de olas como rectángulos, no arcos
-        const frame=Math.floor(T2/400)%4;
-        if((rnd+frame)%4===0){
-          const wy=sy+(rnd&15)+6;
-          ctx.fillStyle=PAL.waterF;
-          ctx.fillRect(sx+2+(rnd&7)*3, wy, 6, 1);
-          ctx.fillRect(sx+14+(rnd&5)*4, wy+2, 4, 1);
+        // Detectar si es agua profunda (pescar) o superficial (beber)
+        const isFish=tile.wt==='fish';
+        const wCol=isFish?PAL.water1:PAL.water2; // más oscura = profunda
+        // Olas animadas simples
+        const frame=Math.floor(T2/450)%4;
+        if((rnd+frame)%3===0){
+          const wy=sy+(rnd&14)+5;
+          ctx.fillStyle=isFish?'rgba(30,80,160,0.7)':'rgba(40,100,180,0.6)';
+          ctx.fillRect(sx+3+(rnd&9)*3, wy, 7, 1);
+          ctx.fillRect(sx+12+(rnd&7)*3, wy+3, 5, 1);
         }
-        // Destello de luz — solo un pixel brillante
-        if(rnd%7===0&&Math.floor(T2/800)%2===0){
-          ctx.fillStyle='rgba(180,230,255,0.5)';
-          ctx.fillRect(sx+(rnd&28)+3, sy+(rnd>>3&20)+4, 2, 1);
+        // Destello
+        if(rnd%6===0&&Math.floor(T2/700)%2===0){
+          ctx.fillStyle=isFish?'rgba(120,180,255,0.4)':'rgba(160,220,255,0.5)';
+          ctx.fillRect(sx+(rnd&26)+4, sy+(rnd>>3&18)+5, 3, 1);
         }
-        // Espuma borde — 1px si el vecino es tierra
+        // Ícono pescado en agua profunda cada ~8 tiles
+        if(isFish&&rnd%11===0){
+          ctx.font='9px serif';ctx.textAlign='center';ctx.globalAlpha=0.4+Math.sin(T2/800+wtx)*0.2;
+          ctx.fillText('🐟',sx+TILE/2,sy+TILE/2+3);
+          ctx.globalAlpha=1;ctx.textAlign='left';
+        }
+        // Espuma borde orgánica
         [[1,0],[0,1],[-1,0],[0,-1]].forEach(([ddx,ddy])=>{
           const nx=((((tx+ddx)%MW)+MW)%MW), ny=((((ty+ddy)%MH)+MH)%MH);
           const nb=wMap[ny]?.[nx];
           if(nb&&nb.t!==T.WATER){
-            ctx.fillStyle=`rgba(160,210,255,${0.28+Math.sin(T2/500+wtx+wty)*0.1})`;
-            if(ddx===1) ctx.fillRect(sx+TILE-4,sy,4,TILE);
-            else if(ddx===-1) ctx.fillRect(sx,sy,4,TILE);
-            else if(ddy===1) ctx.fillRect(sx,sy+TILE-4,TILE,4);
-            else ctx.fillRect(sx,sy,TILE,4);
+            const foamA=0.22+Math.sin(T2/600+wtx*0.7+wty*0.5)*0.1;
+            ctx.fillStyle=`rgba(180,225,255,${foamA})`;
+            // Espuma irregular — variar grosor con rnd
+            const fw=2+(rnd&3);
+            if(ddx===1) ctx.fillRect(sx+TILE-fw,sy+2,fw,TILE-4);
+            else if(ddx===-1) ctx.fillRect(sx,sy+2,fw,TILE-4);
+            else if(ddy===1) ctx.fillRect(sx+2,sy+TILE-fw,TILE-4,fw);
+            else ctx.fillRect(sx+2,sy,TILE-4,fw);
           }
         });
 
@@ -1084,11 +1097,18 @@ function drawObjAt(o,sx,sy){
 function drawStrAt(s,sx,sy){
   ctx.save();ctx.translate(sx+TILE/2,sy+TILE*0.72);
   switch(s.tipo){
-    case'fogon':
+    case'fogon':{
       ctx.fillStyle='#555';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=`rgba(255,${100+Math.sin(Date.now()/180)*40},0,0.9)`;
+      const fp=s.hp!==undefined?s.hp/s.mhp:1;
+      ctx.fillStyle=`rgba(255,${Math.floor(100+Math.sin(Date.now()/180)*40)},0,0.9)`;
       ctx.beginPath();ctx.moveTo(-7,2);ctx.lineTo(0,-11+Math.sin(Date.now()/200)*3);ctx.lineTo(7,2);ctx.closePath();ctx.fill();
-      ctx.fillStyle='rgba(255,200,0,0.7)';ctx.beginPath();ctx.moveTo(-4,2);ctx.lineTo(0,-5+Math.sin(Date.now()/150)*2);ctx.lineTo(4,2);ctx.closePath();ctx.fill();break;
+      ctx.fillStyle='rgba(255,200,0,0.7)';ctx.beginPath();ctx.moveTo(-4,2);ctx.lineTo(0,-5+Math.sin(Date.now()/150)*2);ctx.lineTo(4,2);ctx.closePath();ctx.fill();
+      // Barra de durabilidad
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(-13,15,26,4);
+      ctx.fillStyle=fp>0.5?'#e67e22':fp>0.2?'#e74c3c':'#ff0000';
+      ctx.fillRect(-13,15,Math.floor(26*fp),4);
+      ctx.fillStyle='rgba(255,100,0,0.5)';ctx.font='7px Cinzel,serif';ctx.textAlign='center';
+      ctx.fillText('🔥 '+Math.ceil(fp*100)+'%',0,26);break;}
     case'cama':
       ctx.fillStyle='#6a3010';ctx.fillRect(-15,-5,30,17);
       ctx.fillStyle='#c8a870';ctx.fillRect(-13,-3,26,9);
@@ -1318,7 +1338,7 @@ function drawRain(){
 function drawParts(cx,cy){
   const T2=Date.now();
   parts.forEach(p=>{
-    p.y+=p.vy; p.life--;
+    p.y+=p.vy; if(p.vx)p.x+=p.vx; if(p.isSplash&&p.vy<1.5)p.vy+=0.12; p.life--;
     const a=p.life/p.ml;
     const px2=p.x-cx, py2=p.y-cy;
     if(p.isFlash){
@@ -1342,10 +1362,17 @@ function addPart(x,y,e){
   parts.push({x,y,vy:-1.2,life:40,ml:40,e,isFlash});
 }
 function addFlash(x,y){
-  // Múltiples partículas de destello pixel
   for(let i=0;i<4;i++){
     const ang=i/4*Math.PI*2;
     parts.push({x:x+Math.cos(ang)*12,y:y+Math.sin(ang)*12,vy:-0.6-Math.random()*0.8,life:25,ml:25,e:'flash',isFlash:true});
+  }
+}
+function addSplash(x,y){
+  // Salpicadura de agua — gotas azules
+  for(let i=0;i<6;i++){
+    const ang=Math.random()*Math.PI*2;
+    const spd=0.8+Math.random()*1.4;
+    parts.push({x,y,vx:Math.cos(ang)*spd,vy:-1.2-Math.random()*1.5,life:30,ml:30,e:'💧',isFlash:false,isSplash:true});
   }
 }
 function drawMinimap(){
@@ -1474,6 +1501,19 @@ function update(){
   if(tick%120===0){checkMisiones();updateMisionHUD();}
   ganarSiclosPorAccion();
   tickBuffs();
+  // Durabilidad del fogón (1 minuto = 3600 ticks)
+  if(tick%30===0){
+    structs.forEach((s,i)=>{
+      if(s.tipo==='fogon'&&s.hp!==undefined){
+        s.hp=Math.max(0,s.hp-1); // -1 cada 30 ticks = 100 en 3000 ticks (~50 seg)
+        if(s.hp<=0){
+          structs.splice(i,1);
+          notif('🔥 El fogón se apagó — construye otro para seguir cocinando','red');
+          sndNotifBad();
+        }
+      }
+    });
+  }
   if(tick%300===0) checkTips();
   updateHUD();
 }
@@ -1526,7 +1566,13 @@ function drawNearIndicator(cx,cy){
     const d=Math.hypot(ddx,ddy);if(d<minD){minD=d;nearObj=s;}
   });
   const waterNear=[-1,0,1].some(dy=>[-1,0,1].some(dx=>{const t=wMap[py+dy]?.[px+dx];return t&&t.t===T.WATER;}));
+  const animalNear=animales.find(a=>!a.enArca&&Math.hypot(a.x-P.x,a.y-P.y)<55);
 
+  if(animalNear&&!nearObj){
+    const hasWeapon=hasItem('lanza')||hasItem('espada')||armasEstado['arco']?.nivel>0||armasEstado['espada_s']?.nivel>0;
+    hint.textContent=hasWeapon?`[E] Cazar ${animalNear.tipo==='oveja'?'🐑 Oveja':animalNear.tipo==='vaca'?'🐄 Vaca':'🕊️ Paloma'} (🥩 +carne)`:'[E] Necesitas arma para cazar 🐑';
+    hint.style.display='block';hint.style.color=hasWeapon?'#ffcc44':'#aaa';
+  }
   if(nearObj){
     const sx=nearObj.tx*TILE-cx+TILE/2,sy=nearObj.ty*TILE-cy-10;
     ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='16px serif';ctx.textAlign='center';
@@ -1537,7 +1583,10 @@ function drawNearIndicator(cx,cy){
     hint.style.color='var(--gold)';
   } else if(waterNear){
     if(hasItem('jarra')){
-      hint.textContent='[E] Llenar jarra con agua 💧';hint.style.display='block';nearObj={tipo:'agua'};
+      const tileAtP=wMap[py]?.[px]; const isFishTile=tileAtP?.wt==='fish'||[-1,0,1].flatMap(dy=>[-1,0,1].map(dx=>wMap[py+dy]?.[px+dx])).some(t=>t?.wt==='fish');
+      if(hasItem('jarra')){hint.textContent='[E] Llenar jarra con agua 💧 (para beber)';hint.style.display='block';nearObj={tipo:'agua'};}
+      else if(isFishTile){hint.textContent='[E] Pescar 🐟 (agua profunda — usa 2 fibras)';hint.style.display='block';nearObj={tipo:'agua'};}
+      else{hint.textContent='💧 Agua para beber — necesitas una jarra (3 barros)';hint.style.display='block';}
       hint.style.color='#5af';
     } else {
       hint.textContent='💧 Necesitas una jarra — créala con 3 barros de barro';hint.style.display='block';
@@ -1591,7 +1640,23 @@ function drawNearIndicator(cx,cy){
 }
 
 window.doInteract=function(){
-  if(!nearObj)return;const o=nearObj;
+  // Si hay animal cercano (no en Arca) y el jugador tiene arma, puede cazarlo
+  if(!nearObj){
+    const px=Math.floor(P.x/TILE),py=Math.floor(P.y/TILE);
+    const animalCerca=animales.find(a=>!a.enArca&&Math.hypot(a.x-P.x,a.y-P.y)<55);
+    if(animalCerca){
+      if(hasItem('lanza')||hasItem('espada')||hasItem('arco')||(armasEstado['arco']?.nivel>0)||(armasEstado['espada_s']?.nivel>0)){
+        animalCerca.hp-=25;
+        addFlash(animalCerca.x,animalCerca.y-20);
+        sndAxe();
+        if(animalCerca.hp<=0) notif('🎯 Animal cazado','grn');
+        else notif('🎯 Golpeaste al animal — vuelve a presionar E','');
+      } else notif('🐑 Necesitas una lanza o espada para cazar animales','');
+      return;
+    }
+    return;
+  }
+  const o=nearObj;
   const bon=(hasSkill('fuerza')?2:1)*(getBuff('fuerza2x')?2:1)*(getArmaBonus('craft')>0?1+(getArmaBonus('craft')/200):1);
   if(o.tipo==='arbol'){
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
@@ -1612,10 +1677,21 @@ window.doInteract=function(){
   }else if(o.tipo==='frutal'){
     sndPickPlant();addItem('fruta',2+Math.floor(Math.random()*2));removeObj(o);sndCollect();notif('🍎 Fruta','');addXP(5);
   }else if(o.tipo==='agua'){
-    if(hasItem('jarra')){removeItem('jarra',1);addItem('agua',1);sndDrink();notif('🫙 ¡Jarra llena de agua!','grn');}
+    if(hasItem('jarra')){removeItem('jarra',1);addItem('agua',1);sndDrink();
+      addSplash(P.x,P.y);notif('🫙 ¡Jarra llena de agua!','grn');}
     // Pescar si tiene fibra como caña improvisada
+    // Solo se puede pescar en agua tipo 'fish' (profunda)
+    const tileAqui=wMap[Math.floor(P.y/TILE)]?.[Math.floor(P.x/TILE)];
+    const tileAdj=[-1,0,1].flatMap(dy=>[-1,0,1].map(dx=>wMap[Math.floor(P.y/TILE)+dy]?.[Math.floor(P.x/TILE)+dx])).find(t=>t&&t.wt==='fish');
     if(hasItem('fibra',2)&&Math.random()<(hasSkill('pesc')?0.7:0.3)){
-      removeItem('fibra',1);addItem('pez',1);sndCollect();notif('🐟 ¡Pescaste un pez!','grn');addXP(8);
+      if(tileAdj||tileAqui?.wt==='fish'){
+        removeItem('fibra',1);addItem('pez',1);sndCollect();
+        addSplash(P.x,P.y);notif('🐟 ¡Pescaste un pez!','grn');addXP(8);
+      } else {
+        notif('🐟 Necesitas agua profunda para pescar (busca zonas azul oscuro)','');
+      }
+    } else if(!hasItem('fibra',2)){
+      notif('🎣 Para pescar necesitas 2 fibras como improvisación','');
     }
   }else if(o.tipo==='pozo'){
     // El pozo no necesita jarra — da agua directamente
@@ -1702,7 +1778,7 @@ function renderCraft(){
     const can=Object.entries(r.req).every(([id,q])=>cntItem(id)>=q);
     const strOk=!r.str||structs.some(s=>s.tipo===r.str);
     const div=document.createElement('div');
-    div.className='citem'+((!can||!strOk)?' dis':'');
+    div.className='citem'; // nunca oscurecer el ítem completo
     const rh=Object.entries(r.req).map(([id,q])=>`<span class="creq ${cntItem(id)>=q?'ok':'no'}">${ITEMS[id]?.e||id} ${cntItem(id)}/${q}</span>`).join('');
     const sw=r.str&&!strOk?`<span class="creq no">Necesitas: ${ITEMS[r.str]?.n||r.str}</span>`:'';
     div.innerHTML=`<div class="cemi">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Hacer</button>`;
@@ -1725,7 +1801,9 @@ function placeSt(tipo){
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
     const tx=px+dx,ty=py+dy;
     if(!isSolid(tx,ty)){
-      structs.push({tx,ty,tipo});removeItem(tipo,1);
+      const sData={tx,ty,tipo};
+      if(tipo==='fogon'){sData.hp=100;sData.mhp=100;sData.durTick=0;} // durabilidad 1min
+      structs.push(sData);removeItem(tipo,1);
       notif(`🏗️ ${ITEMS[tipo]?.n||tipo} colocado en el suelo`,'grn');addXP(20);renderInv();
       // Actualizar progreso del Arca
       if(tipo==='arca1'){arcaProgress=Math.max(arcaProgress,1);arcaHP[1]=100;updateArcaHUD();document.getElementById('arca-hud').style.display='block';}
@@ -2537,7 +2615,15 @@ function updateAnimales(){
     // Nefilim atacan animales
     nefilim.forEach(n=>{
       const nd=Math.hypot(n.x-a.x,n.y-a.y);
-      if(nd<60){a.hp-=0.3;if(a.hp<=0){animales=animales.filter(x=>x!==a);}}
+      if(nd<60){a.hp-=0.3;if(a.hp<=0){
+        // Drop al morir
+        const qty=hasSkill('caz')?2:1;
+        if(a.tipo==='oveja'){addItem('carne',qty);addItem('piel',qty);sndCollect();notif('🐑 Oveja — 🥩+'+qty+' 🟤+'+qty,'');}
+        else if(a.tipo==='vaca'){addItem('carne',qty+1);addItem('piel',qty);sndCollect();notif('🐄 Vaca — 🥩+'+(qty+1)+' 🟤+'+qty,'');}
+        else if(a.tipo==='paloma'){addItem('carne',1);sndCollect();notif('🕊️ Paloma — 🥩+1','');}
+        addXP(15);
+        animales=animales.filter(x=>x!==a);
+      }}
     });
   });
 }
@@ -3244,7 +3330,9 @@ const NOTIF_TIPS=[
   {cond:()=>wDay===3&&siclos===0,             msg:'🪙 Vende madera o piedra en la Tienda 🏪 para ganar Siclos'},
   {cond:()=>wDay===4&&!hasItem('armadura'),   msg:'🛡️ Los Nefilim atacan esta noche — crea Armadura de cuero'},
   {cond:()=>wDay===5&&!armasEstado['espada_s'],msg:'⚔️ La Espada de Bronce en la tienda es muy poderosa contra Nefilim'},
-  {cond:()=>P.hunger<30&&!hasItem('fruta')&&!hasItem('carne_a'),msg:'🍖 Busca bayas o frutos para comer — hay árboles frutales en el mapa'},
+  {cond:()=>P.hunger<30&&!hasItem('fruta')&&!hasItem('carne_a'),msg:'🍖 Busca bayas, frutas o caza animales para comer. Con [E] y una lanza/espada puedes cazar ovejas y vacas'},
+  {cond:()=>wDay>=2&&!hasItem('carne')&&!hasItem('carne_a'),msg:'🐑 Para obtener CARNE: acércate a una oveja o vaca y presiona [E] con una lanza en la bolsa'},
+  {cond:()=>cntItem('brea')===0&&misionActual>=1,msg:'🫀 La Brea (corazón negro) se fabrica en Crear → Materiales con 3 resinas + 1 madera'},
   {cond:()=>misionActual===1&&cntItem('madera_g')===0,msg:'🌲 Necesitas Madera de Gofer — fábrícala con 5 maderas + 2 resinas, o cómprala en la tienda'},
   {cond:()=>misionActual>=2&&!structs.find(s=>s.tipo==='altar'),msg:'🕊️ Construye un Altar para recibir bendiciones de Dios'},
   {cond:()=>cntItem('pez')>0&&!hasItem('fogon'),msg:'🔥 Construye un Fogón para asar el pez y recuperar hambre'},
