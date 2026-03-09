@@ -760,7 +760,6 @@ function genMundo(){
   P.x=cx*TILE+20;P.y=cy*TILE+20;
   initDrops();
   initSprites();      // pre-generar sprites pixel art
-  buildWaterBlobs();  // pre-calcular contornos de agua
 }
 
 function addObj(tx,ty,tipo){
@@ -1151,216 +1150,36 @@ function drawWaterShoreTile(sx, sy){
 //  AGUA — blob orgánico vectorial Don't Starve
 // ════════════════════════════════════════════════════════════
 // Cache de grupos de agua ya calculados (se recalcula al generar mapa)
-let waterBlobCache = null;
 
-function buildWaterBlobs(){
-  waterBlobCache = [];
-  const visited = new Set();
-  const key = (x,y) => `${((x%MW)+MW)%MW},${((y%MH)+MH)%MH}`;
+// buildWaterBlobs eliminado
 
-  for(let y=0;y<MH;y++){
-    for(let x=0;x<MW;x++){
-      const k=key(x,y);
-      if(visited.has(k)) continue;
-      const tile=wMap[y]?.[x];
-      if(!tile||tile.t!==T.WATER) continue;
-      // BFS para agrupar tiles conectados
-      const group=[];
-      const queue=[{x,y}];
-      while(queue.length){
-        const cur=queue.shift();
-        const ck=key(cur.x,cur.y);
-        if(visited.has(ck)) continue;
-        visited.add(ck);
-        const wtx=((cur.x%MW)+MW)%MW, wty=((cur.y%MH)+MH)%MH;
-        const t=wMap[wty]?.[wtx];
-        if(!t||t.t!==T.WATER) continue;
-        group.push({tx:cur.x,ty:cur.y,wtx,wty,wt:t.wt});
-        [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>queue.push({x:cur.x+dx,y:cur.y+dy}));
-      }
-      if(group.length===0) continue;
-      // Calcular contorno exterior con offsets orgánicos
-      const blobPts = buildBlobContour(group);
-      const hasFish = group.some(g=>g.wt==='fish');
-      const cx2 = group.reduce((s,g)=>s+g.tx,0)/group.length;
-      const cy2 = group.reduce((s,g)=>s+g.ty,0)/group.length;
-      waterBlobCache.push({group, blobPts, hasFish, cx2, cy2, sz:group.length});
-    }
-  }
-}
 
-function buildBlobContour(group){
-  // Recolectar todos los segmentos de borde expuestos
-  const tileSet = new Set(group.map(t=>`${((t.tx%MW)+MW)%MW},${((t.ty%MH)+MH)%MH}`));
-  const segs = [];
-  group.forEach(t=>{
-    const bx=t.tx*TILE, by=t.ty*TILE;
-    // Para cada lado del tile, si el vecino NO es agua → es borde
-    [[0,-1, bx,by, bx+TILE,by],        // top
-     [1,0,  bx+TILE,by, bx+TILE,by+TILE], // right
-     [0,1,  bx+TILE,by+TILE, bx,by+TILE], // bottom
-     [-1,0, bx,by+TILE, bx,by]            // left
-    ].forEach(([dx,dy,x1,y1,x2,y2])=>{
-      const nk=`${((( t.tx+dx)%MW)+MW)%MW},${(((t.ty+dy)%MH)+MH)%MH}`;
-      if(!tileSet.has(nk)){
-        // Punto medio del segmento + offset orgánico
-        const mx=(x1+x2)/2, my=(y1+y2)/2;
-        const rnd=((t.tx*17+t.ty*31)^(t.tx*7+t.ty*13))&0xff;
-        // Normal hacia afuera
-        const nx2=dx, ny2=dy;
-        // Offset: ±30% del tile, determinista
-        const off = (rnd/255-0.5)*TILE*0.6;
-        segs.push({
-          p1:[x1,y1], p2:[x2,y2],
-          mid:[mx+ny2*off, my+nx2*off], // offset perpendicular al borde
-          tx:t.tx, ty:t.ty
-        });
-      }
-    });
-  });
-  return segs;
-}
+// buildBlobContour eliminado
+
 
 function drawWaterBlobs(cx,cy,T2){
-  if(!waterBlobCache) buildWaterBlobs();
+  // Sin blob vectorial — agua tile por tile con sprite
   const W=canvas.width, H=canvas.height;
+  const tx0=Math.floor(cx/TILE)-1, ty0=Math.floor(cy/TILE)-1;
+  const tx1=tx0+Math.ceil(W/TILE)+3, ty1=ty0+Math.ceil(H/TILE)+4;
+  const frame=Math.floor(T2/500)%3;
+  const uvW=[WATER_UV.water,WATER_UV.waterMid,WATER_UV.waterDark][frame];
 
-  waterBlobCache.forEach(blob=>{
-    // Visibilidad: ¿algún tile del grupo en pantalla?
-    const inView = blob.group.some(t=>{
-      let wx=t.tx*TILE-cx, wy=t.ty*TILE-cy;
-      return wx>-TILE*3&&wx<W+TILE*3&&wy>-TILE*3&&wy<H+TILE*3;
-    });
-    if(!inView) return;
-
-    const wSegs = blob.blobPts;
-    if(!wSegs.length) return;
-
-    // Centro en pantalla
-    const scx = blob.cx2*TILE - cx + TILE/2;
-    const scy = blob.cy2*TILE - cy + TILE/2;
-    const rad  = Math.sqrt(blob.sz)*TILE*0.7;
-
-    // ── Relleno: path de todos los tiles (sin clip costoso) ──
-    ctx.save();
-    ctx.beginPath();
-    blob.group.forEach(t=>{
-      let ox2=t.tx*TILE, oy2=t.ty*TILE;
-      // Wrap visual
-      while(ox2-cx > MW*TILE/2) ox2-=MW*TILE;
-      while(cx-ox2 > MW*TILE/2) ox2+=MW*TILE;
-      while(oy2-cy > MH*TILE/2) oy2-=MH*TILE;
-      while(cy-oy2 > MH*TILE/2) oy2+=MH*TILE;
-      ctx.rect(ox2-cx-1, oy2-cy-1, TILE+2, TILE+2);
-    });
-    // Gradiente radial Don't Starve: agua muy oscura en bordes
-    if(TSHEETS.water){
-      // Rellenar cada tile de agua con el sprite animado
-      const frame=Math.floor(T2/500)%3;
-      const uvW=[WATER_UV.water,WATER_UV.waterMid,WATER_UV.waterDark][frame];
-      blob.group.forEach(t=>{
-        let ox2=t.tx*TILE,oy2=t.ty*TILE;
-        while(ox2-cx>MW*TILE/2)ox2-=MW*TILE;while(cx-ox2>MW*TILE/2)ox2+=MW*TILE;
-        while(oy2-cy>MH*TILE/2)oy2-=MH*TILE;while(cy-oy2>MH*TILE/2)oy2+=MH*TILE;
-        ctx.drawImage(TSHEETS.water,uvW.x,uvW.y,uvW.w,uvW.h,ox2-cx,oy2-cy,TILE,TILE);
-      });
-      ctx.restore();
-    } else {
-      const grd=ctx.createRadialGradient(scx,scy,0,scx,scy,rad);
-      if(blob.hasFish){
-        grd.addColorStop(0,'#1e3a5e');grd.addColorStop(0.6,'#162e50');grd.addColorStop(1,'#0e1e38');
+  for(let ty=ty0;ty<=ty1;ty++){
+    for(let tx=tx0;tx<=tx1;tx++){
+      const wtx=((tx%MW)+MW)%MW, wty=((ty%MH)+MH)%MH;
+      const tile=wMap[wty]?.[wtx];
+      if(!tile||tile.t!==T.WATER) continue;
+      const sx=tx*TILE-cx, sy=ty*TILE-cy;
+      if(TSHEETS.water){
+        ctx.drawImage(TSHEETS.water, uvW.x, uvW.y, uvW.w, uvW.h, sx, sy, TILE, TILE);
       } else {
-        grd.addColorStop(0,'#1a3050');grd.addColorStop(0.6,'#142444');grd.addColorStop(1,'#0a1828');
+        // Fallback color
+        ctx.fillStyle=tile.wt==='fish'?'#1a3050':'#1e3a5e';
+        ctx.fillRect(sx,sy,TILE,TILE);
       }
-      ctx.fillStyle=grd;ctx.fill();ctx.restore();
     }
-
-    // ── Borde orgánico suavizado ──────────────────────────────
-    // Construir cadena de puntos medios con offset
-    const pts = wSegs.map(s=>{
-      let ox2=s.mid[0]-cx, oy2=s.mid[1]-cy;
-      // wrap
-      while(ox2 > MW*TILE/2)  ox2-=MW*TILE;
-      while(-ox2 > MW*TILE/2) ox2+=MW*TILE;
-      while(oy2 > MH*TILE/2)  oy2-=MH*TILE;
-      while(-oy2 > MH*TILE/2) oy2+=MH*TILE;
-      return [ox2, oy2];
-    });
-
-    if(pts.length>=3){
-      // Smooth path: catmull-rom style con quadraticCurveTo
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo((pts[0][0]+pts[1][0])/2, (pts[0][1]+pts[1][1])/2);
-      for(let i=1;i<pts.length;i++){
-        const p=pts[i], pn=pts[(i+1)%pts.length];
-        ctx.quadraticCurveTo(p[0],p[1],(p[0]+pn[0])/2,(p[1]+pn[1])/2);
-      }
-      ctx.closePath();
-
-      // Outline exterior negro Don't Starve
-      ctx.strokeStyle='rgba(0,0,0,0.85)';
-      ctx.lineWidth=2.5;
-      ctx.stroke();
-      // Espuma interior
-      ctx.strokeStyle=`rgba(60,110,180,${0.4+Math.sin(T2/600+blob.cx2)*0.1})`;
-      ctx.lineWidth=1.5;
-      ctx.stroke();
-      ctx.restore();
-
-      // Shore tiles: pendiente hasta medir UV correctos
-    }
-
-    // ── Olas animadas — curvas suaves dentro del blob ─────────
-    const waveN = Math.min(3, Math.ceil(blob.sz/5));
-    for(let w=0;w<waveN;w++){
-      const ws = blob.cx2*11+blob.cy2*7+w*31;
-      const wx = scx + (((ws*17)&63)-32)/64*rad*0.5;
-      const wy = scy + (((ws*29)&63)-32)/64*rad*0.35;
-      const wlen = TILE*(0.5+(ws&7)/14);
-      const phase = T2/1000+w*1.6;
-      const wa = 0.18+Math.sin(phase)*0.07;
-      ctx.save();
-      ctx.translate(wx,wy);
-      ctx.rotate(((ws*3)&15)/15*Math.PI*0.5);
-      ctx.strokeStyle=`rgba(50,100,180,${wa})`;
-      ctx.lineWidth=1.2;
-      ctx.beginPath();
-      ctx.moveTo(-wlen/2, Math.sin(phase)*1.5);
-      ctx.quadraticCurveTo(0,-2.5+Math.sin(phase+1)*2, wlen/2, Math.sin(phase+0.6)*1.5);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // ── Caustique (destello de luz en superficie) ─────────────
-    if(blob.sz>=2){
-      const ca = 0.05+Math.sin(T2/700+blob.cx2*0.4)*0.03;
-      const lg = ctx.createRadialGradient(scx-rad*0.25,scy-rad*0.25,0, scx,scy, rad*0.55);
-      lg.addColorStop(0,`rgba(80,140,220,${ca})`);
-      lg.addColorStop(1,'rgba(0,0,30,0)');
-      ctx.save();
-      ctx.beginPath();
-      blob.group.forEach(t=>{
-        let ox2=t.tx*TILE-cx, oy2=t.ty*TILE-cy;
-        ctx.rect(ox2,oy2,TILE,TILE);
-      });
-      ctx.clip();
-      ctx.fillStyle=lg;
-      ctx.fillRect(scx-rad,scy-rad,rad*2,rad*2);
-      ctx.restore();
-    }
-
-    // ── Ícono pez en agua profunda ────────────────────────────
-    if(blob.hasFish&&blob.sz>=2){
-      const fi=Math.floor(T2/1400)%Math.max(1,blob.group.length);
-      const ft=blob.group[Math.min(fi,blob.group.length-1)];
-      let fx=ft.tx*TILE-cx+TILE/2, fy=ft.ty*TILE-cy+TILE/2;
-      ctx.font='10px serif'; ctx.textAlign='center';
-      ctx.globalAlpha=0.28+Math.sin(T2/900+fi)*0.12;
-      ctx.fillText('🐟',fx,fy+4);
-      ctx.globalAlpha=1; ctx.textAlign='left';
-    }
-  });
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1923,11 +1742,12 @@ function update(){
   const nx=P.x+dx*spd,ny=P.y+dy*spd;
   const bl=colCheck(nx,ny);
   if(!bl.x)P.x=nx;if(!bl.y)P.y=ny;
-  // Mapa infinito — wrap de coordenadas
-  if(P.x<0) P.x+=(MW-1)*TILE;
-  if(P.x>(MW-1)*TILE) P.x-=(MW-1)*TILE;
-  if(P.y<0) P.y+=(MH-1)*TILE;
-  if(P.y>(MH-1)*TILE) P.y-=(MH-1)*TILE;
+  // Wrap suave — el mapa es circular
+  const mapW=MW*TILE, mapH=MH*TILE;
+  if(P.x<TILE)       P.x=mapW-TILE*2;
+  if(P.x>mapW-TILE)  P.x=TILE*2;
+  if(P.y<TILE)       P.y=mapH-TILE*2;
+  if(P.y>mapH-TILE)  P.y=TILE*2;
   if(P.moving){P.animT++;if(P.animT>7){P.animF=(P.animF+1)%4;P.animT=0;}}else P.animF=0;
   if(P.moving){P.eT++;if(P.eT>110){P.eT=0;P.energy=Math.max(0,P.energy-1);}}
   if(P.inv>0)P.inv--;
@@ -2719,8 +2539,7 @@ async function loadGame(){
     if(d.skillsEstado) Object.assign(skillsEstado,d.skillsEstado);
     // Re-aplicar efectos de armas al cargar
     Object.keys(armasEstado).forEach(id=>aplicarEfectoArma(id,armasEstado[id].nivel));
-    waterBlobCache=null; // forzar recálculo al cargar
-    P.hunger=d.hunger||100;P.thirst=d.thirst||100;P.energy=d.energy||100;P.sp=d.sp||0;
+      P.hunger=d.hunger||100;P.thirst=d.thirst||100;P.energy=d.energy||100;P.sp=d.sp||0;
     if(d.skills)d.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk)sk.u=true;});
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
     if(d.structs)structs.push(...d.structs);
