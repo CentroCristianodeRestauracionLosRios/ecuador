@@ -4103,7 +4103,7 @@ onAuthStateChanged(auth,async u=>{
         document.getElementById('btnCont').style.display='block';
         const si=document.getElementById('saveInfo');
         if(si){
-          const dt=sd.savedAt?new Date(sd.savedAt).toLocaleString('es','{hour12:false,month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}'):'';
+          const dt=sd.savedAt?new Date(sd.savedAt).toLocaleString('es',{hour12:false,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
           si.style.display='block';
           si.innerHTML=`Nv.${sd.lv||1} · Día ${sd.day||1} · Arca ${sd.arcaP||0}/3${dt?'<br>'+dt:''}`;
         }
@@ -5637,6 +5637,3 @@ window.addEventListener('DOMContentLoaded',initBgMenu);
 </script>
 </body>
 </html>
-  // ── Paso 2: transiciones eliminadas para estabilidad ──
-
-  
