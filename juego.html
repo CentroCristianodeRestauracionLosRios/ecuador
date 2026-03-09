@@ -987,6 +987,39 @@ function initSprites(){
   for(let v=0;v<4;v++) buildSandSprite(v);
 }
 
+// Pre-cachear tiles del tileset externo en offscreen canvas 32x32
+// Se llama una vez cuando el tileset termina de cargar
+function cacheTilesetSprites(){
+  if(!TSHEETS.floor) return;
+  const types=[
+    ['grass_ts',  FLOOR_UV.grass],
+    ['grassB_ts', FLOOR_UV.grassB],
+    ['dirt_ts',   FLOOR_UV.dirt],
+    ['dirtB_ts',  FLOOR_UV.dirtB],
+    ['stone_ts',  FLOOR_UV.stone],
+    ['stoneB_ts', FLOOR_UV.stoneB],
+    ['soil_ts',   FLOOR_UV.soil],
+    ['soilB_ts',  FLOOR_UV.soilB],
+  ];
+  types.forEach(([key,uv])=>{
+    getSprite(key, (ox,T)=>{
+      // Fondo sólido primero para evitar transparencia
+      ox.fillStyle='#000'; ox.fillRect(0,0,T,T);
+      ox.drawImage(TSHEETS.floor, uv.x, uv.y, uv.w, uv.h, 0, 0, T, T);
+    });
+  });
+  // Igual para agua — 3 frames
+  if(TSHEETS.water){
+    [['water0_ts',WATER_UV.water],['water1_ts',WATER_UV.waterMid],['water2_ts',WATER_UV.waterDark]].forEach(([key,uv])=>{
+      getSprite(key,(ox,T)=>{
+        ox.fillStyle='#1a3050'; ox.fillRect(0,0,T,T);
+        ox.drawImage(TSHEETS.water, uv.x, uv.y, uv.w, uv.h, 0, 0, T, T);
+      });
+    });
+  }
+  console.log('🗺️ Tileset sprites cacheados');
+}
+
 
 // ════════════════════════════════════════════════════════════
 //  TILESETS EXTERNOS — embeber con embed_tiles.py
@@ -1171,10 +1204,14 @@ function drawWaterBlobs(cx,cy,T2){
       const tile=wMap[wty]?.[wtx];
       if(!tile||tile.t!==T.WATER) continue;
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
-      if(TSHEETS.water){
+      // Agua: frame animado pero estable (no depende de posición)
+      const wKey=`water${frame}_ts`;
+      const wSprite=SPRITE_CACHE[wKey];
+      if(wSprite){
+        ctx.drawImage(wSprite, sx, sy);
+      } else if(TSHEETS.water){
         ctx.drawImage(TSHEETS.water, uvW.x, uvW.y, uvW.w, uvW.h, sx, sy, TILE, TILE);
       } else {
-        // Fallback color
         ctx.fillStyle=tile.wt==='fish'?'#1a3050':'#1e3a5e';
         ctx.fillRect(sx,sy,TILE,TILE);
       }
@@ -1197,21 +1234,22 @@ function drawWorld(cx,cy){
       const wtx=((tx%MW)+MW)%MW, wty=((ty%MH)+MH)%MH;
       const tile=wMap[wty]?.[wtx]; if(!tile) continue;
       const sx=tx*TILE-cx, sy=ty*TILE-cy;
-      if(tile.t===T.WATER) continue; // agua: blob vectorial abajo
+      if(tile.t===T.WATER) continue; // agua dibujada aparte
+      // rnd determinista: depende SOLO de la posición del tile en el mapa
       const rnd=((wtx*17+wty*31)^(wtx*7))&0xff;
-      // Usar tileset si está cargado, sino sprite programático
-      if(TSHEETS.floor){
-        let uv, useB=(rnd%3===0);
+      const useB=(rnd%3===0); // variante B — fijo por posición
+      let sprite;
+      if(SPRITE_CACHE['grass_ts']){
+        // Tileset cacheado en offscreen — completamente estable
         switch(tile.t){
-          case T.GRASS: uv=useB?FLOOR_UV.grassB:FLOOR_UV.grass; break;
-          case T.DIRT:  uv=useB?FLOOR_UV.dirtB: FLOOR_UV.dirt;  break;
-          case T.STONE: uv=useB?FLOOR_UV.stoneB:FLOOR_UV.stone; break;
-          case T.SAND:  uv=useB?FLOOR_UV.soilB: FLOOR_UV.soil;  break;
-          default:      uv=FLOOR_UV.grass;
+          case T.GRASS: sprite=SPRITE_CACHE[useB?'grassB_ts':'grass_ts']; break;
+          case T.DIRT:  sprite=SPRITE_CACHE[useB?'dirtB_ts': 'dirt_ts'];  break;
+          case T.STONE: sprite=SPRITE_CACHE[useB?'stoneB_ts':'stone_ts']; break;
+          case T.SAND:  sprite=SPRITE_CACHE[useB?'soilB_ts': 'soil_ts'];  break;
+          default:      sprite=SPRITE_CACHE['grass_ts'];
         }
-        ctx.drawImage(TSHEETS.floor, uv.x, uv.y, uv.w, uv.h, sx, sy, TILE, TILE);
       } else {
-        let sprite;
+        // Fallback programático — también estable por rnd
         switch(tile.t){
           case T.GRASS: sprite=buildGrassSprite(rnd%8); break;
           case T.DIRT:  sprite=buildDirtSprite(rnd%4);  break;
@@ -1219,8 +1257,8 @@ function drawWorld(cx,cy){
           case T.SAND:  sprite=buildSandSprite(rnd%4);  break;
           default:      sprite=buildGrassSprite(rnd%8);
         }
-        ctx.drawImage(sprite, sx, sy);
       }
+      if(sprite) ctx.drawImage(sprite, sx, sy);
     }
   }
 
