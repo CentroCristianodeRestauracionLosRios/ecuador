@@ -535,40 +535,101 @@ const ISO=0.14;
 
 function drawWorld(cx,cy){
   const W=canvas.width,H=canvas.height;
-  const tx0=Math.max(0,Math.floor(cx/TILE)-1);
-  const ty0=Math.max(0,Math.floor(cy/TILE)-1);
-  const tx1=Math.min(MW-1,tx0+Math.ceil(W/TILE)+2);
-  const ty1=Math.min(MH-1,ty0+Math.ceil(H/TILE)+3);
+  const tx0=Math.floor(cx/TILE)-1;
+  const ty0=Math.floor(cy/TILE)-1;
+  const tx1=tx0+Math.ceil(W/TILE)+3;
+  const ty1=ty0+Math.ceil(H/TILE)+4;
+  const T2=Date.now();
   for(let ty=ty0;ty<=ty1;ty++){
     for(let tx=tx0;tx<=tx1;tx++){
-      const tile=wMap[ty]?.[tx];if(!tile)continue;
-      const cols=TC[tile.t]||TC[T.GRASS];
-      const ci=((tx*3+ty*7)%3);
+      // Wrap infinito
+      const wtx=((tx%MW)+MW)%MW, wty=((ty%MH)+MH)%MH;
+      const tile=wMap[wty]?.[wtx];if(!tile)continue;
       const sx=tx*TILE-cx;
-      const sy=ty*TILE-cy+(ty-MH/2)*TILE*ISO*0.12;
-      ctx.fillStyle=cols[ci];
-      ctx.fillRect(sx,sy,TILE+1,TILE+1);
-      if(tile.t===T.WATER){
-        ctx.strokeStyle=`rgba(100,160,255,${0.12+Math.sin(Date.now()/900+tx+ty)*0.07})`;
-        ctx.lineWidth=0.5;ctx.strokeRect(sx,sy,TILE,TILE);
-        ctx.strokeStyle=`rgba(150,200,255,0.15)`;ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(sx+4,sy+TILE*0.5);
-        ctx.bezierCurveTo(sx+TILE*0.3,sy+TILE*0.4,sx+TILE*0.6,sy+TILE*0.6,sx+TILE-4,sy+TILE*0.5);ctx.stroke();
-      }
-      // Subtle grass variation - lighter green patches
-      if((tx+ty)%7===0){
-        ctx.fillStyle='rgba(90,170,45,0.18)';
-        ctx.fillRect(sx+3,sy+3,TILE-6,TILE-6);
-      } else if((tx*2+ty)%11===0){
-        ctx.fillStyle='rgba(55,120,25,0.12)';
-        ctx.fillRect(sx+5,sy+5,TILE-10,TILE-10);
-      }
-      // Tiny grass blades on some tiles
-      if(tile.t===T.GRASS&&(tx*7+ty*3)%13===0){
-        ctx.fillStyle='rgba(100,185,50,0.32)';
-        ctx.fillRect(sx+TILE*0.18,sy+TILE*0.55,2,6);
-        ctx.fillRect(sx+TILE*0.5,sy+TILE*0.45,2,8);
-        ctx.fillRect(sx+TILE*0.75,sy+TILE*0.6,2,5);
+      const sy=ty*TILE-cy;
+      const rnd=(wtx*17+wty*31)^(wtx*7);
+      // ── Hierba rica estilo Drakantos ──
+      if(tile.t===T.GRASS){
+        // Base verde variada
+        const g=ctx.createRadialGradient(sx+TILE/2,sy+TILE/2,0,sx+TILE/2,sy+TILE/2,TILE*0.8);
+        const v=0.85+((rnd&0xff)/255)*0.15;
+        g.addColorStop(0,`rgba(${Math.floor(62*v)},${Math.floor(140*v)},${Math.floor(40*v)},1)`);
+        g.addColorStop(1,`rgba(${Math.floor(45*v)},${Math.floor(110*v)},${Math.floor(28*v)},1)`);
+        ctx.fillStyle=g; ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        // Manchas de hierba más oscura/clara
+        if((wtx+wty)%5===0){
+          ctx.fillStyle='rgba(35,95,18,0.35)';
+          ctx.beginPath();ctx.ellipse(sx+TILE*0.3,sy+TILE*0.6,TILE*0.28,TILE*0.2,0.3,0,Math.PI*2);ctx.fill();
+        }
+        if((wtx*3+wty)%7===0){
+          ctx.fillStyle='rgba(90,175,45,0.25)';
+          ctx.beginPath();ctx.ellipse(sx+TILE*0.7,sy+TILE*0.35,TILE*0.22,TILE*0.16,-0.2,0,Math.PI*2);ctx.fill();
+        }
+        // Briznas de hierba detalladas (estilo pixel art orgánico)
+        if((wtx*7+wty*3)%5===0){
+          const bx=sx+4+(rnd&7)*4, by=sy+TILE*0.55;
+          ctx.strokeStyle='rgba(110,195,55,0.55)'; ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.moveTo(bx,by+7);ctx.quadraticCurveTo(bx-3+Math.sin(T2/1200+wtx)*2,by,bx+2,by-5);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(bx+7,by+6);ctx.quadraticCurveTo(bx+10+Math.sin(T2/1400+wty)*2,by+1,bx+5,by-4);ctx.stroke();
+          ctx.strokeStyle='rgba(75,155,30,0.4)'; ctx.lineWidth=1;
+          ctx.beginPath();ctx.moveTo(bx+3,by+7);ctx.quadraticCurveTo(bx+6,by+2,bx+1,by-3);ctx.stroke();
+        }
+        // Flores pequeñas aleatorias
+        if((wtx*5+wty*9)%23===0){
+          ctx.fillStyle='rgba(255,200,80,0.7)';
+          ctx.beginPath();ctx.arc(sx+TILE*0.65,sy+TILE*0.4,2.5,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='rgba(255,255,200,0.8)';
+          ctx.beginPath();ctx.arc(sx+TILE*0.65,sy+TILE*0.4,1.5,0,Math.PI*2);ctx.fill();
+        }
+        if((wtx*11+wty*4)%31===0){
+          ctx.fillStyle='rgba(180,100,200,0.6)';
+          ctx.beginPath();ctx.arc(sx+TILE*0.3,sy+TILE*0.7,2,0,Math.PI*2);ctx.fill();
+        }
+      } else if(tile.t===T.WATER){
+        // Agua rica con animación y reflejo
+        const wv=Math.sin(T2/900+wtx*0.5+wty*0.3)*0.08;
+        const wg=ctx.createLinearGradient(sx,sy,sx,sy+TILE);
+        wg.addColorStop(0,`rgba(${40+Math.floor(wv*30)},${100+Math.floor(wv*20)},${200},0.95)`);
+        wg.addColorStop(0.5,`rgba(30,80,170,0.97)`);
+        wg.addColorStop(1,`rgba(20,60,140,1)`);
+        ctx.fillStyle=wg; ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        // Reflejo de luz animado
+        const ra=0.12+Math.sin(T2/600+wtx+wty)*0.06;
+        ctx.fillStyle=`rgba(150,210,255,${ra})`;
+        ctx.beginPath();ctx.ellipse(sx+TILE*0.3,sy+TILE*0.38,TILE*0.25,3,Math.sin(T2/800)*0.3,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(sx+TILE*0.7,sy+TILE*0.6,TILE*0.18,2,Math.sin(T2/700+1)*0.3,0,Math.PI*2);ctx.fill();
+        // Olas micro
+        if((wtx+wty)%3===0){
+          ctx.strokeStyle=`rgba(150,210,255,${0.15+Math.sin(T2/700+wtx+wty)*0.07})`;
+          ctx.lineWidth=0.8;
+          ctx.beginPath();ctx.moveTo(sx+TILE*0.2,sy+TILE*0.35+Math.sin(T2/500+wtx)*2);
+          ctx.quadraticCurveTo(sx+TILE*0.5,sy+TILE*0.3,sx+TILE*0.8,sy+TILE*0.35+Math.sin(T2/500+wtx+1)*2);
+          ctx.stroke();
+        }
+      } else if(tile.t===T.DIRT){
+        // Tierra con textura
+        const dg=ctx.createLinearGradient(sx,sy,sx+TILE,sy+TILE);
+        dg.addColorStop(0,'#7a5530');dg.addColorStop(0.5,'#9a6a40');dg.addColorStop(1,'#6a4828');
+        ctx.fillStyle=dg; ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        if((wtx+wty*2)%4===0){
+          ctx.fillStyle='rgba(90,55,28,0.4)';
+          ctx.beginPath();ctx.ellipse(sx+TILE*0.5,sy+TILE*0.5,TILE*0.3,TILE*0.18,0.5,0,Math.PI*2);ctx.fill();
+        }
+      } else if(tile.t===T.SAND){
+        // Arena cálida
+        const sg=ctx.createRadialGradient(sx+TILE*0.4,sy+TILE*0.4,2,sx+TILE/2,sy+TILE/2,TILE*0.7);
+        sg.addColorStop(0,'#e8c878');sg.addColorStop(1,'#c8a848');
+        ctx.fillStyle=sg; ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        if((wtx*4+wty)%6===0){ctx.fillStyle='rgba(180,145,55,0.3)';ctx.beginPath();ctx.arc(sx+TILE*0.6,sy+TILE*0.4,TILE*0.15,0,Math.PI*2);ctx.fill();}
+      } else if(tile.t===T.STONE){
+        // Piedra con grietas
+        const stg=ctx.createLinearGradient(sx,sy,sx+TILE,sy+TILE);
+        stg.addColorStop(0,'#888');stg.addColorStop(0.5,'#aaa');stg.addColorStop(1,'#666');
+        ctx.fillStyle=stg; ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        if((wtx+wty*3)%5===0){
+          ctx.strokeStyle='rgba(60,60,60,0.35)';ctx.lineWidth=1;
+          ctx.beginPath();ctx.moveTo(sx+TILE*0.2,sy+TILE*0.3);ctx.lineTo(sx+TILE*0.5,sy+TILE*0.7);ctx.stroke();
+        }
       }
     }
   }
@@ -576,14 +637,30 @@ function drawWorld(cx,cy){
 
 function drawObjs(cx,cy){
   const W=canvas.width,H=canvas.height;
-  const vis=wObjs.filter(o=>{const sx=o.tx*TILE-cx,sy=o.ty*TILE-cy;return sx>-80&&sx<W+80&&sy>-80&&sy<H+80;}).sort((a,b)=>a.ty-b.ty);
+  // Para mapa infinito: ajustar posición con wrap
+  const vis=wObjs.map(o=>{
+    let ox=o.tx*TILE, oy=o.ty*TILE;
+    // Wrap: acercar al jugador si está en el borde del mapa
+    while(ox-cx > MW*TILE/2) ox -= MW*TILE;
+    while(cx-ox > MW*TILE/2) ox += MW*TILE;
+    while(oy-cy > MH*TILE/2) oy -= MH*TILE;
+    while(cy-oy > MH*TILE/2) oy += MH*TILE;
+    const sx=ox-cx, sy=oy-cy;
+    return {...o, _sx:sx, _sy:sy};
+  }).filter(o=>o._sx>-80&&o._sx<W+80&&o._sy>-80&&o._sy<H+80)
+    .sort((a,b)=>a.ty-b.ty);
   vis.forEach(o=>{
-    const sx=o.tx*TILE-cx;
-    const sy=o.ty*TILE-cy+(o.ty-MH/2)*TILE*ISO*0.12;
+    const sx=o._sx;
+    const sy=o._sy;
     drawObjAt(o,sx,sy);
   });
   structs.forEach(s=>{
-    const sx=s.tx*TILE-cx,sy=s.ty*TILE-cy+(s.ty-MH/2)*TILE*ISO*0.12;
+    let ox=s.tx*TILE, oy=s.ty*TILE;
+    while(ox-cx > MW*TILE/2) ox -= MW*TILE;
+    while(cx-ox > MW*TILE/2) ox += MW*TILE;
+    while(oy-cy > MH*TILE/2) oy -= MH*TILE;
+    while(cy-oy > MH*TILE/2) oy += MH*TILE;
+    const sx=ox-cx, sy=oy-cy;
     drawStrAt(s,sx,sy);
   });
 }
@@ -593,46 +670,81 @@ function drawObjAt(o,sx,sy){
   const sw=Math.sin(Date.now()/1200+o.tx)*1.5;
   switch(o.tipo){
     case'arbol':{
-      const sc=1+(o.tx%3)*0.15; // variación de tamaño entre árboles
+      const sc=0.9+((o.tx*7+o.ty*3)%100)/100*0.6;
       ctx.scale(sc,sc);
-      // Sombra alargada
-      ctx.fillStyle='rgba(0,0,0,0.25)';ctx.beginPath();ctx.ellipse(4,12,22,7,0.2,0,Math.PI*2);ctx.fill();
-      // Tronco con corteza
-      const tg=ctx.createLinearGradient(-6,0,6,0);
-      tg.addColorStop(0,'#3a1c04');tg.addColorStop(0.35,'#6a3c14');tg.addColorStop(0.6,'#5a2e0e');tg.addColorStop(1,'#2e1402');
+      const T2=Date.now();
+      const wind=Math.sin(T2/1800+o.tx*0.4)*2.2;
+      const rnd2=(o.tx*17+o.ty*31)&0xff;
+      // Sombra proyectada suave
+      ctx.fillStyle='rgba(0,0,0,0.22)';
+      ctx.beginPath();ctx.ellipse(6,18,26,8,0.15,0,Math.PI*2);ctx.fill();
+      // Raíces curvas
+      ctx.strokeStyle='rgba(80,45,15,0.65)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-5,18);ctx.quadraticCurveTo(-14,26,-18,30);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(5,18);ctx.quadraticCurveTo(14,26,18,30);ctx.stroke();
+      ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.moveTo(0,18);ctx.quadraticCurveTo(-3,25,0,32);ctx.stroke();
+      // Tronco con corteza rica
+      const tg=ctx.createLinearGradient(-8,-2,8,-2);
+      tg.addColorStop(0,'#2e1204');tg.addColorStop(0.25,'#7a4a20');tg.addColorStop(0.55,'#6a3c18');tg.addColorStop(0.8,'#8B5E30');tg.addColorStop(1,'#3a1a08');
       ctx.fillStyle=tg;
-      ctx.beginPath();ctx.moveTo(-6,20);ctx.lineTo(-5,0);ctx.lineTo(5,0);ctx.lineTo(6,20);ctx.closePath();ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-7,20);ctx.lineTo(-6+wind*0.1,-2);ctx.lineTo(6+wind*0.1,-2);ctx.lineTo(7,20);ctx.closePath();ctx.fill();
       // Líneas de corteza
-      ctx.strokeStyle='rgba(0,0,0,0.25)';ctx.lineWidth=0.8;
-      for(let i=3;i<18;i+=5){ctx.beginPath();ctx.moveTo(-4,i);ctx.lineTo(-2,i+2);ctx.lineTo(0,i);ctx.stroke();}
-      // Raíces
-      ctx.fillStyle='#4a2808';
-      ctx.beginPath();ctx.moveTo(-5,16);ctx.quadraticCurveTo(-12,22,-14,26);ctx.lineTo(-10,20);ctx.closePath();ctx.fill();
-      ctx.beginPath();ctx.moveTo(5,16);ctx.quadraticCurveTo(12,22,14,26);ctx.lineTo(10,20);ctx.closePath();ctx.fill();
-      ctx.beginPath();ctx.moveTo(0,18);ctx.quadraticCurveTo(-2,24,0,28);ctx.lineTo(2,22);ctx.closePath();ctx.fill();
-      // Copa — 4 capas con gradiente
-      const layers=[
-        {r:20,ox:sw,oy:-10,c:'#0e3808'},
-        {r:17,ox:sw-3,oy:-17,c:'#1a5210'},
-        {r:14,ox:sw+2,oy:-23,c:'#2a7018'},
-        {r:11,ox:sw-1,oy:-28,c:'#3a8c20'},
-        {r:7, ox:sw,  oy:-33,c:'#4ea828'},
-      ];
-      layers.forEach(l=>{
-        const cg=ctx.createRadialGradient(l.ox-3,l.oy-3,1,l.ox,l.oy,l.r);
-        cg.addColorStop(0,l.c+'ee');cg.addColorStop(0.7,l.c+'bb');cg.addColorStop(1,l.c+'44');
-        ctx.fillStyle=cg;ctx.beginPath();ctx.arc(l.ox,l.oy,l.r,0,Math.PI*2);ctx.fill();
-      });
-      // Hojas sueltas en borde
-      ctx.fillStyle='rgba(60,140,25,0.4)';
-      for(let i=0;i<8;i++){
-        const a=i/8*Math.PI*2+sw*0.3;
-        const rx=Math.cos(a)*19+sw,ry=Math.sin(a)*12-20;
-        ctx.beginPath();ctx.arc(rx,ry,3.5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(30,12,0,0.35)';ctx.lineWidth=0.9;
+      for(let ci=0;ci<4;ci++){
+        const cy2=-2+ci*5.5;
+        ctx.beginPath();ctx.moveTo(-5,cy2);ctx.quadraticCurveTo(0,cy2+1.5,5,cy2);ctx.stroke();
       }
-      // Brillo de sol en copa
-      ctx.fillStyle='rgba(120,220,50,0.12)';ctx.beginPath();ctx.arc(sw-4,-32,8,0,Math.PI*2);ctx.fill();
-      if(o.hp<o.mhp)hpBar(o,-38);
+      // Copa principal — layers orgánicos estilo Drakantos
+      const variants=[[48,130,28],[42,118,22],[55,145,35]];
+      const [r,g2,b]= variants[rnd2%3];
+      const leafLayers=[
+        {oy:0,  r:22,  lighten:0},
+        {oy:-9, r:19,  lighten:8},
+        {oy:-18,r:16,  lighten:16},
+        {oy:-26,r:12,  lighten:24},
+        {oy:-33,r:8,   lighten:32},
+      ];
+      leafLayers.forEach(({oy:ly,r:lr,lighten:lh},li)=>{
+        const ox2=wind*(li*0.4+0.2);
+        // Sombra de capa
+        if(li===0){
+          ctx.fillStyle='rgba(0,0,0,0.18)';
+          ctx.beginPath();ctx.ellipse(ox2+3,ly+3,lr,lr*0.88,0,0,Math.PI*2);ctx.fill();
+        }
+        // Silueta orgánica con puntos irregulares
+        const lg=ctx.createRadialGradient(ox2-lr*0.25,ly-lr*0.25,lr*0.05,ox2,ly,lr);
+        lg.addColorStop(0,`rgb(${r+lh+20},${g2+lh+22},${b+lh+10})`);
+        lg.addColorStop(0.55,`rgb(${r+lh},${g2+lh},${b+lh})`);
+        lg.addColorStop(1,`rgba(${r+lh-20},${g2+lh-25},${b+lh-12},0.8)`);
+        ctx.fillStyle=lg;
+        ctx.beginPath();
+        const nPts=6+li;
+        for(let p=0;p<nPts;p++){
+          const ang=p/nPts*Math.PI*2-Math.PI/2+(rnd2*0.01);
+          const jit=0.82+((rnd2+p*37)%28)/28*0.36;
+          const px2=Math.cos(ang)*lr*jit+ox2;
+          const py2=Math.sin(ang)*lr*0.88*jit+ly;
+          p===0?ctx.moveTo(px2,py2):ctx.lineTo(px2,py2);
+        }
+        ctx.closePath();ctx.fill();
+        // Oscurecer bordes
+        ctx.strokeStyle=`rgba(${r-20},${g2-30},${b-15},0.4)`;ctx.lineWidth=0.8;ctx.stroke();
+      });
+      // Brillo sol en copa
+      const shg=ctx.createRadialGradient(-6,-36,0,-6,-34,10);
+      shg.addColorStop(0,'rgba(200,255,150,0.28)');shg.addColorStop(1,'rgba(200,255,150,0)');
+      ctx.fillStyle=shg;ctx.beginPath();ctx.arc(-6,-34,10,0,Math.PI*2);ctx.fill();
+      // Hojas sueltas animadas
+      for(let j=0;j<3;j++){
+        const la=(T2/2200+o.tx*0.4+j*2.1)%(Math.PI*2);
+        const lx=Math.cos(la)*20+wind;
+        const ly2=Math.sin(la)*12-20;
+        ctx.fillStyle=`rgba(${r+20},${g2+25},${b+10},0.75)`;
+        ctx.beginPath();ctx.ellipse(lx,ly2,4.5,2.5,la*1.5,0,Math.PI*2);ctx.fill();
+      }
+      if(o.hp<o.mhp)hpBar(o,-46);
       ctx.scale(1/sc,1/sc);break;}
     case'roca':{
       const rs=0.9+(o.ty%4)*0.12;
@@ -752,95 +864,86 @@ function hpBar(o,oy){
 }
 
 function drawPlayer(cx,cy){
-  const sx=P.x-cx,sy=P.y-cy+(P.y/TILE-MH/2)*TILE*ISO*0.12;
-  // Sombra suave
-  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(sx+1,sy+11,12,5,0,0,Math.PI*2);ctx.fill();
-  if(P.inv>0&&Math.floor(Date.now()/110)%2===0)return;
+  const sx=P.x-cx, sy=P.y-cy;
+  const T2=Date.now();
+  const bob=P.moving?Math.sin(T2/140)*3:0;
+  const legL=P.moving?Math.sin(T2/140)*5:0;
+  const armL=P.moving?Math.sin(T2/140)*4:0;
+  if(P.inv>0&&Math.floor(T2/110)%2===0)return;
   ctx.save();ctx.translate(sx,sy);
-  const t=Date.now();
-  const leg=P.moving?Math.sin(P.animF*Math.PI/2)*6:0;
-  const arm=P.moving?Math.sin(P.animF*Math.PI/2)*5:0;
-  const bob=P.moving?Math.sin(t/120)*1.2:0; // rebote vertical
-
-  ctx.translate(0,bob);
-
-  // ── Piernas con túnica ──
-  ctx.fillStyle='#3a2008';
-  ctx.beginPath();ctx.moveTo(-5,2);ctx.lineTo(-7,14+leg);ctx.lineTo(-1,14+leg);ctx.lineTo(1,2);ctx.fill();
-  ctx.beginPath();ctx.moveTo(1,2);ctx.lineTo(-1,14-leg);ctx.lineTo(5,14-leg);ctx.lineTo(7,2);ctx.fill();
+  // Sombra suave
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath();ctx.ellipse(1,13,11,4,0,0,Math.PI*2);ctx.fill();
   // Sandalias
-  ctx.fillStyle='#8a5a20';
-  ctx.fillRect(-8,12+leg,8,3);ctx.fillRect(-2,12-leg,8,3);
-
-  // ── Cuerpo - túnica con detalles ──
-  const bg=ctx.createLinearGradient(-9,-11,9,-11);
-  bg.addColorStop(0,'#7a5818');bg.addColorStop(0.4,'#9a7222');bg.addColorStop(1,'#6a4810');
-  ctx.fillStyle=bg;
-  ctx.beginPath();ctx.moveTo(-9,2);ctx.lineTo(-10,-10);ctx.lineTo(10,-10);ctx.lineTo(9,2);ctx.closePath();ctx.fill();
-  // Franja dorada en túnica
-  ctx.fillStyle='#c9a84c';ctx.fillRect(-10,-10,20,3);ctx.fillRect(-10,2,20,2);
+  ctx.fillStyle='#5a3010';
+  ctx.beginPath();ctx.ellipse(-4,12+bob,5,2.5,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(4,12+bob,5,2.5,0,0,Math.PI*2);ctx.fill();
+  // Piernas con animación
+  const legG=ctx.createLinearGradient(-3,0,3,0);
+  legG.addColorStop(0,'#3a2010');legG.addColorStop(0.5,'#5a3418');legG.addColorStop(1,'#3a2010');
+  ctx.fillStyle=legG;
+  ctx.fillRect(-6, 5+bob, 5, 8+legL);
+  ctx.fillRect(2,  5+bob, 5, 8-legL);
+  // Túnica principal
+  const tg2=ctx.createLinearGradient(-8,-8,8,8);
+  tg2.addColorStop(0,'#c4942a');tg2.addColorStop(0.3,'#e8b84a');tg2.addColorStop(0.6,'#d4a438');tg2.addColorStop(1,'#a07820');
+  ctx.fillStyle=tg2;
+  ctx.beginPath();
+  ctx.moveTo(-8,12+bob);ctx.lineTo(-9,-2+bob);ctx.lineTo(-6,-10+bob);ctx.lineTo(6,-10+bob);ctx.lineTo(9,-2+bob);ctx.lineTo(8,12+bob);
+  ctx.closePath();ctx.fill();
   // Pliegues de tela
-  ctx.strokeStyle='rgba(0,0,0,0.18)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(-4,-8);ctx.lineTo(-5,2);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(3,-8);ctx.lineTo(4,2);ctx.stroke();
-
-  // ── Brazos ──
-  const armColor='#c07848';
-  // Brazo izquierdo
-  if(P.dir===2){
-    const ag=ctx.createLinearGradient(-14,-9,-8,-9);
-    ag.addColorStop(0,'#8a5818');ag.addColorStop(1,'#6a4010');
-    ctx.fillStyle=ag;ctx.fillRect(-14,-10,6,12+arm);
-    ctx.fillStyle=armColor;ctx.fillRect(-14,2+arm,6,5);
-  } else {
-    ctx.fillStyle='#8a5818';ctx.fillRect(-14,-9,6,11+arm);
-    ctx.fillStyle=armColor;ctx.fillRect(-14,2+arm,6,4);
-  }
+  ctx.strokeStyle='rgba(120,80,10,0.4)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(-3,-9+bob);ctx.lineTo(-4,10+bob);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(3,-9+bob);ctx.lineTo(4,10+bob);ctx.stroke();
+  // Cinturón
+  const beltG=ctx.createLinearGradient(-8,0,8,0);
+  beltG.addColorStop(0,'#4a2808');beltG.addColorStop(0.5,'#7a4818');beltG.addColorStop(1,'#4a2808');
+  ctx.fillStyle=beltG;ctx.fillRect(-8,-1+bob,16,4);
+  // Hebilla dorada
+  ctx.fillStyle='#c9a84c';ctx.fillRect(-2,0+bob,4,3);
+  ctx.fillStyle='rgba(255,230,100,0.6)';ctx.fillRect(-1,0+bob,2,1);
+  // Brazos
+  const armG=ctx.createLinearGradient(-2,0,2,0);
+  armG.addColorStop(0,'#a87840');armG.addColorStop(0.5,'#c89050');armG.addColorStop(1,'#a87840');
+  ctx.fillStyle=armG;
+  // Brazo izquierdo (bastón)
+  ctx.save();ctx.translate(-10,-4+bob);ctx.rotate(-0.15-armL*0.08);
+  ctx.fillRect(-2.5,0,5,12);ctx.restore();
   // Brazo derecho
-  if(P.dir===3){
-    ctx.fillStyle='#8a5818';ctx.fillRect(8,-10,6,12-arm);
-    ctx.fillStyle=armColor;ctx.fillRect(8,2-arm,6,5);
-  } else {
-    ctx.fillStyle='#8a5818';ctx.fillRect(8,-9,6,11-arm);
-    ctx.fillStyle=armColor;ctx.fillRect(8,2-arm,6,4);
-  }
-
-  // ── Bastón (vara del profeta) ──
-  ctx.strokeStyle='#7a4a1a';ctx.lineWidth=2.5;
-  const bx=P.dir===2?-16:14;
-  ctx.beginPath();ctx.moveTo(bx,-22+arm);ctx.bezierCurveTo(bx-1,-10,bx+1,0,bx,12);ctx.stroke();
-  // Nudo del bastón
-  ctx.fillStyle='#9a6a2a';ctx.beginPath();ctx.arc(bx,-22+arm,3,0,Math.PI*2);ctx.fill();
-
-  // ── Cabeza ──
-  const hg=ctx.createRadialGradient(-1,-17,2,1,-16,10);
-  hg.addColorStop(0,'#d08050');hg.addColorStop(1,'#a86030');
-  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(1,-17,10,0,Math.PI*2);ctx.fill();
-  // Barba
-  ctx.fillStyle='#7a5a30';
-  ctx.beginPath();ctx.moveTo(-7,-12);ctx.quadraticCurveTo(-8,-5,0,-4);ctx.quadraticCurveTo(8,-5,7,-12);ctx.fill();
-  ctx.fillStyle='#9a7840';
-  ctx.beginPath();ctx.moveTo(-5,-11);ctx.quadraticCurveTo(-5,-6,0,-5);ctx.quadraticCurveTo(5,-6,5,-11);ctx.fill();
-  // Ojos
-  ctx.fillStyle='#fff';
-  if(P.dir!==0&&P.dir!==1){
-    const eo=P.dir===2?-3:3;
-    ctx.fillRect(eo-2,-19,4,3);ctx.fillStyle='#1a0a00';ctx.fillRect(eo-1,-18,2,2);
-  } else {
-    ctx.fillRect(-4,-19,4,3);ctx.fillRect(3,-19,4,3);
-    ctx.fillStyle='#1a0a00';ctx.fillRect(-3,-18,2,2);ctx.fillRect(4,-18,2,2);
-  }
-  // Nariz
-  ctx.fillStyle='#b06840';ctx.beginPath();ctx.arc(P.dir===2?-2:P.dir===3?3:1,-16,1.5,0,Math.PI*2);ctx.fill();
-  // Turbante / tocado
-  ctx.fillStyle='#3a1858';
-  ctx.beginPath();ctx.arc(1,-23,9,Math.PI,0);ctx.fill();
-  ctx.fillRect(-9,-24,18,5);
-  ctx.fillStyle='#5a2888';ctx.fillRect(-10,-21,20,4);
+  ctx.save();ctx.translate(10,-4+bob);ctx.rotate(0.15+armL*0.08);
+  ctx.fillRect(-2.5,0,5,10);ctx.restore();
+  // Bastón de Noé
+  ctx.strokeStyle='#6a4020';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(-12,14+bob);ctx.quadraticCurveTo(-14,-2+bob,-12,-18+bob);ctx.stroke();
+  ctx.fillStyle='#8B5E30';ctx.beginPath();ctx.arc(-12,-18+bob,3.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(-12,-18+bob,2,0,Math.PI*2);ctx.fill();
+  // Cuello
+  ctx.fillStyle='#c07848';ctx.beginPath();ctx.arc(0,-11+bob,4,0,Math.PI*2);ctx.fill();
+  // Cabeza
+  const hg2=ctx.createRadialGradient(-2,-18+bob,1,0,-18+bob,9);
+  hg2.addColorStop(0,'#d08850');hg2.addColorStop(0.6,'#b87040');hg2.addColorStop(1,'#986030');
+  ctx.fillStyle=hg2;ctx.beginPath();ctx.arc(0,-18+bob,9,0,Math.PI*2);ctx.fill();
+  // Sombra facial
+  ctx.fillStyle='rgba(100,50,10,0.2)';ctx.beginPath();ctx.arc(2,-17+bob,7,0,Math.PI*2);ctx.fill();
+  // Ojos expresivos
+  ctx.fillStyle='#1a0a00';ctx.beginPath();ctx.arc(-3,-19+bob,1.8,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(3,-19+bob,1.8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.8)';ctx.beginPath();ctx.arc(-2.4,-19.4+bob,0.7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(3.6,-19.4+bob,0.7,0,Math.PI*2);ctx.fill();
+  // Barba de Noé — dos tonos
+  ctx.fillStyle='#9a7840';ctx.beginPath();ctx.moveTo(-7,-14+bob);ctx.quadraticCurveTo(-5,-8+bob,0,-7+bob);ctx.quadraticCurveTo(5,-8+bob,7,-14+bob);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#c0a060';ctx.beginPath();ctx.moveTo(-5,-14+bob);ctx.quadraticCurveTo(-3,-10+bob,0,-9+bob);ctx.quadraticCurveTo(3,-10+bob,5,-14+bob);ctx.closePath();ctx.fill();
+  // Turbante con capas
+  ctx.fillStyle='#2a1548';ctx.beginPath();ctx.arc(0,-23+bob,9,Math.PI,0,false);ctx.fill();
+  ctx.fillStyle='#3a2060';ctx.fillRect(-9,-25+bob,18,7);
+  ctx.fillStyle='#4a2878';ctx.fillRect(-9,-27+bob,18,4);
+  // Franja dorada del turbante
+  ctx.fillStyle='rgba(201,168,76,0.9)';ctx.fillRect(-9,-22+bob,18,2);
   // Joya del turbante
-  ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(1,-22,2.5,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(0,-23,1.5,0,Math.PI*2);ctx.fill();
-
+  ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(0,-25+bob,2.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,230,120,0.9)';ctx.beginPath();ctx.arc(-0.5,-25.5+bob,1,0,Math.PI*2);ctx.fill();
+  // Flash de invulnerabilidad
+  if(P.inv>0&&Math.floor(T2/110)%2===0){ctx.restore();return;}
   ctx.restore();
 }
 
@@ -968,7 +1071,7 @@ function drawMinimap(){
 function loop(){
   if(!gRun)return;
   afr=requestAnimationFrame(loop);
-  if(gPause)return;
+  if(gPause){drawPortrait();return;}
   const W=canvas.width,H=canvas.height;
   const cx=P.x-W/2,cy=P.y-H/2;
   drawSky();
@@ -978,10 +1081,12 @@ function loop(){
   drawNefilim(cx,cy);
   drawPlayer(cx,cy);
   drawRain();
-  drawNight();
+  drawDiluvio(cx,cy);
+  drawNightVision(cx,cy);
   drawParts(cx,cy);
   drawNearIndicator(cx,cy);
   drawMinimap();
+  drawPortrait();
   update();
 }
 
@@ -999,7 +1104,9 @@ window.addEventListener('keydown',e=>{
   if(e.key==='c'||e.key==='C')toggleP('craft');
   if(e.key==='Escape')doPause();
   if(e.key===' ')attackNefilim();
-  e.preventDefault();
+  // Solo prevenir default para teclas del juego (no bloquear inputs de texto)
+  const gameKeys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '];
+  if(gameKeys.includes(e.key)&&e.target===document.body) e.preventDefault();
 });
 window.addEventListener('keyup',e=>{
   if(e.key==='ArrowUp'||e.key==='w')keys.u=false;
@@ -1020,8 +1127,11 @@ function update(){
   const nx=P.x+dx*spd,ny=P.y+dy*spd;
   const bl=colCheck(nx,ny);
   if(!bl.x)P.x=nx;if(!bl.y)P.y=ny;
-  P.x=Math.max(TILE,Math.min(P.x,(MW-2)*TILE));
-  P.y=Math.max(TILE,Math.min(P.y,(MH-2)*TILE));
+  // Mapa infinito — wrap de coordenadas
+  if(P.x<0) P.x+=(MW-1)*TILE;
+  if(P.x>(MW-1)*TILE) P.x-=(MW-1)*TILE;
+  if(P.y<0) P.y+=(MH-1)*TILE;
+  if(P.y>(MH-1)*TILE) P.y-=(MH-1)*TILE;
   if(P.moving){P.animT++;if(P.animT>7){P.animF=(P.animF+1)%4;P.animT=0;}}else P.animF=0;
   if(P.moving){P.eT++;if(P.eT>110){P.eT=0;P.energy=Math.max(0,P.energy-1);}}
   if(P.inv>0)P.inv--;
@@ -1075,6 +1185,7 @@ function colCheck(nx,ny){
   return bl;
 }
 function isSolid(tx,ty){
+  tx=((tx%MW)+MW)%MW; ty=((ty%MH)+MH)%MH;
   const tile=wMap[ty]?.[tx];if(!tile)return true;
   if(tile.t===T.WATER)return true;
   if(wObjs.find(o=>o.tx===tx&&o.ty===ty&&(o.tipo==='arbol'||o.tipo==='roca')))return true;
@@ -1330,15 +1441,50 @@ function doSleep(){sndSleep();
 
 function drawPortrait(){
   const pc=document.getElementById('portraitCanvas');
-  if(!pc)return;
+  if(!pc||!pc.getContext)return;
   const px=pc.getContext('2d');
   const W=54,H=54;
-  // Fondo degradado
+  px.clearRect(0,0,W,H);
+  // Fondo dinámico según hora del día
+  // Fondo dinámico según hora del día
+  const isNight2=wTime<0.28||wTime>0.75;
+  const isDawn2=wTime>=0.28&&wTime<0.38;
   const bg=px.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#0a1520');bg.addColorStop(1,'#1a0d28');
+  if(isNight2){
+    bg.addColorStop(0,'#0a1228');bg.addColorStop(0.6,'#0e1a38');bg.addColorStop(1,'#0a1218');
+  } else if(isDawn2){
+    bg.addColorStop(0,'#3a2040');bg.addColorStop(0.5,'#c06030');bg.addColorStop(1,'#2a3a10');
+  } else {
+    bg.addColorStop(0,'#2a5a9a');bg.addColorStop(0.5,'#6aaedf');bg.addColorStop(1,'#2a5a18');
+  }
   px.fillStyle=bg;px.fillRect(0,0,W,H);
-  // Borde interior dorado
-  px.strokeStyle='rgba(201,168,76,0.3)';px.lineWidth=1;px.strokeRect(2,2,W-4,H-4);
+  // Silueta de montañas/palmeras al fondo
+  px.fillStyle=isNight2?'#0d1a2a':'rgba(30,80,20,0.7)';
+  px.beginPath();px.moveTo(0,28);px.lineTo(8,18);px.lineTo(16,24);px.lineTo(26,12);px.lineTo(36,20);px.lineTo(44,16);px.lineTo(54,22);px.lineTo(54,54);px.lineTo(0,54);px.fill();
+  // Suelo con hierba
+  const sgr=px.createLinearGradient(0,36,0,54);
+  sgr.addColorStop(0,'#2a5a14');sgr.addColorStop(1,'#1a3a0c');
+  px.fillStyle=sgr;px.fillRect(0,36,54,18);
+  px.fillStyle='rgba(50,100,20,0.6)';px.fillRect(0,36,54,3);
+  // Sol o luna
+  if(isNight2){
+    px.fillStyle='rgba(255,250,230,0.88)';px.beginPath();px.arc(44,6,5,0,Math.PI*2);px.fill();
+    px.fillStyle='rgba(200,200,180,0.6)';px.beginPath();px.arc(46,5,4,0,Math.PI*2);px.fill();
+  } else {
+    const sunA=(wTime-0.28)/0.44;
+    px.fillStyle='rgba(255,220,50,0.9)';
+    px.beginPath();px.arc(8+sunA*38,22-Math.sin(sunA*Math.PI)*8,5,0,Math.PI*2);px.fill();
+  }
+  // Borde dorado con esquinas decoradas
+  px.strokeStyle='rgba(201,168,76,0.6)';px.lineWidth=1.5;px.strokeRect(1.5,1.5,W-3,H-3);
+  px.strokeStyle='rgba(201,168,76,0.3)';px.lineWidth=0.8;px.strokeRect(3,3,W-6,H-6);
+  // Estrellas de noche
+  if(isNight2){
+    [[8,5],[15,9],[30,4],[42,7],[22,3],[35,11],[48,8]].forEach(([sx,sy2])=>{
+      const b=0.3+Math.sin(Date.now()/600+sx)*0.45;
+      px.fillStyle=`rgba(255,255,255,${b})`;px.fillRect(sx,sy2,1.5,1.5);
+    });
+  }
   px.save();px.translate(W/2,H*0.78);
   // Sombra personaje
   px.fillStyle='rgba(0,0,0,0.35)';px.beginPath();px.ellipse(0,4,10,3,0,0,Math.PI*2);px.fill();
@@ -1399,11 +1545,12 @@ window.toggleP=function(w){
   const el=document.getElementById(m[w]);
   const was=el.classList.contains('open');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
-  if(!was){el.classList.add('open');gPause=true;
+  if(!was){el.classList.add('open');
     if(w==='inv')renderInv();
     if(w==='craft')renderCraft();
     if(w==='skills')renderSkills();
-  }else gPause=false;
+  }
+  // Los paneles NO pausan el juego — el jugador sigue moviéndose
 };
 
 window.showS=function(id){
@@ -1469,7 +1616,7 @@ function beginLoop(){
   showS('');
   document.getElementById('hud').style.display='flex';
   document.getElementById('mpad').style.display='flex';
-  gRun=true;gPause=false;
+  gRun=true;gPause=false;godVoiceActive=false;
   initCanvas();initNubes();
   if(afr)cancelAnimationFrame(afr);
   loop();
@@ -1887,7 +2034,7 @@ const MISIONES=[
 function showGodVoice(mision){
   if(!mision||godVoiceActive) return;
   godVoiceActive=true;
-  gPause=true;
+  // NO pausamos el juego, solo mostramos el overlay
   const ov=document.getElementById('god-voice');
   if(!ov) return;
   document.getElementById('gv-title').textContent=mision.titulo;
@@ -1907,7 +2054,6 @@ window.closeGodVoice=function(){
   const ov=document.getElementById('god-voice');
   if(ov) ov.style.display='none';
   godVoiceActive=false;
-  gPause=false;
 };
 
 function checkMisiones(){
