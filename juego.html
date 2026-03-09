@@ -3230,39 +3230,17 @@ window.doResume=function(){gPause=false;document.getElementById('s-pause').class
 
 // ── doJugar: espera a que Firebase confirme la sesión ──
 window.doJugar=function(){
-  initAudio();
-  // Siempre se puede jugar — con o sin cuenta
-  // Si Firebase ya respondió, usar ese estado
-  // Si aún verifica (cu===null), esperar máx 1.5s y jugar igual
-  if(cu !== null){
-    // Firebase ya respondió — jugar directo (cu puede ser usuario o false)
+  try{ initAudio(); }catch(e){ console.warn('Audio:', e); }
+  try{
     startGame();
-    if(!cu) notif('Jugando sin cuenta — el progreso no se guardará','');
-    return;
+  }catch(e){
+    console.error('Error al iniciar juego:', e);
+    // Mostrar error visible en pantalla
+    const err = document.createElement('div');
+    err.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.92);color:#e74c3c;padding:20px 28px;border-radius:12px;font-family:Cinzel,serif;font-size:0.85rem;text-align:center;z-index:9999;border:1px solid #e74c3c;max-width:300px';
+    err.innerHTML = '❌ Error al cargar el juego<br><span style="font-size:0.7rem;color:#aaa;font-family:sans-serif">' + (e.message||String(e)) + '</span><br><br><button onclick="location.reload()" style="background:#c9a84c;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-family:Cinzel,serif;color:#000">🔄 Recargar</button>';
+    document.body.appendChild(err);
   }
-  // cu===null → Firebase aún verificando, esperar brevemente
-  const btn=document.getElementById('btnJugar');
-  const orig=btn.innerHTML;
-  btn.innerHTML='⏳ Conectando...';
-  btn.disabled=true;
-  let resolved=false;
-  const timer=setTimeout(()=>{
-    if(resolved) return;
-    resolved=true;
-    btn.innerHTML=orig; btn.disabled=false;
-    startGame();
-    notif('Sin conexión — el progreso no se guardará','');
-  },1500);
-  const interval=setInterval(()=>{
-    if(cu===null) return;
-    clearInterval(interval);
-    clearTimeout(timer);
-    if(resolved) return;
-    resolved=true;
-    btn.innerHTML=orig; btn.disabled=false;
-    startGame();
-    if(!cu) notif('Jugando sin cuenta — el progreso no se guardará','');
-  },100);
 };
 
 window.doContinuar=function(){
@@ -3927,16 +3905,18 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 function startGame(){
+  // Reset inventario para nueva partida
+  inv.fill(null);
+  SKILLS.forEach(s=>s.u=false);
+  Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,siclos:0,_dying:false});
+  siclos=0; armasEstado={}; skillsEstado={};
   genMundo();
   addItem('madera',5); addItem('piedra',3); addItem('fibra',4);
   addItem('fruta',2);  addItem('bayas',3);  addItem('barro',3);
   addItem('jarra',1);
   beginLoop();
-  // Mostrar tutorial solo si es la primera vez
   const done = localStorage.getItem('noe_tutorial_done');
-  if(!done){
-    setTimeout(showTutorial, 800);
-  }
+  if(!done){ setTimeout(showTutorial, 800); }
 }
 async function loadAndPlay(){await loadGame();beginLoop();}
 // ════════════════════════════════════════════════════════════
@@ -4086,10 +4066,11 @@ function loadNoahSprites(callback){
 
 function beginLoop(){
   showS('');
-  document.getElementById('hud').style.display='flex';
-  document.getElementById('mpad').style.display='flex';
+  const hud=document.getElementById('hud');
+  const mpad=document.getElementById('mpad');
+  if(hud) hud.style.display='flex';
+  if(mpad) mpad.style.display='flex';
   const fb=document.getElementById('hud-float-btns'); if(fb) fb.style.display='flex';
-  // Aplicar ajustes guardados ahora que el canvas existe
   try{ applyAllSettings(); }catch(e){}
   gRun=true;gPause=false;godVoiceActive=false;
   // Cargar sprites solo si no se han cargado antes
@@ -4171,11 +4152,10 @@ window.doLogin=async function(){
   const btn=document.querySelector('#ltab-login-body .mbtn.pri');
   if(btn){btn.disabled=true;btn.textContent='⏳ Ingresando...';}
   try{
-    const cred = await signInWithEmailAndPassword(auth,em,ps);
-    // Esperar a que onAuthStateChanged procese la sesión (max 3s)
-    let waited=0;
-    while(cu===null && waited<3000){ await new Promise(r=>setTimeout(r,100)); waited+=100; }
-    // cu ya fue actualizado por onAuthStateChanged
+    await signInWithEmailAndPassword(auth,em,ps);
+    // onAuthStateChanged actualizará cu y nick automáticamente
+    // Solo esperar 600ms para que onAuthStateChanged termine
+    await new Promise(r=>setTimeout(r,600));
     showS('s-menu');
     startGame();
   }catch(e){
@@ -4203,9 +4183,8 @@ window.doRegister=async function(){
     // Guardar nickname en Firebase (misma ruta que el chat)
     await fbUpdate(ref(db,`usuarios/${cred.user.uid}`),{nickname:nick2,email:em,createdAt:Date.now()});
     nick=nick2;
-    // Esperar confirmación auth
-    let waited=0;
-    while(cu===null && waited<3000){ await new Promise(r=>setTimeout(r,100)); waited+=100; }
+    // Esperar que onAuthStateChanged procese
+    await new Promise(r=>setTimeout(r,600));
     showS('s-menu');
     startGame();
   }catch(e){
