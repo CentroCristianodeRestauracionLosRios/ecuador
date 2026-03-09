@@ -460,7 +460,7 @@ let gRun=false,gPause=false,afr=null,tick=0;
 
 const P={
   x:30*TILE+20,y:30*TILE+20,w:26,h:26,
-  dir:0,moving:false,animF:0,animT:0,inv:0,
+  dir:0,moving:false,animF:0,animT:0,inv:0,facing:'down',
   speed:2.4,
   hp:100,mhp:100,hunger:100,thirst:100,energy:100,
   xp:0,lv:1,sp:0,
@@ -1426,103 +1426,113 @@ function hpBar(o,oy){
 function drawPlayer(cx,cy){
   const sx=P.x-cx, sy=P.y-cy;
   const T2=Date.now();
-  if(P.inv>0&&Math.floor(T2/100)%2===0) return; // parpadeo daño
-  const isSwing=P.inv>0; // usando herramienta
-  const frame=P.moving?Math.floor(T2/140)%4:0;
-  const bob=P.moving?(frame%2===0?1:-1):0;
-  const legAnim=[0,4,0,-4][frame];
-  const armAnim=[0,-3,0,3][frame];
-  // Herramienta activa
+
+  // Sombra (siempre visible)
+  ctx.fillStyle='rgba(0,0,0,0.32)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy+6, 13, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Parpadeo al recibir daño
+  if(P.inv>0 && Math.floor(T2/80)%2===0) return;
+
+  // Avanzar animación
+  tickNoahAnim();
+
+  // ── SPRITE SHEET ─────────────────────────────────────────
+  if(noahLoaded){
+    const {sheet, anim, flipX} = getNoahAnim();
+    if(sheet){
+      const fw = NOAH_CFG.frameW;
+      const fh = NOAH_CFG.frameH;
+      const sc = NOAH_CFG.scale;
+      const dw = fw * sc;
+      const dh = fh * sc;
+
+      // Frame actual dentro de la lista de animación
+      const frameIdx = _noahFrame % anim.length;
+      const frame    = anim[frameIdx];  // índice real en el spritesheet
+      const srcX     = frame * fw;
+      const srcY     = 0;
+
+      // Posición destino: centrado en sx,sy
+      const dx = sx - dw/2;
+      const dy = sy - dh * NOAH_CFG.offsetY;
+
+      ctx.save();
+      if(flipX){
+        // Espejo horizontal para ir a la izquierda
+        ctx.translate(sx*2, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(sheet, srcX, srcY, fw, fh, sx - dw/2, dy, dw, dh);
+      } else {
+        ctx.drawImage(sheet, srcX, srcY, fw, fh, dx, dy, dw, dh);
+      }
+      ctx.restore();
+
+      // Destellos de ataque encima del sprite
+      if(P.inv>20){
+        const fa = Math.min(1,(P.inv-20)/15);
+        const fd = (P.facing==='left')?-1:1;
+        ctx.save(); ctx.translate(sx,sy-20);
+        for(let r=0;r<4;r++){
+          const ang = r/4*Math.PI*2 + T2/100;
+          ctx.strokeStyle=`rgba(255,220,50,${fa*0.85})`;
+          ctx.lineWidth=1.5;
+          ctx.beginPath();
+          ctx.moveTo(0,0);
+          ctx.lineTo(Math.cos(ang)*16*fa, Math.sin(ang)*16*fa);
+          ctx.stroke();
+        }
+        ctx.fillStyle=`rgba(255,255,180,${fa*0.7})`;
+        ctx.beginPath(); ctx.arc(0,0,4*fa,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      return;
+    }
+  }
+
+  // ── FALLBACK dibujado (si sprites no cargan) ─────────────
+  if(P.inv>0&&Math.floor(T2/100)%2===0) return;
+  const isSwing=P.inv>0;
+  const frame2=P.moving?Math.floor(T2/140)%4:0;
+  const bob=P.moving?(frame2%2===0?1:-1):0;
+  const legAnim=[0,4,0,-4][frame2];
+  const armAnim=[0,-3,0,3][frame2];
   const hasTool=hasItem('hacha')||hasItem('pico');
   const toolAngle=isSwing?Math.sin(T2/80)*0.9:(hasTool?-0.3:0);
   ctx.save();ctx.translate(sx,sy);
-  // Sombra pixel
-  ctx.fillStyle='rgba(0,0,0,0.4)';
-  ctx.fillRect(-9,11,18,5);ctx.fillRect(-6,14,12,3);
-  // Sandalias
-  ctx.fillStyle='#3d2008';
-  ctx.fillRect(-8,9+bob+legAnim,7,4);
-  ctx.fillRect(1,9+bob-legAnim,7,4);
   // Piernas
-  ctx.fillStyle='#2a1808';
-  ctx.fillRect(-7,2+bob,5,8+legAnim);
-  ctx.fillStyle='#3d2010';
-  ctx.fillRect(2,2+bob,5,8-legAnim);
-  // Túnica — bloque pixel art
+  ctx.fillStyle='#3d2008';ctx.fillRect(-8,9+bob+legAnim,7,4);ctx.fillRect(1,9+bob-legAnim,7,4);
+  // Cuerpo
   ctx.fillStyle='#b8880e';ctx.fillRect(-8,-10+bob,16,14);
   ctx.fillStyle='#d4a020';ctx.fillRect(-7,-10+bob,7,12);
   ctx.fillStyle='#8a6008';ctx.fillRect(5,-10+bob,3,12);
-  // Pliegues túnica — líneas de 1px
-  ctx.fillStyle='rgba(0,0,0,0.3)';
-  ctx.fillRect(-2,-10+bob,1,12);ctx.fillRect(3,-10+bob,1,12);
-  // Cinturón
   ctx.fillStyle='#3d2008';ctx.fillRect(-8,-1+bob,16,3);
   ctx.fillStyle=PAL.gold;ctx.fillRect(-2,0+bob,4,2);
-  // Brazo izquierdo — con bastón
-  ctx.fillStyle='#8a5a20';
-  ctx.fillRect(-12,-8+bob,4,10+armAnim);
-  // Bastón pixel art
-  ctx.fillStyle='#5a3808';
-  ctx.fillRect(-11,1+bob+armAnim,2,14);
-  ctx.fillStyle=PAL.gold;ctx.fillRect(-12,-1+bob+armAnim,4,3);
-  // Brazo derecho — con herramienta si la tiene
+  // Brazo izq
+  ctx.fillStyle='#8a5a20';ctx.fillRect(-12,-8+bob,4,10+armAnim);
+  ctx.fillStyle='#5a3808';ctx.fillRect(-11,1+bob+armAnim,2,14);
+  // Brazo der + herramienta
   ctx.save();ctx.translate(10,-5+bob);ctx.rotate(toolAngle);
   ctx.fillStyle='#8a5a20';ctx.fillRect(-2,0,4,9+armAnim);
   if(hasTool){
-    if(hasItem('hacha')){
-      // Hacha pixel
-      ctx.fillStyle='#5a3808';ctx.fillRect(-1,8,2,8);
-      ctx.fillStyle='#7a7a7a';ctx.fillRect(-5,4,8,6);
-      ctx.fillStyle='#aaaaaa';ctx.fillRect(-4,4,4,4);
-      ctx.fillStyle='rgba(0,0,0,0.8)';ctx.strokeRect(-5,4,8,6);ctx.lineWidth=1;ctx.stroke();
-    } else if(hasItem('pico')){
-      // Pico pixel
-      ctx.fillStyle='#5a3808';ctx.fillRect(-1,8,2,7);
-      ctx.fillStyle='#6a6a6a';ctx.fillRect(-7,5,14,4);
-      ctx.fillStyle='#999';ctx.fillRect(-6,5,5,3);
-      ctx.fillStyle='#999';ctx.fillRect(4,6,4,2);
-    }
+    ctx.fillStyle='#5a3808';ctx.fillRect(-1,8,2,8);
+    ctx.fillStyle=hasItem('hacha')?'#7a7a7a':'#6a6a6a';ctx.fillRect(-5,4,8,6);
+    ctx.fillStyle='#aaaaaa';ctx.fillRect(-4,4,4,4);
   }
   ctx.restore();
-  // Cuello
-  ctx.fillStyle='#b07838';ctx.fillRect(-3,-11+bob,6,3);
-  // Cabeza — pixel art
+  // Cabeza
   ctx.fillStyle='#c07840';ctx.fillRect(-8,-22+bob,16,12);
   ctx.fillStyle='#d08850';ctx.fillRect(-7,-22+bob,8,10);
-  // Ojos 2px
-  ctx.fillStyle='#1a0a00';
-  ctx.fillRect(-5,-18+bob,3,3);ctx.fillRect(2,-18+bob,3,3);
-  ctx.fillStyle='rgba(255,255,255,0.9)';
-  ctx.fillRect(-4,-18+bob,1,1);ctx.fillRect(3,-18+bob,1,1);
-  // Barba pixel
-  ctx.fillStyle='#8a6830';
-  ctx.fillRect(-6,-14+bob,12,5);ctx.fillRect(-7,-13+bob,2,3);ctx.fillRect(5,-13+bob,2,3);
-  ctx.fillStyle='#b09050';
-  ctx.fillRect(-4,-13+bob,8,3);
-  // Turbante — pixel blocks
+  ctx.fillStyle='#1a0a00';ctx.fillRect(-5,-18+bob,3,3);ctx.fillRect(2,-18+bob,3,3);
+  ctx.fillStyle='rgba(255,255,255,0.9)';ctx.fillRect(-4,-18+bob,1,1);ctx.fillRect(3,-18+bob,1,1);
+  // Barba/pelo
+  ctx.fillStyle='#8a6830';ctx.fillRect(-6,-14+bob,12,5);
+  // Sombrero
   ctx.fillStyle='#1a0838';ctx.fillRect(-9,-30+bob,18,10);
-  ctx.fillStyle='#2a1050';ctx.fillRect(-8,-32+bob,16,4);
   ctx.fillStyle='#38186a';ctx.fillRect(-7,-34+bob,14,4);
-  // Franja dorada
   ctx.fillStyle=PAL.gold;ctx.fillRect(-9,-22+bob,18,2);
-  // Joya central
-  ctx.fillStyle=PAL.gold;ctx.fillRect(-2,-29+bob,4,4);
-  ctx.fillStyle='rgba(255,230,120,0.9)';ctx.fillRect(-1,-28+bob,2,2);
-  // Outline cabeza
-  ctx.strokeStyle='rgba(0,0,0,0.75)';ctx.lineWidth=1;
-  ctx.strokeRect(-9,-34+bob,18,24);
-  // ── DESTELLO al golpear (pixel art flash) ──
-  if(isSwing&&P.inv>20){
-    const fa=Math.min(1,(P.inv-20)/15);
-    // Líneas de destello desde la herramienta
-    ctx.strokeStyle=`rgba(255,230,60,${fa*0.9})`;ctx.lineWidth=2;
-    [[12,-8],[16,-4],[18,0],[14,4]].forEach(([fx,fy])=>{
-      ctx.beginPath();ctx.moveTo(12,-4+bob);ctx.lineTo(fx+bob,fy+bob);ctx.stroke();
-    });
-    // Destellos blancos
-    ctx.fillStyle=`rgba(255,255,200,${fa})`;
-    ctx.fillRect(14,-10+bob,4,4);ctx.fillRect(18,-6+bob,3,3);ctx.fillRect(16,-2+bob,2,2);
-  }
   ctx.restore();
 }
 
@@ -1726,8 +1736,8 @@ function update(){
   tick++;
   const mu=keys.u||mk.u,md=keys.d||mk.d,ml=keys.l||mk.l,mr=keys.r||mk.r;
   let dx=0,dy=0;
-  if(mu){dy=-1;P.dir=1;}if(md){dy=1;P.dir=0;}
-  if(ml){dx=-1;P.dir=2;}if(mr){dx=1;P.dir=3;}
+  if(mu){dy=-1;P.dir=1;P.facing='up';}if(md){dy=1;P.dir=0;P.facing='down';}
+  if(ml){dx=-1;P.dir=2;P.facing='left';}if(mr){dx=1;P.dir=3;P.facing='right';}
   if(dx&&dy){dx*=0.707;dy*=0.707;}
   P.moving=!!(dx||dy);
   const spd=P.speed*(P.energy<20?0.52:1)*(hasSkill('fuerza')?1.15:1)*(getBuff('velocidad2x')?1:1);
@@ -2349,11 +2359,89 @@ function startGame(){
   beginLoop();
 }
 async function loadAndPlay(){await loadGame();beginLoop();}
+// ════════════════════════════════════════════════════════════
+//  SISTEMA DE SPRITES NOÉ — Slice Spritesheets
+//  Los PNG van en la misma carpeta que juego.html
+//  O se pueden embeber en Base64 pegando las constantes abajo
+// ════════════════════════════════════════════════════════════
+
+// ── OPCIÓN A: Base64 embebido (pegar aquí si tienes el script) ──
+// Si tienes los PNG, corre: python3 embed_sprites.py
+// y pega las 3 líneas SHEET_DOWN_B64, SHEET_UP_B64, SHEET_SIDE_B64 aquí:
+const SHEET_DOWN_B64 = null;   // reemplazar con "data:image/png;base64,..."
+const SHEET_UP_B64   = null;   // reemplazar con "data:image/png;base64,..."
+const SHEET_SIDE_B64 = null;   // reemplazar con "data:image/png;base64,..."
+
+// ── Configuración del spritesheet ───────────────────────────
+// Medido de los sprites subidos:
+// Sheet total: ~512×64px → 8 frames de 64×64px cada uno
+// Frame 4 = luna decorativa (separador visual, NO animar)
+// Frames útiles: 0-3 caminar | 5-7 ataque/idle
+const NOAH_CFG = {
+  frameW:  64,    // ancho de 1 frame en píxeles
+  frameH:  64,    // alto  de 1 frame en píxeles
+  totalFrames: 8,
+  scale:   1.4,   // factor de escala al renderizar (tile=32 → sprite ~45px)
+  offsetY: 0.82,  // alineación vertical (base del sprite respecto a posición)
+  fps:     8,     // frames de animación por segundo (tick=60fps → cada 7-8 ticks)
+};
+
+// Índices de frames por estado (frame 4 = luna, se salta)
+const NOAH_ANIM = {
+  walk:   [0,1,2,3],  // caminata — 4 frames
+  idle:   [0],        // quieto   — 1 frame (primer frame)
+  attack: [5,6,7],    // ataque   — 3 frames
+};
+
+// Sheets cargados
+const NOAH_SHEETS = { down:null, up:null, side:null };
+let noahLoaded = false;
+
+// Contador de animación
+let _noahTick=0, _noahFrame=0;
+const _noahTicksPerFrame = Math.round(60 / NOAH_CFG.fps);
+
+function tickNoahAnim(){
+  _noahTick++;
+  if(_noahTick >= _noahTicksPerFrame){ _noahTick=0; _noahFrame++; }
+}
+
+function getNoahAnim(){
+  const dir = P.facing||'down';
+  const sheet = dir==='up' ? NOAH_SHEETS.up
+              : (dir==='left'||dir==='right') ? NOAH_SHEETS.side
+              : NOAH_SHEETS.down;
+  const anim  = P.inv>0 ? NOAH_ANIM.attack
+              : P.moving ? NOAH_ANIM.walk
+              : NOAH_ANIM.idle;
+  return { sheet, anim, flipX:(dir==='left') };
+}
+
+function loadNoahSprites(callback){
+  // Prioridad: 1) Base64 embebido  2) Archivo externo  3) fallback dibujado
+  const sources = {
+    down: SHEET_DOWN_B64 || 'Slice_DownSheet.png',
+    up:   SHEET_UP_B64   || 'Slice_UpSheet.png',
+    side: SHEET_SIDE_B64 || 'Slice_SideSheet.png',
+  };
+  let done=0, total=3;
+  Object.entries(sources).forEach(([key,src])=>{
+    if(!src){ done++; if(done===total&&callback)callback(); return; }
+    const img=new Image();
+    img.onload =()=>{ NOAH_SHEETS[key]=img; done++; if(done===total){noahLoaded=true;if(callback)callback();} };
+    img.onerror=()=>{ console.warn(`Sprite ${key} no encontrado — usando fallback`); done++; if(done===total&&callback)callback(); };
+    img.src=src;
+  });
+}
+
 function beginLoop(){
   showS('');
   document.getElementById('hud').style.display='flex';
   document.getElementById('mpad').style.display='flex';
   gRun=true;gPause=false;godVoiceActive=false;
+  loadNoahSprites(()=>{console.log('🎨 Sprites Noé cargados');});
+  // Cargar sprites de Noé (si no están en el mismo directorio, usa fallback dibujado)
+  loadNoahSprites(()=>console.log('Sprites de Noé cargados ✓'));
   initCanvas();initNubes();
   if(afr)cancelAnimationFrame(afr);
   loop();
@@ -2427,7 +2515,7 @@ async function saveGame(){
   if(!cu)return;
   try{
     await fbUpdate(ref(db,`rpg2/${cu.uid}`),{
-      day:wDay,lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,siclos,armasEstado,skillsEstado,
+      day:wDay,facing:P.facing||'down',lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,siclos,armasEstado,skillsEstado,
       skills:SKILLS.filter(s=>s.u).map(s=>s.id),
       inventory:inv.filter(Boolean),structs:structs,
       px:Math.round(P.x),py:Math.round(P.y),savedAt:Date.now()
@@ -2441,7 +2529,7 @@ async function loadGame(){
   try{
     const s=await get(ref(db,`rpg2/${cu.uid}`));
     const d=s.val();if(!d)return;
-    wDay=d.day||1;P.lv=d.lv||1;P.xp=d.xp||0;P.hp=d.hp||100;
+    wDay=d.day||1;P.facing=d.facing||'down';P.lv=d.lv||1;P.xp=d.xp||0;P.hp=d.hp||100;
     arcaProgress=d.arcaP||0;misionActual=d.mision||0;misionCompletada=d.misionC||[];
     if(d.siclos) siclos=d.siclos;
     if(d.armasEstado) Object.assign(armasEstado,d.armasEstado);
