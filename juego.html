@@ -69,13 +69,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .divider{width:100%;height:1px;background:var(--border);}
 
 /* PANELS */
-.panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;background:linear-gradient(160deg,#0a1020,#150d28);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 48px rgba(0,0,0,0.9);display:none;flex-direction:column;overflow:hidden;animation:pi 0.22s ease;}
+.panel{
+  position:fixed;inset:0;z-index:80;
+  background:linear-gradient(160deg,#06080f 0%,#0d0a1e 60%,#080f1a 100%);
+  display:none;flex-direction:column;overflow:hidden;
+  animation:pi 0.22s ease;
+}
 .panel.open{display:flex;}
-.ph{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(201,168,76,0.05);border-bottom:1px solid var(--border);}
-.ptitle{font-family:'Cinzel',serif;font-size:0.92rem;color:var(--gold-l);}
-.pclose{background:transparent;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;}
-.pclose:hover{color:#fff;}
-.pbody{padding:14px;overflow-y:auto;max-height:68vh;}
+.ph{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+  background:linear-gradient(90deg,rgba(201,168,76,0.10),rgba(201,168,76,0.04));
+  border-bottom:2px solid var(--border);
+  flex-shrink:0;
+}
+.ptitle{font-family:'Cinzel',serif;font-size:1.05rem;color:var(--gold-l);letter-spacing:0.05em;}
+.pclose{
+  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);
+  color:#fff;font-size:1.2rem;cursor:pointer;border-radius:8px;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;font-weight:700;
+}
+.pclose:hover{background:rgba(231,76,60,0.4);border-color:rgba(231,76,60,0.6);}
+.pbody{padding:16px 20px;overflow-y:auto;flex:1;}
 
 /* Inventario */
 .igrid{display:grid;grid-template-columns:repeat(5,56px);gap:5px;}
@@ -151,6 +167,48 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .slmsg{font-family:'Cinzel',serif;font-size:1.8rem;color:var(--gold);text-align:center;}
 
 @keyframes godAppear{from{transform:scale(0.8) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+/* ── TIENDA ── */
+.shop-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media(max-width:420px){.shop-grid{grid-template-columns:1fr;}}
+.sitem{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:5px;transition:all 0.15s;}
+.sitem:hover{border-color:var(--gold);background:rgba(201,168,76,0.06);}
+.sitem.owned{border-color:rgba(39,174,96,0.5);}
+.sitem-top{display:flex;align-items:center;gap:8px;}
+.sitem-ico{font-size:1.6rem;flex-shrink:0;}
+.sitem-info{flex:1;}
+.sitem-name{font-family:'Cinzel',serif;font-size:0.78rem;color:var(--text);}
+.sitem-desc{font-size:0.65rem;color:var(--muted);margin-top:2px;line-height:1.3;}
+.sitem-price{display:flex;align-items:center;justify-content:space-between;margin-top:4px;}
+.sprice{font-family:'Cinzel',serif;font-size:0.75rem;color:#c8d8a8;}
+.sbtn{background:linear-gradient(135deg,#4a7a20,#6aaa2a);color:#0a1808;border:none;border-radius:5px;padding:5px 11px;font-family:'Cinzel',serif;font-size:0.68rem;font-weight:700;cursor:pointer;}
+.sbtn:hover{background:linear-gradient(135deg,#5a9a28,#7aca38);}
+.sbtn:disabled{opacity:0.35;cursor:not-allowed;}
+.sbtn.upg{background:linear-gradient(135deg,#2a6aaa,#3a8acc);}
+.sbtn.upg:hover{background:linear-gradient(135deg,#3a8acc,#4a9add);}
+.scats{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.scat{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:3px 10px;font-size:0.72rem;cursor:pointer;color:var(--muted);transition:all 0.15s;}
+.scat.on,.scat:hover{border-color:#6aaa2a;color:#8acc4a;}
+/* Siclos en HUD */
+.hud-siclos{display:flex;align-items:center;gap:3px;font-family:'Cinzel',serif;font-size:0.72rem;color:#c8d8a8;background:rgba(0,0,0,0.45);border:1px solid rgba(100,160,40,0.4);border-radius:10px;padding:2px 8px;margin-right:4px;}
+/* Arma con nivel */
+.weapon-lv{display:inline-block;background:rgba(201,168,76,0.2);border:1px solid rgba(201,168,76,0.4);border-radius:4px;font-size:0.58rem;color:var(--gold);padding:1px 4px;font-family:'Cinzel',serif;margin-left:3px;}
+/* Notificación tienda */
+.notif.shop{background:rgba(40,80,20,0.95);border-color:rgba(100,180,40,0.6);}
+
+/* ── Rareza de ítems ── */
+.rar-gris   {border-color:#aaa!important; box-shadow:0 0 8px #aaa3;}
+.rar-verde  {border-color:#4acc4a!important; box-shadow:0 0 10px #4acc4a44;}
+.rar-azul   {border-color:#4a8aee!important; box-shadow:0 0 12px #4a8aee55;}
+.rar-morado {border-color:#aa4aee!important; box-shadow:0 0 14px #aa4aee66;}
+.rar-rojo   {border-color:#ee3a3a!important; box-shadow:0 0 16px #ee3a3a77;}
+.rar-dorado {border-color:#f0c030!important; box-shadow:0 0 20px #f0c03099; animation:glow-gold 2s ease-in-out infinite;}
+@keyframes glow-gold{0%,100%{box-shadow:0 0 20px #f0c03099}50%{box-shadow:0 0 32px #f0c030cc,0 0 60px #f0c03044}}
+
+/* Panel fullscreen — barra de rareza en header */
+.ph-rar{display:flex;gap:4px;align-items:center;font-size:0.68rem;}
+.ph-rar span{padding:2px 6px;border-radius:10px;border:1px solid;font-family:'Cinzel',serif;font-size:0.6rem;}
+
 /* Loading overlay */
 #loadOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 #loadOverlay.hidden{display:none;}
@@ -189,13 +247,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div class="hud-bg" style="margin-top:2px"><div class="hud-fill b-xp" id="bXp" style="width:0%"></div></div>
   </div>
   <div class="hud-mid">
-    <div class="hud-day" id="hudDay">Día 1 — Amanecer</div>
+    <div id="buff-bar" style="display:flex;gap:3px;justify-content:center;min-height:14px;margin-top:1px;"></div>
     <div class="hud-tbar"><div class="hud-tf" id="bTime" style="width:0%"></div></div>
   </div>
   <div class="hud-btns">
+    <div class="hud-siclos" id="hudSiclos">🪙 0</div>
     <button class="hbtn" onclick="toggleP('inv')">🎒</button>
     <button class="hbtn" onclick="toggleP('craft')">⚒️</button>
     <button class="hbtn" onclick="toggleP('skills')">✨</button>
+    <button class="hbtn" onclick="toggleP('shop')" title="Tienda">🏪</button>
     <button class="hbtn" id="soundBtn" onclick="toggleSound()">🔊</button>
     <button class="hbtn" onclick="doPause()">⏸</button>
   </div>
@@ -279,6 +339,39 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div class="spts" id="sPts">Puntos: 0</div>
     <div class="stree" id="skillTree"></div>
   </div>
+
+<!-- TIENDA — Siclos de Plata -->
+<div class="panel" id="p-shop" style="width:min(520px,96vw)">
+  <div class="ph">
+    <span class="ptitle">🏪 Tienda del Mercader</span>
+    <div class="ph-rar" style="flex:1;justify-content:center;gap:3px;flex-wrap:wrap">
+      <span style="border-color:#aaa;color:#ccc">⬜Básico</span>
+      <span style="border-color:#4acc4a;color:#4acc4a">🟩Experto</span>
+      <span style="border-color:#4a8aee;color:#6aaeff">🟦Sagrado</span>
+      <span style="border-color:#aa4aee;color:#cc88ff">🟪Épico</span>
+      <span style="border-color:#ee3a3a;color:#ff8888">🟥Legen.</span>
+      <span style="border-color:#f0c030;color:#f0c030">🟨Bendec.</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="hud-siclos" id="shopSiclos">🪙 0</span>
+      <button class="pclose" onclick="toggleP('shop')">✕</button>
+    </div>
+  </div>
+  <div class="pbody">
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:10px;font-style:italic;text-align:center">
+      "Vende tus recursos por Siclos de Plata y compra armas, bendiciones y secretos del Arca"
+    </div>
+    <!-- Sección vender -->
+    <div style="margin-bottom:14px;">
+      <div style="font-family:'Cinzel',serif;font-size:0.78rem;color:var(--gold);margin-bottom:8px;">💰 Vender recursos</div>
+      <div id="sell-grid" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+    <div style="height:1px;background:var(--border);margin-bottom:14px;"></div>
+    <!-- Sección comprar -->
+    <div class="scats" id="shopCats"></div>
+    <div id="shop-grid" class="shop-grid"></div>
+  </div>
+</div>
 </div>
 
 <!-- PAUSA -->
@@ -397,6 +490,11 @@ let victoryAchieved=false;
 let animalesEnArca=0;
 let godVoiceActive=false;
 let visionRadius=999;
+// ── Siclos y Tienda ──
+let siclos=0;
+let buffsActivos={};
+let shopCatActual='bendiciones';
+
 
 // ─── ITEMS ───────────────────────────────────
 const ITEMS={
@@ -427,6 +525,25 @@ const ITEMS={
   arca1:{n:'Cimientos del Arca',e:'⚓',t:'s',d:'Primera parte del Arca de Dios'},
   arca2:{n:'Cubierta del Arca',e:'🏗️',t:'s',d:'Segunda parte del Arca'},
   arca3:{n:'Tejado del Arca',e:'🛖',t:'s',d:'El Arca casi está lista'},
+  // Nuevos items — profundidad
+  madera_g:{n:'Madera de Gofer',e:'🌲',t:'b',d:'Madera sagrada para el Arca'},
+  alquitran:{n:'Alquitrán',e:'🖤',t:'b',d:'Sella el Arca'},
+  metal:{n:'Grapas de metal',e:'⚙️',t:'b',d:'Refuerza el Arca'},
+  cuero:{n:'Cuero curtido',e:'🟤',t:'r',d:'Protección'},
+  semilla:{n:'Semillas',e:'🌱',t:'r',d:'Planta cultivos'},
+  trigo:{n:'Trigo',e:'🌾',t:'c',d:'+15 hambre',fx:{hunger:15}},
+  veneno:{n:'Veneno',e:'☠️',t:'r',d:'Peligroso'},
+  medicina:{n:'Medicina',e:'💊',t:'c',d:'+40 HP',fx:{hp:40}},
+  pez:{n:'Pez',e:'🐟',t:'r',d:'Hay que cocinarlo'},
+  pez_a:{n:'Pez asado',e:'🍣',t:'c',d:'+35 hambre',fx:{hunger:35}},
+  miel:{n:'Miel',e:'🍯',t:'c',d:'+25 hambre +10 HP',fx:{hunger:25,hp:10}},
+  armadura:{n:'Armadura de cuero',e:'🛡️',t:'h',d:'-50% daño recibido'},
+  espada:{n:'Espada de piedra',e:'⚔️',t:'h',d:'x2 daño a Nefilim'},
+  lanza:{n:'Lanza',e:'🗡️',t:'h',d:'Ataca desde lejos'},
+  pozo:{n:'Pozo',e:'🪣',t:'s',d:'Fuente de agua permanente'},
+  huerto:{n:'Huerto',e:'🌿',t:'s',d:'Produce comida con el tiempo'},
+  taller:{n:'Taller',e:'🔨',t:'s',d:'Mejora las herramientas'},
+  altar:{n:'Altar de Oración',e:'🕊️',t:'s',d:'Ora a Dios para pedir bendición'},
 };
 
 const RCATS=['herramientas','construccion','comida','estructuras','arca'];
@@ -445,9 +562,25 @@ const RECETAS=[
   {id:'fogon',cat:'estructuras',r:'fogon',q:1,req:{piedra:5,madera:2},n:'Fogón'},
   {id:'cama',cat:'estructuras',r:'cama',q:1,req:{madera:4,fibra:3},n:'Cama'},
   {id:'cofre',cat:'estructuras',r:'cofre',q:1,req:{tabla:4,cuerda:1},n:'Cofre'},
-  {id:'arca1',cat:'arca',r:'arca1',q:1,req:{tabla:20,cuerda:10,brea:5},n:'Cimientos del Arca'},
-  {id:'arca2',cat:'arca',r:'arca2',q:1,req:{tabla:40,cuerda:20,brea:10,ladrillo:15},n:'Cubierta del Arca'},
-  {id:'arca3',cat:'arca',r:'arca3',q:1,req:{tabla:60,cuerda:30,brea:20,ladrillo:30},n:'Tejado del Arca'},
+  {id:'arca1',cat:'arca',r:'arca1',q:1,req:{madera_g:20,cuerda:10,alquitran:5},n:'Cimientos del Arca'},
+  {id:'arca2',cat:'arca',r:'arca2',q:1,req:{madera_g:30,cuerda:20,alquitran:10,metal:10},n:'Cubierta del Arca'},
+  {id:'arca3',cat:'arca',r:'arca3',q:1,req:{madera_g:40,cuerda:30,alquitran:20,metal:15},n:'Tejado del Arca'},
+  // Herramientas avanzadas
+  {id:'espada',cat:'herramientas',r:'espada',q:1,req:{piedra:8,madera:3,cuerda:2},n:'Espada de piedra'},
+  {id:'lanza', cat:'herramientas',r:'lanza', q:1,req:{madera:4,piedra:3,fibra:2},n:'Lanza'},
+  {id:'armadura',cat:'herramientas',r:'armadura',q:1,req:{cuero:6,cuerda:3},n:'Armadura de cuero'},
+  // Comida
+  {id:'pez_a',cat:'comida',r:'pez_a',q:1,req:{pez:1},n:'Pez asado',str:'fogon'},
+  {id:'medicina',cat:'comida',r:'medicina',q:1,req:{fibra:3,miel:1,fruta:2},n:'Medicina'},
+  // Estructuras avanzadas
+  {id:'pozo',   cat:'estructuras',r:'pozo',   q:1,req:{piedra:12,madera:4,cuerda:2},n:'Pozo'},
+  {id:'huerto', cat:'estructuras',r:'huerto', q:1,req:{madera:6,fibra:4,semilla:3},n:'Huerto'},
+  {id:'taller', cat:'estructuras',r:'taller', q:1,req:{tabla:8,piedra:6,madera:4},n:'Taller'},
+  {id:'altar',  cat:'estructuras',r:'altar',  q:1,req:{piedra:15,madera:5,resina:3},n:'Altar de Oración'},
+  // Arca (requerimientos de madera_g y alquitran)
+  {id:'madera_g',cat:'arca',r:'madera_g',q:2,req:{madera:5,resina:2},n:'Madera de Gofer x2'},
+  {id:'alquitran',cat:'arca',r:'alquitran',q:1,req:{resina:4,brea:2},n:'Alquitrán'},
+  {id:'metal',  cat:'arca',r:'metal',q:2,req:{piedra:6,madera:2},n:'Grapas de metal x2'},
 ];
 
 const SKILLS=[
@@ -460,9 +593,135 @@ const SKILLS=[
   {id:'prof',n:'Profeta',e:'📜',d:'Ganas más experiencia explorando',c:2,req:null,u:false},
   {id:'past',n:'Pastor',e:'🐑',d:'Los animales se acercan a ti',c:2,req:'granj',u:false},
   {id:'guer',n:'Guerrero',e:'⚔️',d:'Haces el doble de daño a los gigantes',c:3,req:'caz',u:false},
+  {id:'cons',n:'Constructor',e:'🏗️',d:'Construyes el Arca 30% más rápido',c:2,req:'carp',u:false},
+  {id:'herr',n:'Herrero',e:'⚒️',d:'Las herramientas duran el doble',c:2,req:'carp',u:false},
+  {id:'pesc',n:'Pescador',e:'🎣',d:'Consigues más peces al pescar',c:1,req:null,u:false},
+  {id:'colm',n:'Apicultor',e:'🍯',d:'Encuentras miel en el bosque',c:2,req:'granj',u:false},
+  {id:'prof2',n:'Visionario',e:'👁️',d:'Ves los Nefilim en el minimapa',c:3,req:'prof',u:false},
+  {id:'sant',n:'Santo',e:'✝️',d:'Las oraciones en el altar te dan más bendición',c:3,req:'prof',u:false},
 ];
 
-// ─── GENERACIÓN MUNDO ────────────────────────
+// ─── TIENDA — Sistema de rareza + niveles 1-60 ───────────────────
+
+// Rangos de rareza: color, nombre, multiplicador de precio
+const RAREZAS=[
+  {id:'gris',   color:'#8a8a8a', borde:'#aaaaaa', nombre:'Básico',     mult:1,   rango:[1,10]},
+  {id:'verde',  color:'#2a8a2a', borde:'#4acc4a', nombre:'Experto',    mult:2.5, rango:[11,20]},
+  {id:'azul',   color:'#1a4a9a', borde:'#4a8aee', nombre:'Sagrado',    mult:6,   rango:[21,30]},
+  {id:'morado', color:'#6a1a9a', borde:'#aa4aee', nombre:'Épico',      mult:15,  rango:[31,40]},
+  {id:'rojo',   color:'#9a1a1a', borde:'#ee3a3a', nombre:'Legendario', mult:35,  rango:[41,50]},
+  {id:'dorado', color:'#8a6a08', borde:'#f0c030', nombre:'Bendecido',  mult:80,  rango:[51,60]},
+];
+
+// Materiales de fusión por rareza (para subir de gris→verde→azul...)
+const FUSION_MAT={
+  'gris→verde':  {req:{fibra:10, piedra:5},             tiempo:300},
+  'verde→azul':  {req:{resina:5, tabla:3},              tiempo:900},
+  'azul→morado': {req:{alquitran:3, metal:5},           tiempo:2700},
+  'morado→rojo': {req:{madera_g:5, metal:8, miel:3},    tiempo:7200},
+  'rojo→dorado': {req:{cuerda_s:3,alquitran:5,metal:10},tiempo:18000},
+};
+
+function getRareza(nivel){
+  return RAREZAS.find(r=>nivel>=r.rango[0]&&nivel<=r.rango[1])||RAREZAS[0];
+}
+function getPrecioBase(nivel){
+  const r=getRareza(nivel);
+  return Math.floor(5 + nivel * 3.5 * r.mult);
+}
+function getStatBonus(nivel){
+  // Daño / efecto escala con nivel
+  return Math.floor(nivel * 1.8 + (nivel>30?nivel*0.5:0));
+}
+
+// Armas disponibles en tienda, con su nivel inicial desbloqueado
+const SHOP_WEAPONS=[
+  {id:'arco',      e:'🏹', n:'Arco',             desc:'Ataca Nefilim a distancia',      stat:'dmg'},
+  {id:'espada_s',  e:'⚔️', n:'Espada de Bronce',  desc:'Alta potencia en combate cuerpo a cuerpo', stat:'dmg'},
+  {id:'escudo_s',  e:'🛡️', n:'Escudo Sagrado',    desc:'Reduce el daño recibido',        stat:'def'},
+  {id:'lanza_s',   e:'🗡️', n:'Lanza Divina',      desc:'Ataque penetrante de largo alcance', stat:'dmg'},
+  {id:'amuleto_c', e:'📿', n:'Amuleto de Noé',    desc:'+HP máximo permanente',          stat:'hp'},
+  {id:'casco',     e:'⛑️', n:'Casco de Bronce',   desc:'Reduce daño en cabeza',         stat:'def'},
+  {id:'botas',     e:'👢', n:'Botas del Profeta', desc:'+velocidad de movimiento',       stat:'spd'},
+  {id:'arco_div',  e:'✨🏹',n:'Arco Profético',   desc:'Arco bendito con efectos divinos', stat:'dmg'},
+];
+
+// Habilidades activas vendibles, con nivel inicial
+const SHOP_SKILLS_TIENDA=[
+  {id:'sk_caza2',  e:'🦌', n:'Caza Avanzada',     desc:'Encuentras animales más rápido y piel extra', stat:'hunt'},
+  {id:'sk_herrero',e:'⚒️', n:'Gran Herrero',       desc:'Fabricas herramientas doradas',  stat:'craft'},
+  {id:'sk_profeta',e:'🕊️', n:'Profecía de Noé',   desc:'Recibes visiones del futuro peligro', stat:'proph'},
+  {id:'sk_marine', e:'⚓', n:'Marinero Experto',   desc:'Construyes el Arca más rápido y mejor', stat:'build'},
+  {id:'sk_curand', e:'💚', n:'Curandero',          desc:'Medicina natural — te curas con plantas', stat:'heal'},
+  {id:'sk_alquim', e:'⚗️', n:'Alquimia',           desc:'Transmutar materiales comunes en raros', stat:'alch'},
+];
+
+// Estado de armas del jugador: {armaId: {nivel, rareza_idx}}
+// Catálogo de tienda: SHOP_CATS por sección
+const SHOP_CATS=['bendiciones','armas','habilidades','fusion','recursos'];
+const SHOP_CATS_NAMES={
+  bendiciones:'✨ Bendiciones',
+  armas:'⚔️ Armas',
+  habilidades:'🌟 Habilidades',
+  fusion:'🔮 Fusión',
+  recursos:'📦 Recursos'
+};
+
+// Bendiciones (sin nivel, precio fijo)
+const SHOP_BENDICIONES=[
+  {id:'bend_fuerza', e:'💪', n:'Bendición de Fuerza',  desc:'x2 velocidad de recolección por 1 día',         precio:8,  buff:{key:'fuerza2x',ticks:3600*3}},
+  {id:'bend_salud',  e:'❤️', n:'Bendición de Salud',   desc:'+50 HP máx por 2 días',                         precio:12, buff:{key:'salud+',ticks:3600*6}},
+  {id:'bend_lluvia', e:'🌧️', n:'Lluvia de Dios',       desc:'Invoca lluvia — riega huertos al instante',      precio:15, buff:{key:'lluvia_div',ticks:1800}},
+  {id:'bend_escudo', e:'🛡️', n:'Escudo Divino',        desc:'Inmune al daño de Nefilim por 3 noches',        precio:20, buff:{key:'escudo_div',ticks:3600*9}},
+  {id:'bend_rapido', e:'⚡', n:'Paso Veloz',            desc:'x2 velocidad de movimiento por 1 día',          precio:10, buff:{key:'velocidad2x',ticks:3600*3}},
+  {id:'bend_vision', e:'👁️', n:'Visión Profética',     desc:'Ve a los Nefilim en el mapa por 5 días',        precio:18, buff:{key:'vision_prof',ticks:3600*15}},
+];
+
+const SHOP_CATS_DATA={bendiciones:'bend',armas:'weap',habilidades:'skill',fusion:'fusion',recursos:'res'};
+
+const SHOP_RECURSOS=[
+  {id:'res_madera_g',  e:'🌲', n:'Madera de Gofer x5',  precio:12, give:{id:'madera_g',qty:5}},
+  {id:'res_alquitran', e:'🖤', n:'Alquitrán x3',         precio:10, give:{id:'alquitran',qty:3}},
+  {id:'res_metal',     e:'⚙️', n:'Grapas de metal x5',   precio:8,  give:{id:'metal',qty:5}},
+  {id:'res_semilla',   e:'🌱', n:'Semillas x5',           precio:6,  give:{id:'semilla',qty:5}},
+  {id:'res_cuerda_s',  e:'〰️', n:'Cuerdas Sagradas x3',  precio:15, give:{id:'cuerda_s',qty:3}},
+];
+
+const SELL_ITEMS=[
+  {id:'madera',   e:'🪵', n:'Madera',         precio:1},
+  {id:'piedra',   e:'🪨', n:'Piedra',         precio:1},
+  {id:'fibra',    e:'🌿', n:'Fibra',          precio:1},
+  {id:'barro',    e:'🟫', n:'Barro',          precio:1},
+  {id:'resina',   e:'🟡', n:'Resina',         precio:2},
+  {id:'cuero',    e:'🟤', n:'Cuero',          precio:3},
+  {id:'carne',    e:'🥩', n:'Carne',          precio:2},
+  {id:'pez',      e:'🐟', n:'Pez',            precio:2},
+  {id:'miel',     e:'🍯', n:'Miel',           precio:4},
+  {id:'tabla',    e:'📋', n:'Tabla',          precio:2},
+  {id:'ladrillo', e:'🧱', n:'Ladrillo',       precio:2},
+  {id:'brea',     e:'⬛', n:'Brea',           precio:3},
+  {id:'madera_g', e:'🌲', n:'Madera Gofer',   precio:4},
+  {id:'alquitran',e:'🖤', n:'Alquitrán',      precio:3},
+  {id:'metal',    e:'⚙️', n:'Grapas',         precio:2},
+];
+
+// Estado de armas/habilidades del jugador (reemplaza armasNivel)
+let armasEstado={};   // {armaId: {nivel:N, rareza:0-5, fusionando:false}}
+let skillsEstado={};  // {skillId: {nivel:N, rareza:0-5}}
+
+// RECETAS TIENDA (para craftear desde shop)
+const RECETAS_TIENDA=[
+  {id:'cuerda_s', cat:'arca',   r:'cuerda_s', q:2, req:{fibra:2,resina:1},           n:'Cuerdas Sagradas x2'},
+  {id:'vela_arca',cat:'estructuras',r:'vela_arca',q:1,req:{resina:2,fibra:1,madera:2},n:'Vela del Arca'},
+  {id:'balsamo',  cat:'comida', r:'balsamo',  q:1, req:{miel:2,fruta:2,medicina:1},  n:'Bálsamo Sagrado',fx:{hp:80}},
+];
+const ITEMS_TIENDA={
+  cuerda_s:{n:'Cuerdas Sagradas',e:'〰️',t:'b',d:'Cuerdas reforzadas para el Arca'},
+  vela_arca:{n:'Vela del Arca',  e:'🕯️',t:'s',d:'Ahuyenta Nefilim en radio grande'},
+  balsamo:  {n:'Bálsamo Sagrado',e:'🧴',t:'c',d:'+80 HP',fx:{hp:80}},
+};
+
+// ─── GENERACIÓN MUNDO ────────────────────────// ─── GENERACIÓN MUNDO ────────────────────────
 function n2d(x,y){const v=Math.sin(x*127.1+y*311.7)*43758.5453;return(v-Math.floor(v))*2-1;}
 
 function genMundo(){
@@ -1102,6 +1361,7 @@ function drawMinimap(){
   }
   wObjs.forEach(o=>{ctx.fillStyle=o.tipo==='arbol'?'#1a5010':o.tipo==='roca'?'#555':'#4a8028';ctx.fillRect(mx+o.tx*sx,my+o.ty*sy2,2,2);});
   structs.forEach(s=>{ctx.fillStyle='#c9a84c';ctx.fillRect(mx+s.tx*sx,my+s.ty*sy2,3,3);});
+  if(hasSkill('prof2')){nefilim.forEach(n=>{ctx.fillStyle='#ff3030';ctx.fillRect(mx+(n.x/TILE)*sx,my+(n.y/TILE)*sy2,3,3);});}
   const ppx=mx+(P.x/TILE)*sx,ppy=my+(P.y/TILE)*sy2;
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ppx,ppy,2.5,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(ppx,ppy,1.5,0,Math.PI*2);ctx.fill();
@@ -1162,7 +1422,7 @@ function update(){
   if(ml){dx=-1;P.dir=2;}if(mr){dx=1;P.dir=3;}
   if(dx&&dy){dx*=0.707;dy*=0.707;}
   P.moving=!!(dx||dy);
-  const spd=P.speed*(P.energy<20?0.52:1)*(hasSkill('fuerza')?1.15:1);
+  const spd=P.speed*(P.energy<20?0.52:1)*(hasSkill('fuerza')?1.15:1)*(getBuff('velocidad2x')?1:1);
   const nx=P.x+dx*spd,ny=P.y+dy*spd;
   const bl=colCheck(nx,ny);
   if(!bl.x)P.x=nx;if(!bl.y)P.y=ny;
@@ -1190,6 +1450,10 @@ function update(){
   if(drops.length===0&&(clima==='lluvia'||clima==='tormenta'))initDrops();
   else if(drops.length>0&&clima!=='lluvia'&&clima!=='tormenta')drops=[];
   if(tick%60===0){
+    // Crecer huertos
+    structs.filter(s=>s.tipo==='huerto'&&s.planted).forEach(s=>{
+      s.grown=Math.min(100,(s.grown||0)+0.15*(clima==='lluvia'?2:1));
+    });
     P.hunger=Math.max(0,P.hunger-0.35);  // reducido para que no distraiga del Arca
     P.thirst=Math.max(0,P.thirst-0.5);
     if(P.hunger>50&&P.thirst>50)P.energy=Math.min(100,P.energy+0.4);
@@ -1208,6 +1472,9 @@ function update(){
   spawnNefilim();
   updateDiluvio();
   if(tick%120===0){checkMisiones();updateMisionHUD();}
+  ganarSiclosPorAccion();
+  tickBuffs();
+  if(tick%300===0) checkTips();
   updateHUD();
 }
 
@@ -1245,16 +1512,26 @@ function findNearestWater(px,py){
 function drawNearIndicator(cx,cy){
   const hint=document.getElementById('ihint');
   const px=Math.floor(P.x/TILE),py=Math.floor(P.y/TILE);
-  nearObj=null;let minD=2.3;
-  wObjs.forEach(o=>{const d=Math.hypot(o.tx-px,o.ty-py);if(d<minD){minD=d;nearObj=o;}});
-  structs.forEach(s=>{const d=Math.hypot(s.tx-px,s.ty-py);if(d<minD){minD=d;nearObj=s;}});
+  nearObj=null;let minD=2.8;
+  wObjs.forEach(o=>{
+    let ddx=o.tx-px, ddy=o.ty-py;
+    if(ddx>MW/2)ddx-=MW; if(ddx<-MW/2)ddx+=MW;
+    if(ddy>MH/2)ddy-=MH; if(ddy<-MH/2)ddy+=MH;
+    const d=Math.hypot(ddx,ddy);if(d<minD){minD=d;nearObj=o;}
+  });
+  structs.forEach(s=>{
+    let ddx=s.tx-px, ddy=s.ty-py;
+    if(ddx>MW/2)ddx-=MW; if(ddx<-MW/2)ddx+=MW;
+    if(ddy>MH/2)ddy-=MH; if(ddy<-MH/2)ddy+=MH;
+    const d=Math.hypot(ddx,ddy);if(d<minD){minD=d;nearObj=s;}
+  });
   const waterNear=[-1,0,1].some(dy=>[-1,0,1].some(dx=>{const t=wMap[py+dy]?.[px+dx];return t&&t.t===T.WATER;}));
 
   if(nearObj){
     const sx=nearObj.tx*TILE-cx+TILE/2,sy=nearObj.ty*TILE-cy-10;
     ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='16px serif';ctx.textAlign='center';
     ctx.fillText('⬆',sx,sy);ctx.textAlign='left';
-    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Usar fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖'};
+    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar ✝️',taller:'[E] Abrir taller 🔨'};
     hint.textContent=labs[nearObj.tipo]||'[E] Interactuar';
     hint.style.display='block';
     hint.style.color='var(--gold)';
@@ -1314,28 +1591,48 @@ function drawNearIndicator(cx,cy){
 }
 
 window.doInteract=function(){
-  // Si hay nefilim cerca, atacar primero
-  if(atacarNefilim())return;
   if(!nearObj)return;const o=nearObj;
-  const bon=hasSkill('fuerza')?2:1;
+  const bon=(hasSkill('fuerza')?2:1)*(getBuff('fuerza2x')?2:1)*(getArmaBonus('craft')>0?1+(getArmaBonus('craft')/200):1);
   if(o.tipo==='arbol'){
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
+    if(hasItem('hacha')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('hacha',1);notif('🪓 La hacha se rompió — crea otra','red');}
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪵');
     sndAxe();addFlash(P.x,P.y-20); if(o.hp<=0){addItem('madera',5+Math.floor(Math.random()*4));if(Math.random()<0.3)addItem('resina',1);removeObj(o);sndCollect();notif('🪵 Madera','');addXP(10);}
     else addItem('madera',1);
   }else if(o.tipo==='roca'){
     const c=(hasItem('pico')?3:1)*bon;o.hp-=c;
+    if(hasItem('pico')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('pico',1);notif('⛏️ El pico se rompió — crea otro','red');}
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪨');
     sndRock();addFlash(P.x,P.y-20); if(o.hp<=0){addItem('piedra',4+Math.floor(Math.random()*3));addItem('barro',Math.random()<0.4?2:1);removeObj(o);sndCollect();notif('🪨 Piedra','');addXP(8);}
     else addItem('piedra',1);
   }else if(o.tipo==='arbusto'||o.tipo==='cana'){
-    sndPickPlant();addItem('fibra',2+Math.floor(Math.random()*2));removeObj(o);sndCollect();notif('🌿 Fibra','');addXP(5);
+    sndPickPlant();addItem('fibra',2+Math.floor(Math.random()*2));if(Math.random()<0.3)addItem('semilla',1);removeObj(o);sndCollect();notif('🌿 Fibra','');addXP(5);
   }else if(o.tipo==='bayas'){
-    sndPickPlant();addItem('bayas',3+Math.floor(Math.random()*3));removeObj(o);sndCollect();notif('🫐 Bayas','');addXP(5);
+    sndPickPlant();addItem('bayas',3+Math.floor(Math.random()*3));if(hasSkill('colm')&&Math.random()<0.4)addItem('miel',1);removeObj(o);sndCollect();notif('🫐 Bayas','');addXP(5);
   }else if(o.tipo==='frutal'){
     sndPickPlant();addItem('fruta',2+Math.floor(Math.random()*2));removeObj(o);sndCollect();notif('🍎 Fruta','');addXP(5);
   }else if(o.tipo==='agua'){
     if(hasItem('jarra')){removeItem('jarra',1);addItem('agua',1);sndDrink();notif('🫙 ¡Jarra llena de agua!','grn');}
+    // Pescar si tiene fibra como caña improvisada
+    if(hasItem('fibra',2)&&Math.random()<(hasSkill('pesc')?0.7:0.3)){
+      removeItem('fibra',1);addItem('pez',1);sndCollect();notif('🐟 ¡Pescaste un pez!','grn');addXP(8);
+    }
+  }else if(o.tipo==='pozo'){
+    // El pozo no necesita jarra — da agua directamente
+    addItem('agua',2);sndDrink();notif('🪣 Sacaste agua del pozo','grn');addXP(2);
+  }else if(o.tipo==='huerto'){
+    // El huerto produce comida si han pasado suficientes horas
+    if(!o.planted){
+      if(hasItem('semilla')){removeItem('semilla',1);o.planted=true;o.grown=0;notif('🌱 Semillas plantadas — riega con lluvia o espera','grn');}
+      else notif('🌱 El huerto está vacío — necesitas semillas (búscalas en el bosque)','');
+    }else if(o.grown>=100){
+      addItem('trigo',2+Math.floor(Math.random()*3));addItem('fruta',1);
+      sndCollect();o.grown=0;notif('🌾 ¡Cosecha lista!','grn');addXP(20);
+    }else{notif(`🌿 Creciendo... ${Math.floor(o.grown)}%`,'');}
+  }else if(o.tipo==='altar'){
+    doOrar();
+  }else if(o.tipo==='taller'){
+    toggleP('craft');notif('🔨 Taller abierto — aquí puedes crear armas','');
   }else if(o.tipo==='fogon'){
     toggleP('craft');notif('🔥 Acércate al fogón para cocinar','');
   }else if(o.tipo==='cama'){doSleep();}
@@ -1469,6 +1766,31 @@ function addXP(n){
   if(P.xp>=need){P.xp-=need;P.lv++;P.sp++;P.mhp+=10;P.hp=Math.min(P.mhp,P.hp+20);sndLevelUp();notif(`⬆️ Nivel ${P.lv}! +1 punto de talento`,'gld');}
 }
 
+function doOrar(){
+  if(!structs.find(s=>s.tipo==='altar'&&Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<80)){
+    notif('Debes estar junto al altar','red');return;
+  }
+  const sp=P.sp; // puntos de talento
+  // La oración cuesta 1 minuto de juego (tick)
+  if(tick-lastPrayTick<3600){notif(`✝️ Ya oraste hace poco — espera ${Math.ceil((3600-(tick-lastPrayTick))/60)} min`,'');return;}
+  lastPrayTick=tick;
+  const roll=Math.random();
+  if(hasSkill('sant')){
+    // Con talento Santo, beneficios más fuertes
+    if(roll<0.35){P.hp=P.mhp;notif('🕊️ Dios te sana completamente','gld');sndLevelUp();}
+    else if(roll<0.6){addItem('madera',10);addItem('piedra',8);notif('🕊️ Dios provee materiales','gld');sndLevelUp();}
+    else if(roll<0.8){P.sp++;notif('🕊️ Dios te da sabiduría — +1 talento','gld');sndLevelUp();}
+    else{P.hunger=100;P.thirst=100;P.energy=100;notif('🕊️ Dios restaura tus fuerzas','gld');sndLevelUp();}
+  } else {
+    if(roll<0.4){P.hp=Math.min(P.mhp,P.hp+30);notif('🕊️ Sentiste la paz de Dios — +30 HP','gld');}
+    else if(roll<0.7){addItem('fruta',2);addItem('agua',1);notif('🕊️ Dios provee alimento','gld');}
+    else{P.energy=100;notif('🕊️ Dios renueva tus fuerzas','gld');}
+  }
+  sndNotifGood();
+  addXP(25);
+}
+let lastPrayTick=0;
+
 function doSleep(){sndSleep();
   const ov=document.getElementById('sl-ov');
   ov.classList.add('on');
@@ -1562,8 +1884,15 @@ function updateHUD(){
   document.getElementById('bEn').style.width=P.energy+'%';
   document.getElementById('bXp').style.width=(P.xp/(P.lv*100))*100+'%';
   document.getElementById('hudLv').textContent=`Nv.${P.lv}`;
+  document.getElementById('hudSiclos').textContent=`🪙 ${siclos}`;
+  // Mostrar buffs activos en HUD como pequeñas pastillas
+  const buffBar=document.getElementById('buff-bar');
+  if(buffBar){
+    const names={fuerza2x:'💪',salud:'+❤️',lluvia_div:'🌧️',escudo_div:'🛡️',velocidad2x:'⚡',vision_prof:'👁️'};
+    buffBar.innerHTML=Object.keys(buffsActivos).map(k=>`<span title="${k}" style="font-size:0.9rem;opacity:0.9">${names[k]||'✨'}</span>`).join('');
+  }
   const tl=wTime<0.2?'🌙 Noche':wTime<0.3?'🌅 Amanecer':wTime<0.5?'☀️ Mañana':wTime<0.7?'☀️ Tarde':wTime<0.8?'🌇 Atardecer':'🌙 Noche';
-  document.getElementById('hudDay').textContent=`Día ${wDay} — ${tl}`;
+  // day counter removed — game is timeless
   document.getElementById('bTime').style.width=(wTime*100)+'%';
   const tc=wTime<0.25||wTime>0.75?'#8888ff':wTime<0.35?'#ffaa44':'#ffdd44';
   document.getElementById('bTime').style.background=`linear-gradient(90deg,${tc}88,${tc})`;
@@ -1580,16 +1909,26 @@ function notif(msg,tipo){
 window.notif=notif;
 
 window.toggleP=function(w){
-  const m={inv:'p-inv',craft:'p-craft',skills:'p-skills'};
+  const m={inv:'p-inv',craft:'p-craft',skills:'p-skills',shop:'p-shop'};
   const el=document.getElementById(m[w]);
+  if(!el) return;
   const was=el.classList.contains('open');
+  // Cerrar todos
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
-  if(!was){el.classList.add('open');
+  if(!was){
+    el.classList.add('open');
+    gPause=true; // Pausa automática al abrir menú
     if(w==='inv')renderInv();
     if(w==='craft')renderCraft();
     if(w==='skills')renderSkills();
+    if(w==='shop')renderShop();
+  } else {
+    gPause=false; // Reanuda el juego al cerrar
   }
-  // Los paneles NO pausan el juego — el jugador sigue moviéndose
+};
+window.closeAllPanels=function(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  gPause=false;
 };
 
 window.showS=function(id){
@@ -1729,7 +2068,7 @@ async function saveGame(){
   if(!cu)return;
   try{
     await fbUpdate(ref(db,`rpg2/${cu.uid}`),{
-      day:wDay,lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,
+      day:wDay,lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,siclos,armasEstado,skillsEstado,
       skills:SKILLS.filter(s=>s.u).map(s=>s.id),
       inventory:inv.filter(Boolean),structs:structs,
       px:Math.round(P.x),py:Math.round(P.y),savedAt:Date.now()
@@ -1745,6 +2084,11 @@ async function loadGame(){
     const d=s.val();if(!d)return;
     wDay=d.day||1;P.lv=d.lv||1;P.xp=d.xp||0;P.hp=d.hp||100;
     arcaProgress=d.arcaP||0;misionActual=d.mision||0;misionCompletada=d.misionC||[];
+    if(d.siclos) siclos=d.siclos;
+    if(d.armasEstado) Object.assign(armasEstado,d.armasEstado);
+    if(d.skillsEstado) Object.assign(skillsEstado,d.skillsEstado);
+    // Re-aplicar efectos de armas al cargar
+    Object.keys(armasEstado).forEach(id=>aplicarEfectoArma(id,armasEstado[id].nivel));
     P.hunger=d.hunger||100;P.thirst=d.thirst||100;P.energy=d.energy||100;P.sp=d.sp||0;
     if(d.skills)d.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk)sk.u=true;});
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
@@ -2102,7 +2446,8 @@ function checkMisiones(){
   if(m.req&&m.req()&&!misionCompletada.includes(m.id)){
     misionCompletada.push(m.id);
     m.recompensa();
-    notif(`✝️ Misión cumplida: ${m.titulo}`,'gld');
+    const scM=15+misionActual*10;addSiclos(scM);
+    notif(`✝️ Misión cumplida: ${m.titulo} +${scM}🪙`,'gld');
     misionActual=Math.min(misionActual+1,MISIONES.length-1);
     if(misionActual<MISIONES.length){
       setTimeout(()=>showGodVoice(MISIONES[misionActual]),3000);
@@ -2317,7 +2662,10 @@ function updateNefilim(){
       if(n.attackT>60){
         n.attackT=0;
         if(n.target==='jugador'){
-          P.hp=Math.max(0,P.hp-n.dmg);
+          const defBonus=getArmaBonus('def');
+          const reduc=getBuff('escudo_div')?1:(defBonus>0?Math.max(0.1,1-defBonus/300):hasItem('armadura')?0.5:1);
+          const dmgFinal=Math.max(0,Math.floor(n.dmg*reduc));
+          P.hp=Math.max(0,P.hp-dmgFinal);
           sndNotifBad();
           notif(`👹 ¡Un gigante te golpea! -${n.dmg} HP`,'red');
           if(P.hp<=0) gameOver();
@@ -2340,7 +2688,8 @@ function updateNefilim(){
 
 function attackNefilim(){
   // Jugador ataca al nefilim más cercano
-  const bonus=hasSkill('guer')?2:1;
+  const dmgArma=getArmaBonus('dmg');
+  const bonus=(hasSkill('guer')?2:1)*(dmgArma>0?1+(dmgArma/100):hasItem('espada')?1.8:hasItem('lanza')?1.4:1);
   let attacked=false;
   nefilim.forEach((n,i)=>{
     const d=Math.hypot(n.x-P.x,n.y-P.y);
@@ -2349,7 +2698,9 @@ function attackNefilim(){
       n.hp-=dmg;
       addPart(n.x,n.y,`-${dmg}`);
       n.stunT=20;
-      if(n.hp<=0){nefilim.splice(i,1);addXP(30);notif('⚔️ ¡Gigante derrotado!','gld');sndLevelUp();}
+      if(n.hp<=0){nefilim.splice(i,1);addXP(30);
+        const sc=3+Math.floor(wDay/3);addSiclos(sc);
+        notif(`⚔️ ¡Gigante derrotado! +${sc}🪙`,'gld');sndLevelUp();}
       attacked=true;
     }
   });
@@ -2523,6 +2874,396 @@ function checkVictory(){
 //  FASE 2 — INTERACCIÓN NEFILIM
 // ════════════════════════════════════════════
 // (ya definida arriba como attackNefilim)
+
+
+// ═══════════════════════════════════════════
+//  SISTEMA DE SICLOS Y TIENDA
+// ═══════════════════════════════════════════
+
+function addSiclos(n){
+  siclos+=n;
+  document.getElementById('hudSiclos').textContent=`🪙 ${siclos}`;
+  const sel=document.getElementById('shopSiclos');if(sel)sel.textContent=`🪙 ${siclos}`;
+}
+
+function ganarSiclosPorAccion(){
+  // Siclos por XP acumulado — pequeña cantidad constante
+  if(tick%600===0&&P.xp>0){
+    const bonus=Math.floor(P.lv*0.5+1);
+    addSiclos(bonus);
+    if(tick%3600===0) notif(`🪙 +${bonus*6} siclos ganados explorando`,'');
+  }
+}
+
+function getRarezaEmoji(idx){
+  return ['⬜','🟩','🟦','🟪','🟥','🟨'][idx]||'⬜';
+}
+
+window.venderItem=function(id,qty=1){
+  const si=SELL_ITEMS.find(s=>s.id===id); if(!si) return;
+  const tengo=cntItem(id);
+  if(tengo<qty){notif(`No tienes suficiente ${si.n}`,'red');return;}
+  removeItem(id,qty);
+  const ganado=si.precio*qty;
+  addSiclos(ganado);
+  sndCollect();
+  notif(`💰 Vendiste ${qty}x ${si.e}${si.n} → 🪙+${ganado}`,'shop');
+  renderShop();
+};
+window.venderTodo=function(id){
+  const si=SELL_ITEMS.find(s=>s.id===id); if(!si) return;
+  const qty=cntItem(id); if(!qty){notif('No tienes nada que vender','red');return;}
+  venderItem(id,qty);
+};
+
+window.comprarBendicion=function(id){
+  const item=SHOP_BENDICIONES.find(i=>i.id===id); if(!item) return;
+  if(siclos<item.precio){notif(`🪙 Necesitas ${item.precio} siclos (tienes ${siclos})`,'red');sndNotifBad();return;}
+  siclos-=item.precio; addSiclos(0);
+  buffsActivos[item.buff.key]=(buffsActivos[item.buff.key]||0)+item.buff.ticks;
+  aplicarBuff(item.buff.key);
+  sndLevelUp();
+  notif(`✨ ${item.n} activada!`,'gld');
+  renderShop();
+};
+
+window.comprarArma=function(armaId,cat,nivelObjetivo){
+  const lista=cat==='armas'?SHOP_WEAPONS:SHOP_SKILLS_TIENDA;
+  const item=lista.find(i=>i.id===armaId); if(!item) return;
+  const precio=getPrecioBase(nivelObjetivo);
+  if(siclos<precio){notif(`🪙 Necesitas ${precio} siclos (tienes ${siclos})`,'red');sndNotifBad();return;}
+  siclos-=precio; addSiclos(0);
+  const est=cat==='armas'?armasEstado:skillsEstado;
+  if(!est[armaId]) est[armaId]={nivel:0,rareza:0};
+  est[armaId].nivel=nivelObjetivo;
+  est[armaId].rareza=RAREZAS.findIndex(r=>nivelObjetivo>=r.rango[0]&&nivelObjetivo<=r.rango[1]);
+  const rar=getRareza(nivelObjetivo);
+  // Efectos en el jugador según tipo
+  aplicarEfectoArma(armaId,nivelObjetivo);
+  sndLevelUp();
+  addPart(P.x,P.y-30,item.e);
+  notif(`${getRarezaEmoji(est[armaId].rareza)} ${item.n} Nv.${nivelObjetivo} obtenida! (${rar.nombre})`,'gld');
+  renderShop();
+};
+
+window.comprarRecurso=function(id){
+  const item=SHOP_RECURSOS.find(i=>i.id===id); if(!item) return;
+  if(siclos<item.precio){notif(`🪙 Necesitas ${item.precio} siclos`,'red');return;}
+  siclos-=item.precio; addSiclos(0);
+  addItem(item.give.id,item.give.qty);
+  sndCollect();
+  notif(`📦 +${item.give.qty} ${ITEMS[item.give.id]?.n||item.give.id}`,'grn');
+  renderShop();
+};
+
+window.fusionarRareza=function(id){
+  // Buscar en armas y habilidades
+  const est=armasEstado[id]||skillsEstado[id];
+  if(!est){notif('No tienes este equipo','red');return;}
+  const rarIdx=est.rareza||0;
+  if(rarIdx>=5){notif('Ya es de rareza máxima — Bendecido','');return;}
+  const rar=RAREZAS[rarIdx];
+  const nextRar=RAREZAS[rarIdx+1];
+  const fusKey=`${rar.id}→${nextRar.id}`;
+  const mat=FUSION_MAT[fusKey];
+  if(!mat){notif('Fusión no disponible','red');return;}
+  // Verificar materiales
+  const falta=Object.entries(mat.req).find(([k,v])=>cntItem(k)<v);
+  if(falta){
+    const it=ITEMS[falta[0]]||{n:falta[0],e:'📦'};
+    notif(`❌ Faltan ${it.e} ${it.n} — necesitas ${falta[1]}, tienes ${cntItem(falta[0])}`,'red');
+    return;
+  }
+  // Consumir materiales
+  Object.entries(mat.req).forEach(([k,v])=>removeItem(k,v));
+  // Fusión exitosa
+  if(armasEstado[id]) armasEstado[id].rareza=rarIdx+1;
+  else skillsEstado[id].rareza=rarIdx+1;
+  sndLevelUp();
+  addPart(P.x,P.y-30,'🔮');
+  notif(`🔮 ¡Fusión exitosa! ${getRarezaEmoji(rarIdx+1)} Ahora es ${nextRar.nombre}`,'gld');
+  // Aplicar efecto de rareza mejorada
+  aplicarEfectoArma(id,est.nivel);
+  renderShop();
+};
+
+function aplicarEfectoArma(id,nivel){
+  const bonus=getStatBonus(nivel);
+  switch(id){
+    case 'amuleto_c': P.mhp=100+bonus; P.hp=Math.min(P.mhp,P.hp+bonus); break;
+    case 'botas':     P.speed=2.4+(bonus*0.008); break;
+    case 'escudo_s':  break; // handled in combat
+    default: break; // daño manejado en attackNefilim
+  }
+}
+
+function getArmaBonus(stat){
+  // Suma bonuses de todas las armas/habilidades activas para un stat dado
+  let total=0;
+  [...SHOP_WEAPONS,...SHOP_SKILLS_TIENDA].forEach(item=>{
+    const est=armasEstado[item.id]||skillsEstado[item.id];
+    if(!est||!est.nivel) return;
+    if(item.stat===stat){
+      const rarMult=1+(est.rareza||0)*0.35; // rareza da 35% más por nivel
+      total+=getStatBonus(est.nivel)*rarMult;
+    }
+  });
+  return Math.floor(total);
+}
+
+function aplicarBuff(key){
+  if(key==='salud+'){P.mhp+=50;P.hp=Math.min(P.mhp,P.hp+50);}
+  else if(key==='lluvia_div'){clima='lluvia';notif('🌧️ ¡Dios envía lluvia!','gld');}
+  else if(key==='velocidad2x'){P.speed=4.8;}
+}
+
+function tickBuffs(){
+  if(tick%60!==0) return;
+  Object.keys(buffsActivos).forEach(k=>{
+    buffsActivos[k]-=60;
+    if(buffsActivos[k]<=0){
+      delete buffsActivos[k];
+      if(k==='salud+'){P.mhp=Math.max(100,P.mhp-50);}
+      else if(k==='velocidad2x'){P.speed=2.4;}
+      notif(`⏱️ Bendición terminó`,'');
+    }
+  });
+}
+
+function getBuff(key){return (buffsActivos[key]||0)>0;}
+
+function renderShop(){
+  const siclosEls=document.querySelectorAll('#hudSiclos,#shopSiclos');
+  siclosEls.forEach(el=>{if(el)el.textContent=`🪙 ${siclos}`;});
+  const sg=document.getElementById('sell-grid');
+  const catsEl=document.getElementById('shopCats');
+  const grid=document.getElementById('shop-grid');
+  if(!sg||!catsEl||!grid) return;
+
+  // ── Sección Vender ──────────────────────────────────────────
+  sg.innerHTML='';
+  SELL_ITEMS.forEach(si=>{
+    const qty=cntItem(si.id); if(!qty) return;
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:8px;padding:6px 10px;';
+    d.innerHTML=`<span style="font-size:1.15rem">${si.e}</span>
+      <span style="flex:1;font-size:0.72rem;color:var(--text)">${si.n}<span style="color:var(--muted)"> ×${qty}</span></span>
+      <span style="font-size:0.68rem;color:#c8d8a8;margin-right:4px">🪙${si.precio}/u</span>
+      <button class="sbtn" style="padding:3px 8px;font-size:0.62rem" onclick="venderItem('${si.id}',1)">×1</button>
+      <button class="sbtn" style="padding:3px 8px;font-size:0.62rem;margin-left:2px;background:linear-gradient(135deg,#7a3010,#aa4418)" onclick="venderTodo('${si.id}')">Todo</button>`;
+    sg.appendChild(d);
+  });
+  if(!sg.innerHTML) sg.innerHTML='<div style="color:var(--muted);font-size:0.72rem;padding:4px">No tienes recursos para vender</div>';
+
+  // ── Categorías ─────────────────────────────────────────────
+  catsEl.innerHTML='';
+  SHOP_CATS.forEach(cat=>{
+    const b=document.createElement('button');
+    b.className='scat'+(cat===shopCatActual?' on':'');
+    b.textContent=SHOP_CATS_NAMES[cat];
+    b.onclick=()=>{shopCatActual=cat;renderShop();};
+    catsEl.appendChild(b);
+  });
+
+  // ── Contenido por categoría ─────────────────────────────────
+  grid.innerHTML='';
+
+  if(shopCatActual==='bendiciones'){
+    grid.style.gridTemplateColumns='repeat(2,1fr)';
+    SHOP_BENDICIONES.forEach(item=>{
+      const activo=getBuff(item.buff.key);
+      const puedo=siclos>=item.precio;
+      const div=document.createElement('div');
+      div.className='sitem'+(activo?' owned':'');
+      div.innerHTML=`
+        <div class="sitem-top">
+          <div class="sitem-ico">${item.e}</div>
+          <div class="sitem-info">
+            <div class="sitem-name">${item.n}</div>
+            <div class="sitem-desc">${item.desc}</div>
+            ${activo?`<div style="font-size:0.6rem;color:#6aaa2a;margin-top:2px">✅ Activa — ${Math.floor((buffsActivos[item.buff.key]||0)/60)}s</div>`:''}
+          </div>
+        </div>
+        <div class="sitem-price">
+          <span class="sprice">🪙 ${item.precio}</span>
+          <button class="sbtn" ${!puedo?'disabled':''} onclick="comprarBendicion('${item.id}')">Comprar</button>
+        </div>`;
+      grid.appendChild(div);
+    });
+
+  } else if(shopCatActual==='armas'||shopCatActual==='habilidades'){
+    const lista=shopCatActual==='armas'?SHOP_WEAPONS:SHOP_SKILLS_TIENDA;
+    grid.style.gridTemplateColumns='repeat(2,1fr)';
+    lista.forEach(item=>{
+      const est=shopCatActual==='armas'?armasEstado[item.id]:skillsEstado[item.id];
+      const nivel=est?est.nivel:0;
+      const rarIdx=est?est.rareza:0;
+      const rar=RAREZAS[rarIdx]||RAREZAS[0];
+      const precioNv1=getPrecioBase(1);
+      const precioUpg=nivel>0?getPrecioBase(Math.min(nivel+5,60)):precioNv1;
+      const nivelUpg=nivel>0?Math.min(nivel+5,60):1;
+      const rarUpg=getRareza(nivelUpg);
+      const puedoNv1=siclos>=precioNv1;
+      const puedoUpg=siclos>=precioUpg;
+      const div=document.createElement('div');
+      div.className='sitem';
+      div.style.borderColor=rar.borde;
+      div.style.background=`linear-gradient(135deg,rgba(0,0,0,0.8),${rar.color}22)`;
+
+      let contenido='';
+      if(nivel===0){
+        // No tiene — mostrar precio para comprar Nv.1
+        contenido=`
+          <div class="sitem-top">
+            <div class="sitem-ico" style="position:relative">
+              ${item.e}
+              <span style="position:absolute;bottom:-2px;right:-4px;font-size:0.55rem;background:${RAREZAS[0].color};border-radius:3px;padding:0 2px;color:#fff">Nv.1</span>
+            </div>
+            <div class="sitem-info">
+              <div class="sitem-name">${item.n}</div>
+              <div class="sitem-desc">${item.desc}</div>
+              <div style="font-size:0.6rem;margin-top:2px;color:${RAREZAS[0].borde}">⬜ ${RAREZAS[0].nombre} — Nv.1 — Daño base: +${getStatBonus(1)}</div>
+            </div>
+          </div>
+          <div class="sitem-price">
+            <span class="sprice">🪙 ${precioNv1}</span>
+            <button class="sbtn" ${!puedoNv1?'disabled':''} onclick="comprarArma('${item.id}','${shopCatActual}',1)">Obtener</button>
+          </div>`;
+      } else {
+        // Ya tiene — mostrar nivel actual y opción de subir
+        const maxNivel=nivel>=60;
+        contenido=`
+          <div class="sitem-top">
+            <div class="sitem-ico" style="position:relative">
+              ${item.e}
+              <span style="position:absolute;bottom:-2px;right:-4px;font-size:0.55rem;background:${rar.color};border-radius:3px;padding:0 2px;color:#fff;border:1px solid ${rar.borde}">Nv.${nivel}</span>
+            </div>
+            <div class="sitem-info">
+              <div class="sitem-name">${item.n}</div>
+              <div class="sitem-desc">${item.desc}</div>
+              <div style="font-size:0.6rem;margin-top:2px;color:${rar.borde}">
+                ${getRarezaEmoji(rarIdx)} ${rar.nombre} — Nv.${nivel} — Efecto: +${getStatBonus(nivel)}
+              </div>
+              ${!maxNivel?`<div style="font-size:0.58rem;color:var(--muted)">→ Subir a Nv.${nivelUpg}: 🪙${precioUpg} <span style="color:${rarUpg.borde}">(${rarUpg.nombre})</span></div>`:''}
+            </div>
+          </div>
+          <div class="sitem-price">
+            ${maxNivel?'<span style="color:#f0c030;font-size:0.7rem">🏆 NIVEL MÁXIMO</span>':''}
+            ${!maxNivel?`<span class="sprice">🪙 ${precioUpg}</span><button class="sbtn upg" ${!puedoUpg?'disabled':''} onclick="comprarArma('${item.id}','${shopCatActual}',${nivelUpg})">Subir Nv.</button>`:''}
+          </div>`;
+      }
+      div.innerHTML=contenido;
+      grid.appendChild(div);
+    });
+
+  } else if(shopCatActual==='fusion'){
+    grid.style.gridTemplateColumns='1fr';
+    // Mostrar armas/habilidades que pueden fusionarse de rareza
+    const todasEquip=[...SHOP_WEAPONS,...SHOP_SKILLS_TIENDA];
+    const tieneEquip=todasEquip.filter(e=>{
+      const est=armasEstado[e.id]||skillsEstado[e.id];
+      return est&&est.nivel>0;
+    });
+    if(!tieneEquip.length){
+      grid.innerHTML='<div style="color:var(--muted);font-size:0.78rem;padding:20px;text-align:center">Compra armas o habilidades primero para poder fusionar su rareza</div>';
+    } else {
+      tieneEquip.forEach(item=>{
+        const est=armasEstado[item.id]||skillsEstado[item.id];
+        const rarIdx=est.rareza||0;
+        const rar=RAREZAS[rarIdx];
+        if(rarIdx>=5){
+          const div=document.createElement('div');
+          div.className='sitem owned';
+          div.style.borderColor=RAREZAS[5].borde;
+          div.innerHTML=`<div class="sitem-top"><div class="sitem-ico">${item.e}</div><div class="sitem-info"><div class="sitem-name">${item.n}</div><div style="color:${RAREZAS[5].borde};font-size:0.72rem">🏆 Rareza máxima — BENDECIDO</div></div></div>`;
+          grid.appendChild(div);
+          return;
+        }
+        const nextRar=RAREZAS[rarIdx+1];
+        const fusKey=`${rar.id}→${nextRar.id}`;
+        const mat=FUSION_MAT[fusKey];
+        const puedeF=mat&&Object.entries(mat.req).every(([k,v])=>cntItem(k)>=v);
+        const reqTxt=mat?Object.entries(mat.req).map(([k,v])=>{
+          const it=ITEMS[k]||{n:k,e:'📦'};
+          const ok=cntItem(k)>=v;
+          return `<span style="color:${ok?'#4acc4a':'#ee5555'};font-size:0.65rem">${it.e}${v}x</span>`;
+        }).join(' '):'';
+        const div=document.createElement('div');
+        div.className='sitem';
+        div.style.borderColor=rar.borde;
+        div.style.background=`linear-gradient(135deg,rgba(0,0,0,0.85),${rar.color}30)`;
+        div.innerHTML=`
+          <div class="sitem-top">
+            <div class="sitem-ico" style="position:relative">
+              ${item.e}
+              <span style="position:absolute;bottom:-2px;right:-4px;font-size:0.55rem;background:${rar.color};border-radius:3px;padding:0 2px;color:#fff">Nv.${est.nivel}</span>
+            </div>
+            <div class="sitem-info">
+              <div class="sitem-name">${item.n}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                <span style="color:${rar.borde};font-size:0.7rem">${getRarezaEmoji(rarIdx)} ${rar.nombre}</span>
+                <span style="color:var(--muted)">→</span>
+                <span style="color:${nextRar.borde};font-size:0.7rem">${getRarezaEmoji(rarIdx+1)} ${nextRar.nombre}</span>
+              </div>
+              <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${reqTxt}</div>
+            </div>
+          </div>
+          <div class="sitem-price">
+            <span style="font-size:0.6rem;color:var(--muted)">⏱ ${Math.floor((mat?.tiempo||0)/60)}min</span>
+            <button class="sbtn" style="background:linear-gradient(135deg,${rar.color},${nextRar.color})" ${!puedeF?'disabled':''} onclick="fusionarRareza('${item.id}')">Fusionar</button>
+          </div>`;
+        grid.appendChild(div);
+      });
+    }
+
+  } else if(shopCatActual==='recursos'){
+    grid.style.gridTemplateColumns='repeat(2,1fr)';
+    SHOP_RECURSOS.forEach(item=>{
+      const puedo=siclos>=item.precio;
+      const div=document.createElement('div');
+      div.className='sitem';
+      div.innerHTML=`
+        <div class="sitem-top">
+          <div class="sitem-ico">${item.e}</div>
+          <div class="sitem-info">
+            <div class="sitem-name">${item.n}</div>
+          </div>
+        </div>
+        <div class="sitem-price">
+          <span class="sprice">🪙 ${item.precio}</span>
+          <button class="sbtn" ${!puedo?'disabled':''} onclick="comprarRecurso('${item.id}')">Comprar</button>
+        </div>`;
+      grid.appendChild(div);
+    });
+  }
+}
+
+// Notificaciones contextuales al explorar
+const NOTIF_TIPS=[
+  {cond:()=>wDay===2&&!hasItem('hacha'),      msg:'💡 Crea un Hacha (3 maderas+2 piedras) para talar más rápido'},
+  {cond:()=>wDay===3&&siclos===0,             msg:'🪙 Vende madera o piedra en la Tienda 🏪 para ganar Siclos'},
+  {cond:()=>wDay===4&&!hasItem('armadura'),   msg:'🛡️ Los Nefilim atacan esta noche — crea Armadura de cuero'},
+  {cond:()=>wDay===5&&!armasEstado['espada_s'],msg:'⚔️ La Espada de Bronce en la tienda es muy poderosa contra Nefilim'},
+  {cond:()=>P.hunger<30&&!hasItem('fruta')&&!hasItem('carne_a'),msg:'🍖 Busca bayas o frutos para comer — hay árboles frutales en el mapa'},
+  {cond:()=>misionActual===1&&cntItem('madera_g')===0,msg:'🌲 Necesitas Madera de Gofer — fábrícala con 5 maderas + 2 resinas, o cómprala en la tienda'},
+  {cond:()=>misionActual>=2&&!structs.find(s=>s.tipo==='altar'),msg:'🕊️ Construye un Altar para recibir bendiciones de Dios'},
+  {cond:()=>cntItem('pez')>0&&!hasItem('fogon'),msg:'🔥 Construye un Fogón para asar el pez y recuperar hambre'},
+  {cond:()=>P.thirst<20&&!hasItem('jarra')&&!structs.find(s=>s.tipo==='pozo'),msg:'💧 Sin jarra y sin pozo — crea una jarra (3 barros) o un pozo (12 piedras)'},
+  {cond:()=>wDay===7&&arcaProgress===0,       msg:'⛵ ¡El Arca debe empezar a construirse! Ve a la sección Crear → El Arca'},
+  {cond:()=>armasEstado['arco']?.nivel>0&&getBuff('escudo_div'),msg:'🏹 Tienes arco + escudo divino — eres muy fuerte contra los Nefilim esta noche'},
+];
+let lastTipTick=0, lastTipIdx=-1;
+function checkTips(){
+  if(tick-lastTipTick<1800) return; // cada 30 seg de juego
+  for(let i=0;i<NOTIF_TIPS.length;i++){
+    if(i===lastTipIdx) continue;
+    if(NOTIF_TIPS[i].cond()){
+      notif(NOTIF_TIPS[i].msg,'');
+      lastTipTick=tick; lastTipIdx=i;
+      return;
+    }
+  }
+}
 
 // ─── FONDO MENÚ ───────────────────────────────
 function initBgMenu(){
