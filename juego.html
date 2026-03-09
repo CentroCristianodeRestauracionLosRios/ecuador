@@ -256,6 +256,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <button class="hbtn" onclick="toggleP('craft')">⚒️</button>
     <button class="hbtn" onclick="toggleP('skills')">✨</button>
     <button class="hbtn" onclick="toggleP('shop')" title="Tienda">🏪</button>
+    <button class="hbtn" onclick="toggleP('equip')" title="Equipamiento">⚔️</button>
     <button class="hbtn" id="soundBtn" onclick="toggleSound()">🔊</button>
     <button class="hbtn" onclick="doPause()">⏸</button>
   </div>
@@ -291,7 +292,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <div class="gt-verse">"Juego de supervivencia · Génesis 6—9"</div>
     </div>
     <div class="ark-icon">⛵</div>
-    <div class="ubadge" id="ubadge" style="display:none"><div class="gdot"></div><span id="unick">Jugador</span></div>
+    <div class="ubadge" id="ubadge" style="display:none"><div class="gdot"></div><span id="unick">Jugador</span>
+    <span style="font-size:0.65rem;color:#c9a84c;cursor:pointer" id="hudFamilia" onclick="toggleFamiliaPanel()" title="Familia de Noé">👨‍👦 0</span></div>
     <div class="mbtns">
       <button class="mbtn pri" id="btnJugar" onclick="doJugar()">⚔️  Jugar</button>
       <button class="mbtn" onclick="doContinuar()" id="btnCont" style="display:none">📜  Continuar partida</button>
@@ -341,6 +343,34 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   </div>
 
 <!-- TIENDA — Siclos de Plata -->
+<!-- PANEL EQUIPAMIENTO -->
+<div class="panel" id="p-equip">
+  <div class="ph">
+    <span class="ptitle">⚔️ Equipamiento activo</span>
+    <button class="pclose" onclick="toggleP('equip')">✕</button>
+  </div>
+  <div class="pbody">
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px;text-align:center;font-style:italic">
+      Puedes equipar hasta <b style="color:var(--gold)">2 armas</b> y <b style="color:var(--gold)">3 habilidades</b> simultáneamente
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <!-- Armas equipadas -->
+      <div>
+        <div style="font-family:Cinzel,serif;font-size:0.8rem;color:var(--gold);margin-bottom:8px">⚔️ Armas (máx 2)</div>
+        <div id="equip-weapons" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <!-- Habilidades activas -->
+      <div>
+        <div style="font-family:Cinzel,serif;font-size:0.8rem;color:var(--gold);margin-bottom:8px">✨ Habilidades (máx 3)</div>
+        <div id="equip-skills" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+    <div style="font-family:Cinzel,serif;font-size:0.78rem;color:var(--gold);margin-bottom:8px">📦 Disponibles para equipar</div>
+    <div id="equip-available" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </div>
+</div>
+
 <div class="panel" id="p-shop">
   <div class="ph">
     <span class="ptitle">🏪 Tienda del Mercader</span>
@@ -492,6 +522,21 @@ let godVoiceActive=false;
 let visionRadius=999;
 // ── Siclos y Tienda ──
 let siclos=0;
+// Slots de equipamiento activo (máx 2 armas, 3 habilidades)
+let equipWeapons = [];   // ids de armas equipadas (máx 2)
+
+// ── FAMILIA DE NOÉ ────────────────────────────────────────────
+// NPCs que recolectan automáticamente
+let familia = [];
+const FAMILIA_DEFS = [
+  {id:'shem',  n:'Sem',    e:'👦', color:'#c89060', task:'madera', emoji:'🪵', intervalo:300, nivel:1},
+  {id:'cam',   n:'Cam',    e:'👦', color:'#b07040', task:'piedra', emoji:'🪨', intervalo:350, nivel:1},
+  {id:'jafet', n:'Jafet',  e:'👦', color:'#a06030', task:'fibra',  emoji:'🌿', intervalo:280, nivel:1},
+];
+let familiaTick=0;
+let equipSkills  = [];   // ids de habilidades equipadas (máx 3)
+const MAX_EQUIP_WEAPONS = 2;
+const MAX_EQUIP_SKILLS  = 3;
 let buffsActivos={};
 let shopCatActual='bendiciones';
 
@@ -546,7 +591,7 @@ const ITEMS={
   altar:{n:'Altar de Oración',e:'🕊️',t:'s',d:'Ora a Dios para pedir bendición'},
 };
 
-const RCATS=['herramientas','construccion','comida','estructuras','arca'];
+const RCATS=['herramientas','construccion','comida','estructuras','edificios','arca'];
 const RECETAS=[
   {id:'jarra',cat:'herramientas',r:'jarra',q:1,req:{barro:3},n:'Jarra de barro'},
   {id:'hacha',cat:'herramientas',r:'hacha',q:1,req:{madera:3,piedra:2},n:'Hacha'},
@@ -581,6 +626,12 @@ const RECETAS=[
   {id:'madera_g',cat:'arca',r:'madera_g',q:2,req:{madera:5,resina:2},n:'Madera de Gofer x2'},
   {id:'alquitran',cat:'arca',r:'alquitran',q:1,req:{resina:4,brea:2},n:'Alquitrán'},
   {id:'metal',  cat:'arca',r:'metal',q:2,req:{piedra:6,madera:2},n:'Grapas de metal x2'},
+  // Edificios especiales
+  {id:'campamento', cat:'edificios',r:'campamento',q:1,req:{madera:8,fibra:6,piedra:4},n:'Campamento Familiar',e:'🏕️',bonus:'Familia puede unirse al nivel requerido'},
+  {id:'forja',      cat:'edificios',r:'forja',     q:1,req:{piedra:20,madera:8,metal:5},n:'Forja Sagrada',e:'🔥',bonus:'+50% daño de herramientas'},
+  {id:'capilla',    cat:'edificios',r:'capilla',   q:1,req:{piedra:15,madera:10,resina:5},n:'Capilla de Oración',e:'⛪',bonus:'Orar cada 3 min (antes 10)'},
+  {id:'granero',    cat:'edificios',r:'granero',   q:1,req:{madera:15,fibra:8,tabla:5},n:'Granero',e:'🏚️',bonus:'+30% recursos al recolectar'},
+  {id:'muralla',    cat:'edificios',r:'muralla',   q:1,req:{piedra:30,madera:10,metal:8},n:'Muralla Protectora',e:'🏰',bonus:'-50% daño de nefilim'},
 ];
 
 const SKILLS=[
@@ -764,7 +815,7 @@ function genMundo(){
 }
 
 function addObj(tx,ty,tipo){
-  const hp={arbol:5,roca:8,arbusto:2,bayas:2,frutal:3,cana:1}[tipo]||2;
+  const hp={arbol:20,roca:25,arbusto:2,bayas:2,frutal:3,cana:1}[tipo]||2;
   const o={tx,ty,tipo,hp,mhp:hp,id:Math.random()};
   wMap[ty][tx].obj=o.id;
   wObjs.push(o);
@@ -823,7 +874,7 @@ const PAL={
 
 // ── Cache de sprites pre-dibujados ─────────────────────────
 // Clave: "tipo_variante" → offscreen canvas 32x32
-const SPRITE_CACHE = {};
+const SPRITE_CACHE = {}; // tiles regenerados sin cuadros negros
 
 function getSprite(key, drawFn){
   if(SPRITE_CACHE[key]) return SPRITE_CACHE[key];
@@ -849,62 +900,28 @@ function pxDot(ox, x,y, col){ ox.fillStyle=col; ox.fillRect(x,y,1,1); }
 
 function buildGrassSprite(variant){
   return getSprite('grass_'+variant, (ox,T)=>{
-    const seed = variant;
-    // Base: fondo verde oscuro
-    ox.fillStyle = PAL.grass1; ox.fillRect(0,0,T,T);
-
-    // Variación tonal: manchas de tierra asomando (Don't Starve tiene suelo visible)
-    const patches = [[4,6,8,5],[16,3,7,4],[22,14,6,5],[8,20,9,4],[18,22,6,3]];
-    patches.forEach(([px,py,pw,ph],i)=>{
-      if(i%3===seed%3){
-        ox.fillStyle=PAL.grass2; ox.fillRect(px,py,pw,ph);
-      }
+    const seed=variant;
+    // Base verde — variantes sutiles sin bordes negros
+    const bases=['#3a4a2a','#3d4f2c','#384828','#415230','#3b4d2b','#364626','#3f5030','#3c4c2a'];
+    ox.fillStyle=bases[seed%bases.length]; ox.fillRect(0,0,T,T);
+    // Variación tonal suave — sin bordes negros
+    ox.fillStyle=['#3e5230','#405530','#3c5030','#425432'][seed%4];
+    ox.fillRect(seed*5%18, seed*7%18, 12+seed%8, 12+seed%6);
+    // Briznas simples
+    [[3,26],[8,24],[13,27],[18,25],[23,26],[28,24]].forEach(([bx,by],i)=>{
+      if((i+seed)%3===0) return;
+      ox.fillStyle='#506038'; ox.fillRect(bx,by,1,3);
+      ox.fillStyle='#607040'; ox.fillRect(bx,by-2,1,2);
     });
-
-    // Briznas de hierba — pixel art, 3-5 briznas por tile
-    const blades=[
-      [3,24],[7,22],[12,25],[17,23],[22,24],[27,22],[5,19],[15,21],[25,20]
-    ];
-    blades.forEach(([bx,by],i)=>{
-      if((i+seed)%3===0) return; // spacing aleatorio
-      const h = 4+(i+seed)%4;
-      const lean = (i+seed)%3-1; // -1,0,1
-      // Brizna pixel a pixel
-      ox.fillStyle=PAL.grassBlade;
-      ox.fillRect(bx,   by,   1, 2);
-      ox.fillRect(bx+lean>0?1:0, by-2, 1, 2);
-      ox.fillRect(bx+(lean>0?2:lean<0?-1:0), by-4, 1, 2);
-      // Punta más clara
-      ox.fillStyle=PAL.grassBladeL;
-      ox.fillRect(bx+(lean>0?3:lean<0?-2:0), by-5, 1, 1);
-    });
-
-    // Flores ocasionales (Don't Starve: flores pequeñas con borde negro)
+    // Flor pequeña sin outline
     if(seed%5===0){
-      const fx=10+(seed*7)%14, fy=8+(seed*11)%10;
-      // Pétalos 1px
-      const petal=['#7a6a8a','#6a5a7a'][seed%2];
-      ox.fillStyle=petal;
-      ox.fillRect(fx,fy-1,1,1); ox.fillRect(fx,fy+1,1,1);
-      ox.fillRect(fx-1,fy,1,1); ox.fillRect(fx+1,fy,1,1);
-      ox.fillStyle='#d4c050'; ox.fillRect(fx,fy,1,1); // centro amarillo
-      // Outline pétalo
-      ox.fillStyle=PAL.outline;
-      ox.fillRect(fx,fy-2,1,1); ox.fillRect(fx,fy+2,1,1);
-      ox.fillRect(fx-2,fy,1,1); ox.fillRect(fx+2,fy,1,1);
-    }
-
-    // Piedrecillas decorativas ocasionales
-    if(seed%7===2){
-      const rx=18+(seed*5)%10, ry=18+(seed*9)%10;
-      ox.fillStyle='#383830'; ox.fillRect(rx,ry,3,2);
-      ox.fillStyle='#4a4a40'; ox.fillRect(rx,ry,2,1);
-      ox.fillStyle=PAL.outline; ox.fillRect(rx-1,ry-1,5,4);
-      // quitar outline interior
-      ox.fillStyle='#383830'; ox.fillRect(rx,ry,3,2);
+      const fx=10+(seed*7)%14, fy=10+(seed*11)%10;
+      ox.fillStyle=['#c86080','#80a030','#6080c8'][seed%3];
+      ox.fillRect(fx,fy,2,2);
     }
   });
 }
+
 
 function buildDirtSprite(variant){
   return getSprite('dirt_'+variant, (ox,T)=>{
@@ -923,11 +940,10 @@ function buildDirtSprite(variant){
       pts.slice(1).forEach(p=>ox.lineTo(p[0],p[1]));
       ox.strokeStyle=PAL.dirtCrack; ox.lineWidth=1; ox.stroke();
     });
-    // Terrones
+    // Terrones sin outline negro
     [[5,5,4,3],[16,10,5,3],[8,18,4,4],[22,6,3,3],[20,20,5,3]].forEach(([tx,ty,tw,th],i)=>{
       if(i%4!==variant%4) return;
       ox.fillStyle=PAL.dirtL; ox.fillRect(tx,ty,tw,th);
-      ox.fillStyle=PAL.outline; ox.strokeRect(tx-0.5,ty-0.5,tw+1,th+1); ox.lineWidth=1; ox.stroke();
     });
   });
 }
@@ -1781,6 +1797,7 @@ function update(){
   if(P.moving){P.animT++;if(P.animT>7){P.animF=(P.animF+1)%4;P.animT=0;}}else P.animF=0;
   if(P.moving){P.eT++;if(P.eT>110){P.eT=0;P.energy=Math.max(0,P.energy-1);}}
   if(P.inv>0)P.inv--;
+  tickFamilia();
   wTime+=1/(60*60*3);
   if(wTime>=1){wTime=0;wDay++;sndNewDay();notif(`☀️ Día ${wDay}`,'gld');}
   climaT++;
@@ -1978,7 +1995,7 @@ window.doInteract=function(){
     return;
   }
   const o=nearObj;
-  const bon=(hasSkill('fuerza')?2:1)*(getBuff('fuerza2x')?2:1)*(getArmaBonus('craft')>0?1+(getArmaBonus('craft')/200):1);
+  const bon=(hasSkill('fuerza')?2:1)*(getBuff('fuerza2x')?2:1)*(getArmaBonus('craft')>0?1+(getArmaBonus('craft')/200):1)*getBonusEdificio('forja')*getBonusEdificio('granero');
   if(o.tipo==='arbol'){
     triggerNoahAction('slice');
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
@@ -2095,7 +2112,7 @@ function renderCraft(){
   RCATS.forEach(c=>{
     const b=document.createElement('div');
     b.className='ccat'+(c===cCat?' on':'');
-    b.textContent={herramientas:'🛠️ Útiles',construccion:'🏗️ Materiales',comida:'🍖 Alimentos',estructuras:'🏠 Construir',arca:'⛵ El Arca'}[c];
+    b.textContent={herramientas:'🛠️ Útiles',construccion:'🏗️ Materiales',comida:'🍖 Alimentos',estructuras:'🏠 Construir',edificios:'🏰 Edificios',arca:'⛵ El Arca'}[c];
     b.onclick=()=>{cCat=c;renderCraft();};
     cc.appendChild(b);
   });
@@ -2314,7 +2331,7 @@ function notif(msg,tipo){
 window.notif=notif;
 
 window.toggleP=function(w){
-  const m={inv:'p-inv',craft:'p-craft',skills:'p-skills',shop:'p-shop'};
+  const m={inv:'p-inv',craft:'p-craft',skills:'p-skills',shop:'p-shop',equip:'p-equip'};
   const el=document.getElementById(m[w]);
   if(!el){ console.error('Panel no encontrado:',w); return; }
   const was=el.classList.contains('open');
@@ -2328,6 +2345,8 @@ window.toggleP=function(w){
       if(w==='craft') renderCraft();
       if(w==='skills')renderSkills();
       if(w==='shop')  renderShop();
+      if(w==='equip') renderEquip();
+      if(w==='equip') renderEquip();
     }catch(e){ console.error('Error al renderizar panel',w,e); }
   } else {
     el.style.display='';
@@ -2383,6 +2402,23 @@ window.doContinuar=function(){
   if(cu===null){showS('s-login');return;}
   if(!cu){showS('s-login');return;}
   loadAndPlay();
+};
+
+window.toggleFamiliaPanel=function(){
+  let el=document.getElementById('familia-modal');
+  if(el){ el.remove(); gPause=false; return; }
+  el=document.createElement('div');
+  el.id='familia-modal';
+  el.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center';
+  el.innerHTML=`<div style="background:linear-gradient(160deg,#06080f,#0d0a1e);border:2px solid rgba(201,168,76,0.4);border-radius:16px;padding:24px;max-width:420px;width:90vw;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-family:Cinzel,serif;color:var(--gold)">👨‍👩‍👦 Familia de Noé</span>
+      <button class="pclose" onclick="toggleFamiliaPanel()">✕</button>
+    </div>
+    ${getFamiliaPanel()}
+  </div>`;
+  document.body.appendChild(el);
+  gPause=true;
 };
 window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0});startGame();};
 window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';showS('s-menu');};
@@ -3605,13 +3641,170 @@ function tickBuffs(){
 
 function getBuff(key){return (buffsActivos[key]||0)>0;}
 
+// ── Bonus activos de edificios ───────────────────────────────
+function tieneEdificio(id){ return structs.some(s=>s.tipo===id); }
+function getBonusEdificio(tipo){
+  switch(tipo){
+    case 'forja':   return tieneEdificio('forja')?1.5:1;
+    case 'granero': return tieneEdificio('granero')?1.3:1;
+    case 'muralla': return tieneEdificio('muralla')?0.5:1;
+    case 'capilla': return tieneEdificio('capilla')?180:600;
+    default: return 1;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER EQUIPAMIENTO
+// ════════════════════════════════════════════════════════════
+function renderEquip(){
+  const wEl=document.getElementById('equip-weapons');
+  const sEl=document.getElementById('equip-skills');
+  const aEl=document.getElementById('equip-available');
+  if(!wEl||!sEl||!aEl) return;
+
+  const slotStyle=(filled)=>`display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid ${filled?'rgba(201,168,76,0.5)':'rgba(255,255,255,0.1)'};background:${filled?'rgba(201,168,76,0.08)':'rgba(255,255,255,0.03)'}`;
+
+  // ── Slots de armas ──────────────────────────────────────────
+  wEl.innerHTML='';
+  for(let i=0;i<MAX_EQUIP_WEAPONS;i++){
+    const id=equipWeapons[i];
+    const div=document.createElement('div');
+    div.style.cssText=slotStyle(!!id);
+    if(id){
+      const est=armasEstado[id]||{nivel:1,rareza:0};
+      const arma=SHOP_WEAPONS.find(w=>w.id===id)||{n:id,e:'⚔️'};
+      const rar=RAREZAS[est.rareza]||RAREZAS[0];
+      div.innerHTML=`<span style="font-size:1.2rem">${arma.e||'⚔️'}</span>
+        <span style="flex:1;font-size:0.75rem;color:var(--text)">${arma.n}<br><span style="color:${rar.color||'#aaa'};font-size:0.65rem">Nv.${est.nivel} · ${rar.nombre}</span></span>
+        <button class="sbtn" style="font-size:0.65rem;padding:2px 7px" onclick="desequiparArma('${id}')">Quitar</button>`;
+    } else {
+      div.innerHTML=`<span style="color:var(--muted);font-size:0.75rem">Ranura ${i+1} vacía</span>`;
+    }
+    wEl.appendChild(div);
+  }
+
+  // ── Slots de habilidades ────────────────────────────────────
+  sEl.innerHTML='';
+  for(let i=0;i<MAX_EQUIP_SKILLS;i++){
+    const id=equipSkills[i];
+    const div=document.createElement('div');
+    div.style.cssText=slotStyle(!!id);
+    if(id){
+      const sk=SKILLS.find(s=>s.id===id)||{n:id,e:'✨'};
+      div.innerHTML=`<span style="font-size:1.1rem">${sk.e}</span>
+        <span style="flex:1;font-size:0.75rem;color:var(--text)">${sk.n}</span>
+        <button class="sbtn" style="font-size:0.65rem;padding:2px 7px" onclick="desequiparSkill('${id}')">Quitar</button>`;
+    } else {
+      div.innerHTML=`<span style="color:var(--muted);font-size:0.75rem">Ranura ${i+1} vacía</span>`;
+    }
+    sEl.appendChild(div);
+  }
+
+  // ── Disponibles para equipar ────────────────────────────────
+  aEl.innerHTML='';
+  // Armas desbloqueadas no equipadas
+  Object.entries(armasEstado).forEach(([id,est])=>{
+    if(equipWeapons.includes(id)) return;
+    const arma=SHOP_WEAPONS.find(w=>w.id===id)||{n:id,e:'⚔️'};
+    const d=document.createElement('div');
+    d.style.cssText='padding:6px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(255,255,255,0.03)';
+    d.innerHTML=`<span>${arma.e||'⚔️'}</span><span style="font-size:0.72rem">${arma.n}</span><button class="sbtn" style="font-size:0.62rem;padding:2px 6px" onclick="equiparArma('${id}')">Equipar ⚔️</button>`;
+    aEl.appendChild(d);
+  });
+  // Habilidades aprendidas no equipadas
+  SKILLS.filter(s=>s.u&&!equipSkills.includes(s.id)).forEach(sk=>{
+    const d=document.createElement('div');
+    d.style.cssText='padding:6px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(255,255,255,0.03)';
+    d.innerHTML=`<span>${sk.e}</span><span style="font-size:0.72rem">${sk.n}</span><button class="sbtn" style="font-size:0.62rem;padding:2px 6px" onclick="equiparSkill('${sk.id}')">Equipar ✨</button>`;
+    aEl.appendChild(d);
+  });
+  if(!aEl.innerHTML) aEl.innerHTML='<div style="color:var(--muted);font-size:0.72rem">Aprende habilidades o consigue armas primero</div>';
+}
+
+window.equiparArma=function(id){
+  if(equipWeapons.includes(id)){notif('Ya equipada','');return;}
+  if(equipWeapons.length>=MAX_EQUIP_WEAPONS){notif(`Solo puedes equipar ${MAX_EQUIP_WEAPONS} armas a la vez`,'red');return;}
+  equipWeapons.push(id); renderEquip(); notif('⚔️ Arma equipada','grn');
+};
+window.desequiparArma=function(id){
+  equipWeapons=equipWeapons.filter(x=>x!==id); renderEquip();
+};
+window.equiparSkill=function(id){
+  if(equipSkills.includes(id)){notif('Ya equipada','');return;}
+  if(equipSkills.length>=MAX_EQUIP_SKILLS){notif(`Solo puedes equipar ${MAX_EQUIP_SKILLS} habilidades a la vez`,'red');return;}
+  equipSkills.push(id); renderEquip(); notif('✨ Habilidad equipada','grn');
+};
+window.desequiparSkill=function(id){
+  equipSkills=equipSkills.filter(x=>x!==id); renderEquip();
+};
+
+// ════════════════════════════════════════════════════════════
+//  FAMILIA DE NOÉ — recolección automática
+// ════════════════════════════════════════════════════════════
+function tickFamilia(){
+  if(!familia.length) return;
+  familiaTick++;
+  familia.forEach(m=>{
+    const speed = hasSkill('veloc') ? Math.floor(m.intervalo*0.6) : m.intervalo;
+    if(familiaTick % speed !== 0) return;
+    // Cantidad base según nivel del miembro
+    const qty = m.nivel + (hasSkill('fuerza')?1:0);
+    addItem(m.task, qty);
+    notif(`${m.e} ${m.n} recolectó ${m.emoji}×${qty}`,'');
+  });
+}
+
+function getFamiliaPanel(){
+  return `<div style="padding:16px">
+    <div style="font-family:Cinzel,serif;font-size:0.85rem;color:var(--gold);margin-bottom:12px">👨‍👩‍👦 Familia de Noé</div>
+    ${FAMILIA_DEFS.map(fd=>{
+      const m=familia.find(f=>f.id===fd.id);
+      return m
+        ? `<div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid rgba(201,168,76,0.3);border-radius:8px;margin-bottom:8px;background:rgba(201,168,76,0.06)">
+            <span style="font-size:1.3rem">${fd.e}</span>
+            <div style="flex:1"><div style="font-size:0.78rem;color:var(--text)">${fd.n} — Nv.${m.nivel}</div>
+            <div style="font-size:0.65rem;color:var(--muted)">Recolecta ${fd.emoji} cada ~${Math.round(fd.intervalo/60)}s</div></div>
+            <button class="sbtn" onclick="subirNivelFamilia('${fd.id}')">⬆️ Nv.</button>
+          </div>`
+        : `<div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:8px">
+            <span style="font-size:1.3rem;opacity:0.4">${fd.e}</span>
+            <div style="flex:1"><div style="font-size:0.78rem;color:var(--muted)">${fd.n} — Sin unirse</div>
+            <div style="font-size:0.65rem;color:var(--muted)">Requerido: Nivel ${fd.id==='shem'?3:fd.id==='cam'?5:8}</div></div>
+            <button class="sbtn" onclick="reclutarFamilia('${fd.id}')" ${P.lv<(fd.id==='shem'?3:fd.id==='cam'?5:8)?'disabled style="opacity:0.4"':''}>Reclutar</button>
+          </div>`;
+    }).join('')}
+  </div>`;
+}
+
+window.reclutarFamilia=function(id){
+  const fd=FAMILIA_DEFS.find(f=>f.id===id); if(!fd) return;
+  const lvReq=id==='shem'?3:id==='cam'?5:8;
+  if(P.lv<lvReq){notif(`Necesitas nivel ${lvReq} para reclutar a ${fd.n}`,'red');return;}
+  if(familia.find(f=>f.id===id)){notif('Ya está en tu familia','');return;}
+  familia.push({...fd});
+  notif(`👨‍👦 ${fd.n} se unió a tu familia — recolectará ${fd.emoji}`,'gld');
+};
+window.subirNivelFamilia=function(id){
+  const m=familia.find(f=>f.id===id); if(!m) return;
+  const cost={madera:10*m.nivel,piedra:5*m.nivel};
+  if(!hasItem('madera',cost.madera)||!hasItem('piedra',cost.piedra)){
+    notif(`Necesitas ${cost.madera}🪵 y ${cost.piedra}🪨 para subir nivel`,'red'); return;
+  }
+  removeItem('madera',cost.madera); removeItem('piedra',cost.piedra);
+  m.nivel++; m.intervalo=Math.max(60,m.intervalo-20);
+  notif(`⬆️ ${m.n} subió a nivel ${m.nivel}`,'gld');
+};
+
 function renderShop(){
   const siclosEls=document.querySelectorAll('#hudSiclos,#shopSiclos');
   siclosEls.forEach(el=>{if(el)el.textContent=`🪙 ${siclos}`;});
   const sg=document.getElementById('sell-grid');
   const catsEl=document.getElementById('shopCats');
   const grid=document.getElementById('shop-grid');
-  if(!sg||!catsEl||!grid) return;
+  if(!sg||!catsEl||!grid){
+    console.error('renderShop: elementos no encontrados',{sg:!!sg,catsEl:!!catsEl,grid:!!grid});
+    return;
+  }
 
   // ── Sección Vender ──────────────────────────────────────────
   sg.innerHTML='';
