@@ -1075,6 +1075,7 @@ const auth=getAuth(app),db=getDatabase(app);
 
 // ─── CONSTANTES MUNDO ────────────────────────
 const TILE=32,MW=80,MH=80;
+const DIOS_ICON='<img src="Dios1.png" style="width:1.1em;height:1.1em;object-fit:contain;vertical-align:middle;display:inline-block;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.style.display=\'none\'" alt="✝">';
 const T={GRASS:0,DIRT:1,WATER:2,SAND:3,STONE:4};
 
 // ─── ESTADO ──────────────────────────────────
@@ -1242,7 +1243,7 @@ const SKILLS=[
   {id:'pesc',n:'Pescador',e:'🎣',d:'Consigues más peces al pescar',c:1,req:null,u:false},
   {id:'colm',n:'Apicultor',e:'🍯',d:'Encuentras miel en el bosque',c:2,req:'granj',u:false},
   {id:'prof2',n:'Visionario',e:'👁️',d:'Ves los Nefilim en el minimapa',c:3,req:'prof',u:false},
-  {id:'sant',n:'Santo',e:'✝',d:'Las oraciones en el altar te dan más bendición',c:3,req:'prof',u:false},
+  {id:'sant',n:'Santo',e:DIOS_ICON,d:'Las oraciones en el altar te dan más bendición',c:3,req:'prof',u:false},
 ];
 
 // ─── TIENDA — Sistema de rareza + niveles 1-60 ───────────────────
@@ -2503,7 +2504,7 @@ function drawNearIndicator(cx,cy){
     const sx=nearObj.tx*TILE-cx+TILE/2,sy=nearObj.ty*TILE-cy-10;
     ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='16px serif';ctx.textAlign='center';
     ctx.fillText('⬆',sx,sy);ctx.textAlign='left';
-    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar ✝',taller:'[E] Abrir taller 🔨'};
+    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar '+DIOS_ICON,taller:'[E] Abrir taller 🔨'};
     hint.textContent=labs[nearObj.tipo]||'[E] Interactuar';
     hint.style.display='block';
     hint.style.color='var(--gold)';
@@ -2713,7 +2714,7 @@ let cCat='herramientas';
 
 // Diccionarios de consejos para el taller
 const RESOURCE_TIPS = {'madera': 'Corta árboles con [E]', 'piedra': 'Golpea rocas grises con [E]', 'fibra': 'Recoge arbustos verdes con [E]', 'barro': 'Recoge los charcos de barro', 'resina': 'Cae al cortar árboles (20% prob.)', 'cuerda': 'Fabricada con 4 fibras en el Taller', 'tabla': 'Fabricada con 3 maderas en el Taller', 'agua': 'Llena tu jarra en el agua o usa el pozo', 'carne': 'Caza animales con [E]', 'fruta': 'Recoge árboles frutales con [E]', 'bayas': 'Recoge arbustos de bayas con [E]', 'pez': 'Pesca en aguas profundas con jarra', 'semilla': 'Cae al recoger arbustos (aleatoria)', 'metal': 'Fabricado con 6 piedras en el Taller', 'ladrillo': 'Fabricado con 4 barros en el Taller', 'brea': 'Fabricada con 3 resinas en el Taller', 'alquitran': 'Fabricada con resina y brea en Taller', 'madera_g': 'Fabricada con 5 maderas + 2 resinas', 'trigo': 'Cosecha el huerto cuando esté listo', 'miel': 'Recolecta arbustos de bayas (raro)', 'cuero': 'Cae al cazar animales grandes'};
-const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas ✝', 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
+const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas '+DIOS_ICON, 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
 
 function showTip(msg, dur=2000){
   let el=document.getElementById('craft-tip');
@@ -2986,7 +2987,7 @@ function showLevelUpScreen(lv, spGain, hpGain){
         style="width:100%;font-size:0.9rem;padding:14px;letter-spacing:0.12em;
           animation:lvupFloat 1.8s ease-in-out 1s infinite;
           box-shadow:0 0 20px rgba(201,168,76,0.5)">
-        ✝ &nbsp; ¡Gloria a Dios! &nbsp; ✝
+        <img src="Dios1.png" style="width:1.4em;height:1.4em;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.style.display='none'" alt="✝"> &nbsp; ¡Gloria a Dios! &nbsp; <img src="Dios1.png" style="width:1.4em;height:1.4em;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 0 4px rgba(201,168,76,0.6))" onerror="this.style.display='none'" alt="✝">
       </button>
 
       <!-- Halo inferior -->
@@ -3025,7 +3026,7 @@ function doOrar(){
   }
   const sp=P.sp; // puntos de talento
   // La oración cuesta 1 minuto de juego (tick)
-  if(tick-lastPrayTick<3600){notif(`✝ Ya oraste hace poco — espera ${Math.ceil((3600-(tick-lastPrayTick))/60)} min`,'');return;}
+  if(tick-lastPrayTick<3600){notif(`${DIOS_ICON} Ya oraste hace poco — espera ${Math.ceil((3600-(tick-lastPrayTick))/60)} min`,'');return;}
   lastPrayTick=tick;
   const roll=Math.random();
   if(hasSkill('sant')){
@@ -3259,7 +3260,7 @@ window.toggleFamiliaPanel=function(){
       <span style="font-family:Cinzel,serif;color:var(--gold)">👨‍👩‍👦 Familia de Noé</span>
       <button class="pclose" onclick="toggleFamiliaPanel()">✕</button>
     </div>
-    ${getFamiliaPanel()}
+    <div id="familia-panel-content">${getFamiliaPanel()}</div>
   </div>`;
   document.body.appendChild(el);
   gPause=true;
@@ -3547,7 +3548,7 @@ function renderTutStep(){
   const isLast = _tutIdx === total - 1;
   const nextBtn = document.getElementById('tut-next');
   const prevBtn = document.getElementById('tut-prev');
-  nextBtn.textContent = isLast ? '¡Comenzar! ✝' : 'Siguiente →';
+  nextBtn.innerHTML = isLast ? '¡Comenzar! '+DIOS_ICON : 'Siguiente →';
   nextBtn.className = isLast ? 'mbtn pri' : 'mbtn pri';
   prevBtn.style.display = _tutIdx === 0 ? 'none' : 'block';
 
@@ -4625,7 +4626,7 @@ function checkMisiones(){
     misionCompletada.push(m.id);
     m.recompensa();
     const scM=15+misionActual*10;addSiclos(scM);
-    notif(`✝ Misión cumplida: ${m.titulo} +${scM}🪙`,'gld');
+    notif(`${DIOS_ICON} Misión cumplida: ${m.titulo} +${scM}🪙`,'gld');
     misionActual=Math.min(misionActual+1,MISIONES.length-1);
     if(misionActual<MISIONES.length){
       setTimeout(()=>showGodVoice(MISIONES[misionActual]),3000);
@@ -4647,7 +4648,7 @@ function updateMisionHUD(){
   const m=MISIONES[misionActual];
   if(!m||misionActual>=MISIONES.length-1){el.style.display='none';return;}
   el.style.display='block';
-  document.getElementById('mision-txt').textContent=`✝ ${m.titulo}`;
+  document.getElementById('mision-txt').innerHTML=`${DIOS_ICON} ${m.titulo}`;
 }
 
 // ════════════════════════════════════════════
@@ -5429,9 +5430,7 @@ window.subirNivelFamilia=function(id){
 };
 
 function refreshFamiliaPanel(){
-  const modal=document.getElementById('familia-modal');
-  if(!modal) return;
-  const content=modal.querySelector('div>div:last-child');
+  const content=document.getElementById('familia-panel-content');
   if(content) content.innerHTML=getFamiliaPanel();
 }
 
