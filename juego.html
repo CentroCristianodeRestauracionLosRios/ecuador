@@ -2335,6 +2335,17 @@ function loop(){
   drawNearIndicator(cx,cy);
   drawMinimap();
   drawPortrait();
+  // Efecto borde rojo parpadeante cuando HP bajo (<30%)
+  if(P.hp>0 && P.hp/P.mhp<0.3){
+    const alpha=0.35+0.3*Math.sin(Date.now()/180);
+    ctx.save();
+    const grad=ctx.createRadialGradient(W/2,H/2,H*0.28,W/2,H/2,H*0.75);
+    grad.addColorStop(0,'rgba(0,0,0,0)');
+    grad.addColorStop(1,`rgba(200,0,0,${alpha})`);
+    ctx.fillStyle=grad;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
   update();
 }
 
@@ -3265,7 +3276,7 @@ window.toggleFamiliaPanel=function(){
   document.body.appendChild(el);
   gPause=true;
 };
-window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0});startGame();};
+window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;noahAction='idle';noahActionTimer=0;_noahFrame=0;_noahTick=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,_dying:false});startGame();};
 window.doManualSave=async function(){
   const btn=document.querySelector('#hud-float-btns .hfloat');
   if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
@@ -4843,12 +4854,12 @@ function updateNefilim(){
     if(n.target==='arca'&&arca){tx=arca.tx*TILE;ty=arca.ty*TILE;}
     else{tx=P.x;ty=P.y;}
     const dx=tx-n.x,dy=ty-n.y,dist=Math.hypot(dx,dy);
-    if(dist>30){
+    if(dist>60){
       n.x+=dx/dist*n.spd*1.2;n.y+=dy/dist*n.spd*1.2;
     } else {
       // Atacar
       n.attackT++;
-      if(n.attackT>60){
+      if(n.attackT>40){
         n.attackT=0;
         if(n.target==='jugador'){
           const defBonus=getArmaBonus('def');
