@@ -3635,12 +3635,20 @@ let _tutIdx = 0;
 function showTutorial(){
   _tutIdx = 0;
   gPause = true;
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const el=document.getElementById('s-tutorial');
-  if(el) el.classList.add('active');
-  // Bajar el canvas para que el tutorial quede visible
+  // Ocultar HUD y mpad para que no tapen el tutorial
+  const hud=document.getElementById('hud');
+  const mpad=document.getElementById('mpad');
+  const fb=document.getElementById('hud-float-btns');
+  if(hud) hud.style.display='none';
+  if(mpad) mpad.style.display='none';
+  if(fb) fb.style.display='none';
+  // Bajar el canvas
   const gc=document.getElementById('gameCanvas');
   if(gc) gc.style.zIndex='-1';
+  // Mostrar tutorial directamente con display:flex
+  document.querySelectorAll('.screen').forEach(s=>{ s.classList.remove('active'); s.style.display=''; });
+  const el=document.getElementById('s-tutorial');
+  if(el){ el.style.display='flex'; el.classList.add('active'); }
   renderTutStep();
 }
 
@@ -3687,10 +3695,19 @@ window.tutStep = function(dir){
 
 function finishTutorial(){
   localStorage.setItem('noe_tutorial_done','1');
-  document.getElementById('s-tutorial').classList.remove('active');
-  // Restaurar canvas
+  const el=document.getElementById('s-tutorial');
+  if(el){ el.classList.remove('active'); el.style.display=''; }
+  // Restaurar canvas y HUD
   const gc=document.getElementById('gameCanvas');
   if(gc) gc.style.zIndex='';
+  if(gRun){
+    const hud=document.getElementById('hud');
+    const mpad=document.getElementById('mpad');
+    const fb=document.getElementById('hud-float-btns');
+    if(hud) hud.style.display='flex';
+    if(mpad) mpad.style.display='flex';
+    if(fb) fb.style.display='flex';
+  }
   gPause = false;
 }
 
@@ -4272,10 +4289,9 @@ window.doLogin=async function(){
   try{
     await signInWithEmailAndPassword(auth,em,ps);
     // onAuthStateChanged actualizará cu y nick automáticamente
-    // Solo esperar 600ms para que onAuthStateChanged termine
     await new Promise(r=>setTimeout(r,600));
     showS('s-menu');
-    startGame();
+    // NO llamar startGame() — el usuario elige "Continuar partida" o "Jugar" desde el menú
   }catch(e){
     const codes={'auth/user-not-found':'No existe una cuenta con ese correo.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-email':'Correo inválido.','auth/invalid-credential':'Correo o contraseña incorrectos.'};
     er.textContent=codes[e.code]||'Error al ingresar. Verifica tus datos.';
