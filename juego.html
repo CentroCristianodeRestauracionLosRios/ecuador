@@ -2335,8 +2335,9 @@ function loop(){
   drawNearIndicator(cx,cy);
   drawMinimap();
   drawPortrait();
-  // Efecto borde rojo parpadeante cuando HP bajo (<30%)
-  if(P.hp>0 && P.hp/P.mhp<0.3){
+  // Efecto borde rojo parpadeante cuando HP bajo o stats críticos
+  const enPeligro = (P.hp>0 && P.hp/P.mhp<0.3) || P.hunger<15 || P.thirst<15 || P.energy<10;
+  if(enPeligro){
     const alpha=0.35+0.3*Math.sin(Date.now()/180);
     ctx.save();
     const grad=ctx.createRadialGradient(W/2,H/2,H*0.28,W/2,H/2,H*0.75);
@@ -3509,6 +3510,94 @@ const TUTORIAL_STEPS = [
       </div>`,
   },
   {
+    icon:'🌿',
+    title:'Recursos especiales — ¿cómo conseguirlos?',
+    color:'#60c860',
+    html:`
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:0.74rem">
+        ${[
+          ['🟫','Barro','Acércate al agua o tierra húmeda y presiona [E]'],
+          ['🟡','Resina','Golpea árboles con [E] — aparece al azar entre la madera'],
+          ['🟤','Cuero curtido','Acércate a animales y presiona [E] para obtener cuero crudo, luego fabrícalo en el taller'],
+          ['🥩','Carne cruda','Recolecta de animales con [E] — cocínala en el fogón para comer'],
+          ['🐟','Pez','Ve al agua profunda (tile azul oscuro) con una jarra y presiona [E]'],
+          ['🍯','Miel','Busca colmenas en el bosque — aparecen como objetos brillantes en el mapa'],
+          ['🌾','Semillas','Cosecha huertos maduros o cómpralas en la tienda'],
+          ['⬛','Brea','Fabrica en el taller: 3 Resinas + 1 Madera → úsala para hacer Alquitrán'],
+        ].map(([e,n,d])=>`<div style="display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,0.04);padding:7px 10px;border-radius:8px">
+          <span style="font-size:1.1rem;min-width:22px">${e}</span>
+          <div><b style="color:#f0d080">${n}</b><br><span style="color:var(--muted);font-size:0.68rem">${d}</span></div>
+        </div>`).join('')}
+      </div>`,
+  },
+  {
+    icon:'⚒️',
+    title:'Herramientas — para qué sirve cada una',
+    color:'#e09040',
+    html:`
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:0.74rem">
+        ${[
+          ['🪓','Hacha','Corta árboles más rápido y da más madera por corte'],
+          ['⛏️','Pico','Rompe rocas más rápido y obtén más piedra y metal'],
+          ['🔦','Antorcha (equipada)','Equípala en el slot de arma — aleja a los Nefilim cuando se acercan de noche'],
+          ['⚔️','Espada de piedra','Equípala para hacer x1.8 de daño a los Nefilim al atacar'],
+          ['🗡️','Lanza','Equípala para hacer x1.4 de daño — más alcance que la espada'],
+          ['🛡️','Armadura de cuero','Equípala en el slot de defensa — reduce -50% el daño recibido'],
+          ['💊','Medicina','Úsala desde la bolsa cuando tu HP esté bajo — recupera vida'],
+        ].map(([e,n,d])=>`<div style="display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,0.04);padding:7px 10px;border-radius:8px">
+          <span style="font-size:1.1rem;min-width:22px">${e}</span>
+          <div><b style="color:#f0d080">${n}</b><br><span style="color:var(--muted);font-size:0.68rem">${d}</span></div>
+        </div>`).join('')}
+      </div>`,
+  },
+  {
+    icon:'🏗️',
+    title:'Estructuras — cómo construirlas y usarlas',
+    color:'#70b0f0',
+    html:`
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:10px">Fabrica las estructuras en el Taller (⚒️), colócalas en el suelo desde la bolsa y acércate para usarlas con [E].</p>
+      <div style="display:flex;flex-direction:column;gap:7px;font-size:0.73rem">
+        ${[
+          ['🔥','Fogón (5🪨+2🪵)','Cocina carne cruda, peces y pan. Acércate y presiona [E]'],
+          ['🛏️','Cama (5🪵+3🌿)','Duerme para recuperar energía y algo de HP. Presiona [E]'],
+          ['📦','Cofre (5🪵+2🌿)','Almacena objetos extra fuera de tu bolsa. Abre con [E]'],
+          ['🌱','Huerto (8🪵+5🟫+3💧)','Produce trigo y fruta automáticamente. Riégalo acercándote con agua'],
+          ['🪣','Pozo (10🪨+5🟫)','Fuente infinita de agua — no necesitas jarra para beber'],
+          ['⚒️','Taller avanzado (15🪵+10🪨)','Desbloquea recetas avanzadas de armas y estructuras'],
+          ['🛐','Altar de Oración (15🪨+5🪵+3🟡)','Acércate y presiona [E] para orar — recibe bendiciones divinas cada 10 min'],
+        ].map(([e,n,d])=>`<div style="display:flex;gap:8px;align-items:flex-start;background:rgba(255,255,255,0.04);padding:7px 10px;border-radius:8px">
+          <span style="font-size:1.1rem;min-width:22px">${e}</span>
+          <div><b style="color:#f0d080">${n}</b><br><span style="color:var(--muted);font-size:0.68rem">${d}</span></div>
+        </div>`).join('')}
+      </div>`,
+  },
+  {
+    icon:'🐘',
+    title:'Animales y el Arca — ¿qué hacer ahora?',
+    color:'#c9a84c',
+    html:`
+      <p style="font-size:0.8rem;color:var(--text);line-height:1.7;margin-bottom:10px">
+        ¡Construiste el Arca! Pero aún falta lo más importante: <b style="color:#f0d080">meter los animales antes del diluvio</b>.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:0.74rem;margin-bottom:10px">
+        <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:8px;padding:10px 14px">
+          <b style="color:#f0d080">1. Atrae animales</b><br>
+          <span style="color:var(--muted)">Acércate a cualquier animal — aparecerá un ❤️ y te seguirán si tienes comida en la bolsa (fruta, bayas o pan).</span>
+        </div>
+        <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:8px;padding:10px 14px">
+          <b style="color:#f0d080">2. Lleva los animales al Arca</b><br>
+          <span style="color:var(--muted)">Con el animal siguiéndote, acércate al Arca construida y presiona [E] para meterlo. Necesitas al menos 2 de cada especie (macho y hembra).</span>
+        </div>
+        <div style="background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);border-radius:8px;padding:10px 14px">
+          <b style="color:#f0d080">3. Barra de progreso del Arca</b><br>
+          <span style="color:var(--muted)">El ícono ⛵ en el HUD muestra cuántos animales has metido. Necesitas llenar la barra antes de que el diluvio (💧) llegue al máximo.</span>
+        </div>
+      </div>
+      <div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:8px;padding:8px 12px;font-size:0.72rem;color:#f08080">
+        ⚠️ Los Nefilim atacan de noche — construye el Arca de día y defiéndela de noche. Usa antorchas <b>equipadas</b> para ahuyentarlos.
+      </div>`,
+  },
+  {
     icon:'💾',
     title:'Guardar tu progreso',
     color:'#50c880',
@@ -3543,9 +3632,12 @@ let _tutIdx = 0;
 
 function showTutorial(){
   _tutIdx = 0;
-  renderTutStep();
-  showS('s-tutorial');
+  // Ocultar otras pantallas pero mantener el juego pausado
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('s-tutorial');
+  if(el) el.classList.add('active');
   gPause = true;
+  renderTutStep();
 }
 
 function renderTutStep(){
@@ -4830,17 +4922,17 @@ function updateNefilim(){
   const isNight=wTime>0.78||wTime<0.25;
   // De día desaparecen
   if(!isNight){nefilim=[];return;}
-  const hasTorch=hasItem('antorcha');
+  // Antorcha ahuyenta SOLO si está equipada en algún slot, no solo en bolsa
+  const torchEquipped=Object.values(armasEstado).some(a=>a&&a.id&&String(a.id).includes('antorcha'));
   const fogonNear=structs.some(s=>{
     if(s.tipo!=='fogon') return false;
     return Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<180;
   });
   nefilim.forEach((n,idx)=>{
     if(n.stunT>0){n.stunT--;return;}
-    // Antorcha y fogón los ahuyentan
     const distP=Math.hypot(n.x-P.x,n.y-P.y);
-    if(hasTorch&&distP<150){
-      // Huyen
+    // Antorcha equipada o fogón cerca los ahuyentan
+    if(torchEquipped&&distP<150){
       const fx=(n.x-P.x)/distP,fy=(n.y-P.y)/distP;
       n.x+=fx*n.spd*1.5;n.y+=fy*n.spd*1.5;return;
     }
@@ -4894,6 +4986,7 @@ function attackNefilim(){
   nefilim.forEach((n,i)=>{
     const d=Math.hypot(n.x-P.x,n.y-P.y);
     if(d<80){
+      triggerNoahAction('pierce');
       const dmg=(10+P.lv*3)*bonus;
       n.hp-=dmg;
       addPart(n.x,n.y,`-${dmg}`);
