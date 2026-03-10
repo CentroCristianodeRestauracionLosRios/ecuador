@@ -789,6 +789,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   <button class="hfloat" onclick="doManualSave()" title="Guardar progreso">
     <span class="hfloat-icon">💾</span><span class="hfloat-label">Guardar</span>
   </button>
+  <button class="hfloat" onclick="showTutorial()" title="Ver Tutorial" style="border-color:rgba(201,168,76,0.5)">
+    <span class="hfloat-icon">📖</span><span class="hfloat-label">Tutorial</span>
+  </button>
   <button class="hfloat" onclick="doSaveQuit()" title="Guardar y salir al menú" style="border-color:rgba(231,100,60,0.5)">
     <span class="hfloat-icon">🚪</span><span class="hfloat-label">Salir</span>
   </button>
@@ -1000,7 +1003,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     <div class="ptit">⏸ Juego pausado</div><div class="divider"></div>
     <button class="mbtn pri" onclick="doResume()">▶ Seguir jugando</button>
     <button class="mbtn" onclick="saveGame()">💾 Guardar</button>
-    <button class="mbtn" onclick="showTutorial()">📖 Ver Tutorial</button>
     <button class="mbtn" onclick="doSaveQuit()">🏠 Guardar y salir</button>
   </div>
 </div>
@@ -3632,11 +3634,11 @@ let _tutIdx = 0;
 
 function showTutorial(){
   _tutIdx = 0;
-  // Ocultar otras pantallas pero mantener el juego pausado
+  gPause = true;
+  // Ocultar otras screens y mostrar tutorial
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById('s-tutorial');
   if(el) el.classList.add('active');
-  gPause = true;
   renderTutStep();
 }
 
@@ -3688,7 +3690,7 @@ function finishTutorial(){
 }
 
 window.skipTutorial = function(){
-  if(confirm('¿Saltar el tutorial? Puedes volver a verlo desde el menú de pausa.'))
+  if(confirm('¿Saltar el tutorial? Puedes volver a verlo desde el botón 📖 en el HUD.'))
     finishTutorial();
 };
 
@@ -4009,20 +4011,36 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 
 function startGame(){
-  // Reset inventario para nueva partida
+  // Reset completo para nueva partida
   inv.fill(null);
   SKILLS.forEach(s=>s.u=false);
   Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,siclos:0,_dying:false});
   siclos=0; armasEstado={}; skillsEstado={};
+  familia.length=0;
+  arcaProgress=0; arcaHP={1:100,2:100,3:100}; floodLevel=0;
+  misionActual=0; misionCompletada=[]; victoryAchieved=false; animalesEnArca=0;
+  structs.length=0; wDay=1;
   genMundo();
   addItem('madera',5); addItem('piedra',3); addItem('fibra',4);
   addItem('fruta',2);  addItem('bayas',3);  addItem('barro',3);
   addItem('jarra',1);
   beginLoop();
+  setTimeout(()=>showGodVoice(MISIONES[0]),2000);
+  notif(`🕊️ ¡Que Dios te guíe, ${nick}!`,'gld');
+  setTimeout(()=>notif('🌿 Acércate a un árbol y presiona [E] para cortarlo',''),2500);
+  setTimeout(()=>notif('🏺 Crea una Jarra de barro con 3 barros — para cargar agua',''),6000);
+  setTimeout(()=>notif('💧 Lleva la jarra al agua y presiona [E] para llenarla',''),9500);
+  setTimeout(()=>notif('🍎 Abre tu bolsa y toca una fruta para comerla',''),13000);
   const done = localStorage.getItem('noe_tutorial_done');
   if(!done){ setTimeout(showTutorial, 800); }
 }
-async function loadAndPlay(){await loadGame();beginLoop();}
+async function loadAndPlay(){
+  await loadGame();
+  beginLoop();
+  // Notificaciones de bienvenida al continuar
+  notif(`📜 ¡Bienvenido de vuelta, ${nick}!`,'gld');
+  setTimeout(()=>showGodVoice(MISIONES[Math.min(misionActual,MISIONES.length-1)]),1500);
+}
 // ════════════════════════════════════════════════════════════
 //  SISTEMA DE SPRITES NOÉ — Slice Spritesheets
 //  Los PNG van en la misma carpeta que juego.html
@@ -4180,22 +4198,13 @@ function beginLoop(){
   // Cargar sprites solo si no se han cargado antes
   if(!noahLoaded) loadNoahSprites(()=>{console.log('🎨 Sprites Noé cargados');});
   if(!tilesetsLoaded) loadTilesets(()=>{console.log('🗺️ Tilesets cargados');});
-  // Cargar sprites de Noé (si no están en el mismo directorio, usa fallback dibujado)
   initCanvas();initNubes();
   if(afr)cancelAnimationFrame(afr);
   loop();
-  // Notificaciones de tutorial escalonadas
   scheduleAmbience();
   spawnAnimales();
-  arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;
-  misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;
-  // Misión 0 — El Llamado (automática al inicio)
-  setTimeout(()=>showGodVoice(MISIONES[0]),2000);
-  notif(`🕊️ ¡Que Dios te guíe, ${nick}!`,'gld');
-  setTimeout(()=>notif('🌿 Acércate a un árbol y presiona [E] para cortarlo',''),2500);
-  setTimeout(()=>notif('🏺 Crea una Jarra de barro con 3 barros — para cargar agua',''),6000);
-  setTimeout(()=>notif('💧 Lleva la jarra al agua y presiona [E] para llenarla',''),9500);
-  setTimeout(()=>notif('🍎 Abre tu bolsa y toca una fruta para comerla',''),13000);
+  // NO resetear arcaProgress/mision aquí — eso lo hace startGame (nueva partida)
+  // loadGame ya carga los valores correctos antes de llamar beginLoop
 }
 function gameOver(){
   if(P._dying) return;
