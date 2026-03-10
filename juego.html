@@ -977,7 +977,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 <!-- PAUSA -->
 <!-- TUTORIAL GUIADO -->
-<div class="screen" id="s-tutorial" style="z-index:150;overflow-y:auto;align-items:center;justify-content:center;padding:20px 0;">
+<div id="s-tutorial" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);overflow-y:auto;align-items:center;justify-content:center;padding:20px 0;">
   <div id="tut-box" style="background:linear-gradient(160deg,#06080f,#0d0a1e);border:2px solid rgba(201,168,76,0.5);border-radius:16px;padding:0;width:min(500px,94vw);max-height:94vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(201,168,76,0.2);">
     <!-- Barra de progreso -->
     <div style="height:3px;background:rgba(255,255,255,0.05);">
@@ -3635,20 +3635,8 @@ let _tutIdx = 0;
 function showTutorial(){
   _tutIdx = 0;
   gPause = true;
-  // Ocultar HUD y mpad para que no tapen el tutorial
-  const hud=document.getElementById('hud');
-  const mpad=document.getElementById('mpad');
-  const fb=document.getElementById('hud-float-btns');
-  if(hud) hud.style.display='none';
-  if(mpad) mpad.style.display='none';
-  if(fb) fb.style.display='none';
-  // Bajar el canvas
-  const gc=document.getElementById('gameCanvas');
-  if(gc) gc.style.zIndex='-1';
-  // Mostrar tutorial directamente con display:flex
-  document.querySelectorAll('.screen').forEach(s=>{ s.classList.remove('active'); s.style.display=''; });
   const el=document.getElementById('s-tutorial');
-  if(el){ el.style.display='flex'; el.classList.add('active'); }
+  if(el) el.style.display='flex';
   renderTutStep();
 }
 
@@ -3696,18 +3684,7 @@ window.tutStep = function(dir){
 function finishTutorial(){
   localStorage.setItem('noe_tutorial_done','1');
   const el=document.getElementById('s-tutorial');
-  if(el){ el.classList.remove('active'); el.style.display=''; }
-  // Restaurar canvas y HUD
-  const gc=document.getElementById('gameCanvas');
-  if(gc) gc.style.zIndex='';
-  if(gRun){
-    const hud=document.getElementById('hud');
-    const mpad=document.getElementById('mpad');
-    const fb=document.getElementById('hud-float-btns');
-    if(hud) hud.style.display='flex';
-    if(mpad) mpad.style.display='flex';
-    if(fb) fb.style.display='flex';
-  }
+  if(el) el.style.display='none';
   gPause = false;
 }
 
