@@ -2148,47 +2148,172 @@ function drawPlayer(cx,cy){
     }
   }
 
-  // ── FALLBACK dibujado (si sprites no cargan) ─────────────
+  // ── FALLBACK dibujado — Noé granjero medieval ─────────────
   if(P.inv>0&&Math.floor(T2/100)%2===0) return;
   const isSwing=P.inv>0;
-  const frame2=P.moving?Math.floor(T2/140)%4:0;
+  const frame2=P.moving?Math.floor(T2/130)%4:0;
   const bob=P.moving?(frame2%2===0?1:-1):0;
-  const legAnim=[0,4,0,-4][frame2];
-  const armAnim=[0,-3,0,3][frame2];
+  const legAnim=[0,5,0,-5][frame2];
+  const armAnim=[0,-4,0,4][frame2];
   const hasTool=hasItem('hacha')||hasItem('pico');
-  const toolAngle=isSwing?Math.sin(T2/80)*0.9:(hasTool?-0.3:0);
+  const toolAngle=isSwing?Math.sin(T2/80)*1.1:(hasTool?-0.35:0);
+  const fd=P.facing==='left'?-1:1;
   ctx.save();ctx.translate(sx,sy);
-  // Piernas
-  ctx.fillStyle='#3d2008';ctx.fillRect(-8,9+bob+legAnim,7,4);ctx.fillRect(1,9+bob-legAnim,7,4);
-  // Cuerpo
-  ctx.fillStyle='#b8880e';ctx.fillRect(-8,-10+bob,16,14);
-  ctx.fillStyle='#d4a020';ctx.fillRect(-7,-10+bob,7,12);
-  ctx.fillStyle='#8a6008';ctx.fillRect(5,-10+bob,3,12);
-  ctx.fillStyle='#3d2008';ctx.fillRect(-8,-1+bob,16,3);
-  ctx.fillStyle=PAL.gold;ctx.fillRect(-2,0+bob,4,2);
-  // Brazo izq
-  ctx.fillStyle='#8a5a20';ctx.fillRect(-12,-8+bob,4,10+armAnim);
-  ctx.fillStyle='#5a3808';ctx.fillRect(-11,1+bob+armAnim,2,14);
-  // Brazo der + herramienta
-  ctx.save();ctx.translate(10,-5+bob);ctx.rotate(toolAngle);
-  ctx.fillStyle='#8a5a20';ctx.fillRect(-2,0,4,9+armAnim);
+
+  // — Botas —
+  ctx.fillStyle='#2a1808'; // cuero oscuro
+  ctx.fillRect(-8,12+bob+legAnim,7,5);   // bota izq
+  ctx.fillRect(1,12+bob-legAnim,7,5);    // bota der
+  // Suela más clara
+  ctx.fillStyle='#3e2510';
+  ctx.fillRect(-8,16+bob+legAnim,7,2);
+  ctx.fillRect(1,16+bob-legAnim,7,2);
+
+  // — Pantalón remendado (verde oliva oscuro) —
+  ctx.fillStyle='#4a5828';
+  ctx.fillRect(-8,4+bob,7,10+legAnim);   // pierna izq
+  ctx.fillRect(1,4+bob,7,10-legAnim);    // pierna der
+  // Remiendo en rodilla
+  ctx.fillStyle='#3a4818';
+  ctx.fillRect(-7,9+bob+legAnim,5,3);
+  ctx.fillRect(2,9+bob-legAnim,5,3);
+
+  // — Camisa de lino (bajo el chaleco) — mangas visibles en lados
+  ctx.fillStyle='#c8b878'; // lino beige
+  ctx.fillRect(-12,-8+bob,4,12+armAnim); // manga izq
+  ctx.fillRect(8,-8+bob,4,12-armAnim);   // manga der
+  // Puño camisa
+  ctx.fillStyle='#b0a060';
+  ctx.fillRect(-12,3+bob+armAnim,4,2);
+  ctx.fillRect(8,3+bob-armAnim,4,2);
+
+  // — Cuerpo / chaleco de cuero —
+  ctx.fillStyle='#7a4a18'; // marrón cuero
+  ctx.fillRect(-8,-10+bob,16,15);
+  // Luz en chaleco
+  ctx.fillStyle='#9a6228';
+  ctx.fillRect(-7,-10+bob,6,13);
+  // Sombra lateral
+  ctx.fillStyle='#5a3210';
+  ctx.fillRect(5,-10+bob,3,13);
+  // Costuras del chaleco
+  ctx.fillStyle='#3e2008';
+  ctx.fillRect(-8,-3+bob,16,1); // costura horizontal
+  ctx.fillRect(-1,-10+bob,2,15); // abertura central
+  // Cinturón
+  ctx.fillStyle='#3a2008';
+  ctx.fillRect(-8,3+bob,16,3);
+  // Hebilla dorada
+  ctx.fillStyle='#c8a040';
+  ctx.fillRect(-2,3+bob,4,3);
+  ctx.fillStyle='#a87828';
+  ctx.fillRect(-1,4+bob,2,1);
+
+  // — Mano izq —
+  ctx.fillStyle='#c8845a';
+  ctx.fillRect(-13,5+bob+armAnim,4,4);
+
+  // — Brazo der + herramienta —
+  ctx.save();ctx.translate(10,-4+bob);ctx.rotate(toolAngle);
+  // Mano
+  ctx.fillStyle='#c8845a';ctx.fillRect(-2,7+armAnim,4,4);
   if(hasTool){
-    ctx.fillStyle='#5a3808';ctx.fillRect(-1,8,2,8);
-    ctx.fillStyle=hasItem('hacha')?'#7a7a7a':'#6a6a6a';ctx.fillRect(-5,4,8,6);
-    ctx.fillStyle='#aaaaaa';ctx.fillRect(-4,4,4,4);
+    // Mango
+    ctx.fillStyle='#5a3808';ctx.fillRect(-1,8,2,10);
+    if(hasItem('hacha')){
+      // Hacha
+      ctx.fillStyle='#8a8a8a';ctx.fillRect(-5,4,4,7);
+      ctx.fillStyle='#aaaaaa';ctx.fillRect(-5,4,4,3);
+      ctx.fillStyle='#c0c0c0';ctx.fillRect(-4,5,2,2);
+    } else {
+      // Pico
+      ctx.fillStyle='#8a8a8a';ctx.fillRect(-6,3,10,4);
+      ctx.fillStyle='#aaaaaa';ctx.fillRect(-6,3,4,2);ctx.fillRect(4,3,2,4);
+    }
   }
   ctx.restore();
-  // Cabeza
-  ctx.fillStyle='#c07840';ctx.fillRect(-8,-22+bob,16,12);
-  ctx.fillStyle='#d08850';ctx.fillRect(-7,-22+bob,8,10);
-  ctx.fillStyle='#1a0a00';ctx.fillRect(-5,-18+bob,3,3);ctx.fillRect(2,-18+bob,3,3);
-  ctx.fillStyle='rgba(255,255,255,0.9)';ctx.fillRect(-4,-18+bob,1,1);ctx.fillRect(3,-18+bob,1,1);
-  // Barba/pelo
-  ctx.fillStyle='#8a6830';ctx.fillRect(-6,-14+bob,12,5);
-  // Sombrero
-  ctx.fillStyle='#1a0838';ctx.fillRect(-9,-30+bob,18,10);
-  ctx.fillStyle='#38186a';ctx.fillRect(-7,-34+bob,14,4);
-  ctx.fillStyle=PAL.gold;ctx.fillRect(-9,-22+bob,18,2);
+
+  // — Cabeza (piel) —
+  ctx.fillStyle='#c8845a';
+  ctx.fillRect(-8,-22+bob,16,12);
+  // Luz en frente
+  ctx.fillStyle='#e09870';
+  ctx.fillRect(-6,-22+bob,7,9);
+  // Sombra lateral (profundidad)
+  ctx.fillStyle='#a06038';
+  ctx.fillRect(5,-22+bob,3,10);
+
+  // — Ojos —
+  ctx.fillStyle='#1a0a00';
+  ctx.fillRect(-5,-18+bob,3,3);
+  ctx.fillRect(2,-18+bob,3,3);
+  // Brillo ojo
+  ctx.fillStyle='rgba(255,255,255,0.9)';
+  ctx.fillRect(-4,-18+bob,1,1);
+  ctx.fillRect(3,-18+bob,1,1);
+  // Nariz
+  ctx.fillStyle='#a86040';
+  ctx.fillRect(-1,-16+bob,2,2);
+  // Boca — pequeña sonrisa
+  ctx.fillStyle='#7a3818';
+  ctx.fillRect(-3,-13+bob,2,1);ctx.fillRect(1,-13+bob,2,1);
+
+  // — Cabello largo castaño —
+  ctx.fillStyle='#4a2808'; // castaño oscuro
+  // Parte superior (flequillo)
+  ctx.fillRect(-8,-28+bob,16,8);
+  // Mechones laterales que caen
+  ctx.fillRect(-9,-22+bob,3,8);  // izq
+  ctx.fillRect(7,-22+bob,3,8);   // der
+  // Mechones que pasan por los hombros
+  ctx.fillStyle='#3a1c08';
+  ctx.fillRect(-10,-18+bob,3,5);
+  ctx.fillRect(8,-18+bob,3,5);
+  // Reflejos en cabello
+  ctx.fillStyle='#6a3a10';
+  ctx.fillRect(-6,-28+bob,4,3);
+  ctx.fillRect(0,-27+bob,3,2);
+
+  // — Barba poblada —
+  ctx.fillStyle='#5a3010'; // castaño más oscuro que el pelo
+  // Zona de la barba (mandíbula)
+  ctx.fillRect(-7,-14+bob,14,6);  // base de la barba
+  // Bigote
+  ctx.fillStyle='#4a2808';
+  ctx.fillRect(-5,-14+bob,10,3);
+  // Mechones de barba
+  ctx.fillStyle='#6a3a14';
+  ctx.fillRect(-6,-12+bob,2,5);   // mechón izq
+  ctx.fillRect(-3,-11+bob,2,4);
+  ctx.fillRect(0,-11+bob,2,5);
+  ctx.fillRect(3,-11+bob,2,4);
+  ctx.fillRect(5,-12+bob,2,5);    // mechón der
+  // Borde inferior de barba (más claro = punta)
+  ctx.fillStyle='#7a4818';
+  ctx.fillRect(-4,-8+bob,8,2);
+
+  // — Sombrero de paja medieval —
+  // Ala del sombrero
+  ctx.fillStyle='#c8a840';
+  ctx.fillRect(-11,-28+bob,22,3);
+  // Sombra bajo el ala
+  ctx.fillStyle='#9a7820';
+  ctx.fillRect(-10,-28+bob,20,1);
+  // Copa del sombrero
+  ctx.fillStyle='#d4b448';
+  ctx.fillRect(-7,-36+bob,14,9);
+  // Textura paja (líneas)
+  ctx.fillStyle='#b89030';
+  ctx.fillRect(-6,-35+bob,1,7);ctx.fillRect(-3,-35+bob,1,7);
+  ctx.fillRect(0,-35+bob,1,7);ctx.fillRect(3,-35+bob,1,7);
+  ctx.fillRect(6,-35+bob,1,7);
+  // Cinta del sombrero
+  ctx.fillStyle='#5a2808';
+  ctx.fillRect(-7,-29+bob,14,2);
+  // Hebilla de la cinta
+  ctx.fillStyle='#c8a040';
+  ctx.fillRect(-1,-29+bob,2,2);
+
   ctx.restore();
 }
 
@@ -3230,28 +3355,103 @@ function drawPortrait(){
       px.fillStyle=`rgba(255,255,255,${b})`;px.fillRect(sx,sy2,1.5,1.5);
     });
   }
-  px.save();px.translate(W/2,H*0.78);
-  // Sombra personaje
-  px.fillStyle='rgba(0,0,0,0.35)';px.beginPath();px.ellipse(0,4,10,3,0,0,Math.PI*2);px.fill();
-  // Piernas
-  const leg=P.moving?Math.sin(P.animF*Math.PI/2)*3:0;
-  px.fillStyle='#4a2808';px.fillRect(-6,2,5,7+leg);px.fillRect(2,2,5,7-leg);
-  // Cuerpo - túnica
-  px.fillStyle='#6a4a10';px.fillRect(-7,-8,14,12);
-  px.fillStyle='#8a6214';px.fillRect(-7,-8,14,3);
-  px.fillStyle='#7a5212';px.fillRect(-7,-2,14,2);
-  // Brazos
-  const arm=P.moving?Math.sin(P.animF*Math.PI/2)*3:0;
-  px.fillStyle='#5a3810';px.fillRect(-10,-7,4,9+arm);px.fillRect(7,-7,4,9-arm);
-  // Cabeza
-  px.fillStyle='#c07848';px.beginPath();px.arc(0,-14,8,0,Math.PI*2);px.fill();
-  // Cara
-  px.fillStyle='#e8e8e8';px.beginPath();px.arc(0,-11,5,0,Math.PI,false);px.fill();
-  px.fillStyle='#1a0a00';px.fillRect(-2,-15,2,2);px.fillRect(2,-15,2,2);
-  // Sombrero/turbante
-  px.fillStyle='#3a2060';px.fillRect(-8,-22,16,6);px.fillRect(-9,-18,18,4);
-  // Barba
-  px.fillStyle='#8a6030';px.beginPath();px.arc(0,-9,4,0,Math.PI,true);px.fill();
+  px.save();px.translate(W/2,H*0.80);
+  const leg=P.moving?Math.sin((P.animF||0)*Math.PI/2)*2:0;
+  const arm=P.moving?Math.sin((P.animF||0)*Math.PI/2)*2:0;
+
+  // Sombra
+  px.fillStyle='rgba(0,0,0,0.35)';px.beginPath();px.ellipse(0,5,9,3,0,0,Math.PI*2);px.fill();
+
+  // Botas
+  px.fillStyle='#2a1808';
+  px.fillRect(-6,3,5,6+leg); px.fillRect(2,3,5,6-leg);
+  px.fillStyle='#3e2510';
+  px.fillRect(-6,8+leg,5,1); px.fillRect(2,8-leg,5,1);
+
+  // Pantalón
+  px.fillStyle='#4a5828';
+  px.fillRect(-6,0,5,6+leg); px.fillRect(2,0,5,6-leg);
+  // Remiendo
+  px.fillStyle='#3a4818';
+  px.fillRect(-5,3+leg,3,2); px.fillRect(3,3-leg,3,2);
+
+  // Mangas camisa (lino)
+  px.fillStyle='#c8b878';
+  px.fillRect(-9,-7,3,10+arm); px.fillRect(7,-7,3,10-arm);
+  px.fillStyle='#b0a060';
+  px.fillRect(-9,2+arm,3,1); px.fillRect(7,2-arm,3,1);
+
+  // Cuerpo chaleco cuero
+  px.fillStyle='#7a4a18';
+  px.fillRect(-6,-9,12,12);
+  px.fillStyle='#9a6228';
+  px.fillRect(-5,-9,5,10);
+  px.fillStyle='#5a3210';
+  px.fillRect(4,-9,2,10);
+  // Abertura y cinturón
+  px.fillStyle='#3e2008';
+  px.fillRect(-6,1,12,1);
+  px.fillRect(-1,-9,2,12);
+  px.fillStyle='#3a2008';
+  px.fillRect(-6,1,12,2);
+  px.fillStyle='#c8a040';
+  px.fillRect(-2,1,4,2);
+
+  // Cabeza — piel
+  px.fillStyle='#c8845a';
+  px.fillRect(-6,-20,12,10);
+  px.fillStyle='#e09870';
+  px.fillRect(-5,-20,6,8);
+  px.fillStyle='#a06038';
+  px.fillRect(4,-20,2,9);
+
+  // Ojos
+  px.fillStyle='#1a0a00';
+  px.fillRect(-4,-17,2,2); px.fillRect(2,-17,2,2);
+  px.fillStyle='rgba(255,255,255,0.9)';
+  px.fillRect(-3,-17,1,1); px.fillRect(3,-17,1,1);
+  // Nariz
+  px.fillStyle='#a86040';
+  px.fillRect(-1,-14,2,2);
+
+  // Cabello castaño largo
+  px.fillStyle='#4a2808';
+  px.fillRect(-6,-27,12,8);   // tope
+  px.fillRect(-7,-20,2,7);    // mechón izq
+  px.fillRect(6,-20,2,7);     // mechón der
+  px.fillStyle='#3a1c08';
+  px.fillRect(-8,-18,2,4);    // mechón hombro izq
+  px.fillRect(7,-18,2,4);     // mechón hombro der
+  px.fillStyle='#6a3a10';
+  px.fillRect(-4,-27,3,2);    // reflejo
+
+  // Barba poblada
+  px.fillStyle='#5a3010';
+  px.fillRect(-5,-12,10,5);   // base
+  px.fillStyle='#4a2808';
+  px.fillRect(-4,-12,8,3);    // bigote
+  px.fillStyle='#6a3a14';
+  px.fillRect(-5,-10,2,4);    // mechones
+  px.fillRect(-2,-9,2,3);
+  px.fillRect(1,-9,2,4);
+  px.fillRect(4,-10,2,3);
+  px.fillStyle='#7a4818';
+  px.fillRect(-3,-7,6,2);     // punta barba
+
+  // Sombrero de paja
+  px.fillStyle='#c8a840';
+  px.fillRect(-8,-27,16,2);   // ala
+  px.fillStyle='#d4b448';
+  px.fillRect(-5,-33,10,7);   // copa
+  // Líneas paja
+  px.fillStyle='#b89030';
+  px.fillRect(-4,-32,1,5);px.fillRect(-2,-32,1,5);px.fillRect(0,-32,1,5);px.fillRect(2,-32,1,5);px.fillRect(4,-32,1,5);
+  // Cinta
+  px.fillStyle='#5a2808';
+  px.fillRect(-5,-27,10,2);
+  px.fillStyle='#c8a040';
+  px.fillRect(-1,-27,2,2);
+
   px.restore();
   // HP indicator en retrato - brillo rojo si bajo
   if(P.hp/P.mhp < 0.3){
