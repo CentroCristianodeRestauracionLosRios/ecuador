@@ -791,6 +791,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 <!-- Botones flotantes: guardar y salir (opción en Ajustes) -->
 <div id="hud-float-btns" style="display:none">
+  <div id="hud-muro-btn" onclick="abrirPanelMuro()" style="display:none;cursor:pointer;background:rgba(10,8,5,0.88);border:1.5px solid rgba(201,168,76,0.55);border-radius:10px;padding:5px 8px;text-align:center;min-width:44px">
+    <div style="font-size:1rem;line-height:1">&#127984;</div>
+    <div id="hud-muro-lv" style="font-family:Cinzel,serif;font-size:0.56rem;color:#c9a84c;margin-top:2px">Nv.0</div>
+    <div id="hud-muro-hppct" style="font-size:0.5rem;color:#80c860;margin-top:1px">100%</div>
+  </div>
   <button class="hfloat" onclick="openArcaView()" id="btn-mundo-arca"
     title="Ver el Arca" style="border-color:rgba(100,160,255,0.5)">
     <span class="hfloat-icon">⛵</span><span class="hfloat-label">Ver Arca</span>
@@ -1102,6 +1107,7 @@ let clima='soleado',climaT=0,climaN=900;
 let drops=[];
 let nearObj=null;
 let parts=[];
+let proyectiles=[];  // {x,y,tx,ty,spd,tipo,dmg,splash,targets,life}
 let nubes=[];
 
 // ─── FASE 2 — Estado ─────────────────────────
@@ -1110,6 +1116,29 @@ let nefilim=[];
 let arcaProgress=0;
 let arcaHP={1:100,2:100,3:100};
 let floodLevel=0;
+
+// ── MURO PERIMETRAL — un único muro que rodea toda la zona del arca ──
+// nivelMuro: 0=no construido, 1-3=madera (cada vez más robusto), 4-6=piedra
+// hpMuro: puntos de vida actuales del muro (escala con nivel)
+let nivelMuro = 0;
+let hpMuro = 0;
+// Datos de cada nivel del muro
+const MURO_NIVELES = [
+  null, // 0 = sin muro
+  {nombre:'Muro Madera I',   mat:'madera', HP:400,  color1:'#4a2808',color2:'#6a3a10',req:{madera:20,cuerda:6}},
+  {nombre:'Muro Madera II',  mat:'madera', HP:700,  color1:'#3d2008',color2:'#5a3010',req:{madera:30,tabla:8,cuerda:4}},
+  {nombre:'Muro Madera III', mat:'madera', HP:1100, color1:'#2a1404',color2:'#4a2808',req:{madera:40,tabla:14,resina:6}},
+  {nombre:'Muro Piedra I',   mat:'piedra', HP:1800, color1:'#2a2a2a',color2:'#3d3d3d',req:{piedra:30,ladrillo:10,madera:10}},
+  {nombre:'Muro Piedra II',  mat:'piedra', HP:2600, color1:'#1e1e1e',color2:'#2a2a2a',req:{piedra:50,ladrillo:20,metal:8}},
+  {nombre:'Muro Piedra III', mat:'piedra', HP:3500, color1:'#141414',color2:'#1e1e1e',req:{piedra:70,ladrillo:30,metal:16}},
+];
+// Posiciones fijas de artillería en el muro (relativas al centro de la zona)
+const ARTY_SLOTS = [
+  {dx:-9,dy:-9},{dx:0,dy:-9},{dx:9,dy:-9}, // borde norte
+  {dx:9,dy:0},                               // borde este
+  {dx:9,dy:9},{dx:0,dy:9},{dx:-9,dy:9},    // borde sur
+  {dx:-9,dy:0},                              // borde oeste
+];
 let misionActual=0;
 let misionCompletada=[];
 let victoryAchieved=false;
@@ -1185,6 +1214,10 @@ const ITEMS={
   huerto:{n:'Huerto',e:'🌿',t:'s',d:'Produce comida con el tiempo'},
   taller:{n:'Taller',e:'🔨',t:'s',d:'Mejora las herramientas'},
   altar:{n:'Altar de Oración',e:'🕊️',t:'s',d:'Ora a Dios para pedir bendición'},
+  // ── Artillería del muro (se coloca como struct en el muro) ──
+  arco_muro:{n:'Arco del Muro',  e:'🏹',t:'b',d:'Fijado en el muro — disparo automático'},
+  ballista:  {n:'Ballista',       e:'🎯',t:'b',d:'Alta penetración — 1 NPC lo opera'},
+  catapulta: {n:'Catapulta',      e:'⚙️',t:'b',d:'Daño en área — demoledora'},
 };
 
 const RCATS=['herramientas','construccion','comida','estructuras','edificios','arca'];
@@ -1228,6 +1261,10 @@ const RECETAS=[
   {id:'capilla',    cat:'edificios',r:'capilla',   q:1,req:{piedra:15,madera:10,resina:5},n:'Capilla de Oración',e:'⛪',bonus:'Orar cada 3 min (antes 10)'},
   {id:'granero',    cat:'edificios',r:'granero',   q:1,req:{madera:15,fibra:8,tabla:5},n:'Granero',e:'🏚️',bonus:'+30% recursos al recolectar'},
   {id:'muralla',    cat:'edificios',r:'muralla',   q:1,req:{piedra:30,madera:10,metal:8},n:'Muralla Protectora',e:'🏰',bonus:'-50% daño de nefilim'},
+  // ── Artillería del muro (se coloca como struct) ──────────
+  {id:'arco_muro',cat:'estructuras',r:'arco_muro',q:1,req:{madera:6,cuerda:4,fibra:3}, n:'Arco del Muro',e:'🏹',str:null},
+  {id:'ballista', cat:'estructuras',r:'ballista', q:1,req:{madera:10,metal:6,cuerda:4},n:'Ballista',      e:'🎯',str:null},
+  {id:'catapulta',cat:'estructuras',r:'catapulta',q:1,req:{madera:15,piedra:8,metal:8},n:'Catapulta',     e:'⚙️',str:null},
 ];
 
 const SKILLS=[
@@ -1404,6 +1441,17 @@ function genMundo(){
   }
   wObjs=wObjs.filter(o=>!(Math.abs(o.tx-cx)<=4&&Math.abs(o.ty-cy)<=4));
   P.x=cx*TILE+20;P.y=cy*TILE+20;
+
+  // — Zona de construcción del Arca — pradera 18×18 despejada al noreste —
+  const ZONA_TX=46, ZONA_TY=38;   // centro de la zona del arca
+  for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
+    const tx2=ZONA_TX+dx, ty2=ZONA_TY+dy;
+    if(wMap[ty2]&&wMap[ty2][tx2]){
+      wMap[ty2][tx2].t=T.GRASS;
+      wMap[ty2][tx2].obj=null;
+    }
+  }
+  wObjs=wObjs.filter(o=>!(Math.abs(o.tx-ZONA_TX)<=10&&Math.abs(o.ty-ZONA_TY)<=10));
   initDrops();
   initSprites();      // pre-generar sprites pixel art
 }
@@ -1904,6 +1952,420 @@ function drawObjs(cx,cy){
     const sx=ox-cx, sy=oy-cy;
     drawStrAt(s,sx,sy);
   });
+  // Dibujar el muro perimetral si está construido
+  if(nivelMuro>0) drawMuroPerimetral(cx,cy);
+}
+
+// ════════════════════════════════════════════════════════════
+// MURO PERIMETRAL — dibuja el rectángulo completo
+// Centro de la zona: ZONA_TX=46, ZONA_TY=38
+// Borde del muro: radio 10 tiles alrededor del centro
+// ════════════════════════════════════════════════════════════
+const MURO_CX=46, MURO_CY=38, MURO_R=10; // tiles
+
+function drawMuroPerimetral(cx,cy){
+  if(nivelMuro<1) return;
+  const nv=MURO_NIVELES[nivelMuro];
+  if(!nv) return;
+  const T2=Date.now();
+  const isMadera=nivelMuro<=3;
+  const esPiedra=nivelMuro>=4;
+  const hpPct=Math.max(0,Math.min(1,hpMuro/nv.HP));
+  // Parpadeo rojo si HP bajo
+  const flashRed=hpPct<0.3&&Math.floor(T2/300)%2===0;
+
+  // Las 4 paredes: norte, sur, este, oeste
+  // Norte: y = MURO_CY - MURO_R, x = MURO_CX-MURO_R..MURO_CX+MURO_R
+  // Sur:   y = MURO_CY + MURO_R
+  // Oeste: x = MURO_CX - MURO_R, y = MURO_CY-MURO_R..MURO_CY+MURO_R
+  // Este:  x = MURO_CX + MURO_R
+
+  const segments=[
+    // {horizontal, tiles}
+    {horiz:true,  x0:MURO_CX-MURO_R, x1:MURO_CX+MURO_R, y:MURO_CY-MURO_R}, // Norte
+    {horiz:true,  x0:MURO_CX-MURO_R, x1:MURO_CX+MURO_R, y:MURO_CY+MURO_R}, // Sur
+    {horiz:false, y0:MURO_CY-MURO_R, y1:MURO_CY+MURO_R, x:MURO_CX-MURO_R}, // Oeste
+    {horiz:false, y0:MURO_CY-MURO_R, y1:MURO_CY+MURO_R, x:MURO_CX+MURO_R}, // Este
+  ];
+
+  segments.forEach(seg=>{
+    if(seg.horiz){
+      for(let tx=seg.x0;tx<=seg.x1;tx++){
+        drawMuroSegmento(tx*TILE-cx, seg.y*TILE-cy, true, isMadera, nivelMuro, flashRed, T2, tx, seg.y);
+      }
+    } else {
+      for(let ty=seg.y0;ty<=seg.y1;ty++){
+        drawMuroSegmento(seg.x*TILE-cx, ty*TILE-cy, false, isMadera, nivelMuro, flashRed, T2, seg.x, ty);
+      }
+    }
+  });
+
+  // Esquinas reforzadas (torres)
+  const corners=[
+    {tx:MURO_CX-MURO_R, ty:MURO_CY-MURO_R},
+    {tx:MURO_CX+MURO_R, ty:MURO_CY-MURO_R},
+    {tx:MURO_CX-MURO_R, ty:MURO_CY+MURO_R},
+    {tx:MURO_CX+MURO_R, ty:MURO_CY+MURO_R},
+  ];
+  corners.forEach(({tx,ty})=>{
+    drawTorreMuro(tx*TILE-cx, ty*TILE-cy, isMadera, nivelMuro, flashRed);
+  });
+
+  // Puerta al NORTE — lado más reforzado con artillería (armas apuntan al exterior)
+  drawPuertaMuro(MURO_CX*TILE-cx, (MURO_CY-MURO_R)*TILE-cy, isMadera, nivelMuro);
+
+  // Barra de HP del muro (en el centro de la pantalla superior)
+  drawMuroHPBar();
+}
+
+function drawMuroSegmento(sx,sy,horiz,isMadera,nv,flashRed,T2,tx,ty){
+  // No dibujar en la apertura de la puerta sur
+  if(horiz && ty===MURO_CY-MURO_R && tx>=MURO_CX-1 && tx<=MURO_CX+1) return;
+
+  const W=TILE, H=TILE;
+  const wallH=isMadera?28:36;       // altura visible del muro en px
+  const topD=isMadera?8:10;         // profundidad de la cara superior (2.5D)
+
+  // Colores según nivel
+  let cf,cl,ct; // frente, luz, techo
+  if(isMadera){
+    cf=nv===1?'#5a3010':nv===2?'#4a2808':'#3a1c08';
+    cl=nv===1?'#7a4820':nv===2?'#6a3a12':'#5a2e0a';
+    ct=nv===1?'#3a2008':nv===2?'#2a1404':'#1a0c02';
+  } else {
+    cf=nv===4?'#3d3d3d':nv===5?'#2e2e2e':'#222';
+    cl=nv===4?'#555':nv===5?'#444':'#333';
+    ct=nv===4?'#1e1e1e':nv===5?'#181818':'#111';
+  }
+
+  ctx.save();ctx.translate(sx+TILE/2, sy+TILE/2);
+  if(flashRed){ctx.globalAlpha=0.75;}
+
+  // ── Sombra en el suelo ──
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.fillRect(-W/2,2,W,6);
+
+  // ── Cara superior (techo 2.5D inclinado) ──
+  ctx.fillStyle=ct;
+  ctx.beginPath();
+  ctx.moveTo(-W/2,-wallH/2);
+  ctx.lineTo(-W/2+topD,-wallH/2-topD);
+  ctx.lineTo( W/2+topD,-wallH/2-topD);
+  ctx.lineTo( W/2,     -wallH/2);
+  ctx.closePath();ctx.fill();
+  // Borde del techo
+  ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=0.8;ctx.stroke();
+
+  // ── Cara frontal ──
+  ctx.fillStyle=cf;
+  ctx.fillRect(-W/2,-wallH/2,W,wallH);
+
+  if(isMadera){
+    // Tablones verticales
+    const numT=nv===1?3:nv===2?4:5;
+    for(let i=0;i<numT;i++){
+      const bx=-W/2+2+i*(W-4)/numT;
+      ctx.fillStyle=cl;ctx.fillRect(bx,-wallH/2+2,(W-4)/numT-2,wallH-4);
+    }
+    // Travesaños
+    ctx.fillStyle=ct;ctx.fillRect(-W/2,-2,W,3);
+    if(nv===3){ctx.fillRect(-W/2,-wallH/4,W,2);ctx.fillRect(-W/2,wallH/4-2,W,2);}
+    // Almenas de madera (niveles 2 y 3)
+    if(nv>=2){
+      for(let i=0;i<3;i++){
+        const ax=-W/2+4+i*(W-8)/3;
+        // Frente del diente
+        ctx.fillStyle=cf;ctx.fillRect(ax,-wallH/2-7,(W-8)/3*0.55,7);
+        // Techo del diente 2.5D
+        ctx.fillStyle=ct;
+        ctx.beginPath();
+        const aw=(W-8)/3*0.55;
+        ctx.moveTo(ax,-wallH/2-7);
+        ctx.lineTo(ax+topD*0.7,-wallH/2-7-topD*0.7);
+        ctx.lineTo(ax+aw+topD*0.7,-wallH/2-7-topD*0.7);
+        ctx.lineTo(ax+aw,-wallH/2-7);
+        ctx.closePath();ctx.fill();
+      }
+    }
+  } else {
+    // Sillares de piedra
+    const rowH=wallH/2;
+    for(let row=0;row<2;row++){
+      const yBase=-wallH/2+row*rowH;
+      const offset=row%2===0?0:(W/3);
+      for(let bx2=-W/2+offset;bx2<W/2;bx2+=W/3){
+        ctx.fillStyle=row%2===0?cl:cf;
+        ctx.fillRect(bx2+1,yBase+1,W/3-2,rowH-2);
+      }
+    }
+    // Juntas de mortero
+    ctx.strokeStyle=ct;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(-W/2,-wallH/2+rowH);ctx.lineTo(W/2,-wallH/2+rowH);ctx.stroke();
+    // Almenas de piedra (nivel 6)
+    if(nv===6){
+      for(let i=0;i<3;i++){
+        const ax=-W/2+3+i*(W-6)/3;
+        const aw=(W-6)/3*0.5;
+        ctx.fillStyle=cf;ctx.fillRect(ax,-wallH/2-9,aw,9);
+        ctx.fillStyle=ct;
+        ctx.beginPath();
+        ctx.moveTo(ax,-wallH/2-9);
+        ctx.lineTo(ax+topD*0.6,-wallH/2-9-topD*0.6);
+        ctx.lineTo(ax+aw+topD*0.6,-wallH/2-9-topD*0.6);
+        ctx.lineTo(ax+aw,-wallH/2-9);
+        ctx.closePath();ctx.fill();
+      }
+    }
+  }
+
+  // Outline de la cara frontal
+  ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=0.8;
+  ctx.strokeRect(-W/2,-wallH/2,W,wallH);
+
+  if(flashRed){ctx.fillStyle='rgba(220,0,0,0.35)';ctx.fillRect(-W/2,-wallH/2,W,wallH);}
+  ctx.restore();
+}
+
+function drawTorreMuro(sx,sy,isMadera,nv,flashRed){
+  // Torre de esquina en 2.5D — cara frontal + cara superior + cara lateral
+  ctx.save();ctx.translate(sx+TILE/2, sy+TILE/2);
+  const sz=nv<=3?24:30;
+  const topD=nv<=3?9:12; // profundidad perspectiva
+  const wallH=nv<=3?38:46;
+
+  // Colores
+  let cf,cl,ct; // frente, lateral, techo
+  if(isMadera){
+    cf=nv===1?'#5a3010':nv===2?'#4a2808':'#3a1c08';
+    cl=nv===1?'#3a1c08':nv===2?'#2a1404':'#1a0c02';
+    ct=nv===1?'#2a1208':nv===2?'#1e0e04':'#140a02';
+  } else {
+    cf=nv===4?'#3d3d3d':nv===5?'#2e2e2e':'#252525';
+    cl=nv===4?'#222':nv===5?'#1a1a1a':'#141414';
+    ct=nv===4?'#161616':nv===5?'#111':'#0a0a0a';
+  }
+
+  // Sombra
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(topD/2,wallH/2-2,sz/2+4,6,0,0,Math.PI*2);
+  ctx.fill();
+
+  // Cara lateral (derecha — perspectiva) — trapecio
+  ctx.fillStyle=cl;
+  ctx.beginPath();
+  ctx.moveTo(sz/2,-wallH/2);
+  ctx.lineTo(sz/2+topD,-wallH/2-topD);
+  ctx.lineTo(sz/2+topD, wallH/2-topD);
+  ctx.lineTo(sz/2, wallH/2);
+  ctx.closePath();ctx.fill();
+
+  // Cara frontal
+  ctx.fillStyle=cf;
+  ctx.fillRect(-sz/2,-wallH/2,sz,wallH);
+
+  if(isMadera){
+    // Detalle madera: tablones verticales
+    const numT=nv===1?3:4;
+    const tW=(sz-4)/numT;
+    for(let i=0;i<numT;i++){
+      const lc=i%2===0?cl:cf;
+      ctx.fillStyle=lc;ctx.fillRect(-sz/2+2+i*tW,-wallH/2+2,tW-1,wallH-4);
+    }
+    ctx.fillStyle=cl;ctx.fillRect(-sz/2,-4,sz,3);
+    ctx.fillStyle=cl;ctx.fillRect(-sz/2,4,sz,3);
+  } else {
+    // Detalle piedra: sillares
+    for(let row=0;row<3;row++){
+      const rh=wallH/3, yB=-wallH/2+row*rh;
+      const off=row%2===0?0:sz/4;
+      for(let bx=-sz/2+off;bx<sz/2;bx+=sz/3){
+        ctx.fillStyle=row%2===0?'#444':'#333';
+        ctx.fillRect(bx+1,yB+1,sz/3-2,rh-2);
+      }
+    }
+  }
+
+  // Troneras (ventanas)
+  ctx.fillStyle='rgba(0,0,0,0.85)';
+  ctx.fillRect(-6,-8,5,6);
+  ctx.fillRect(2,-8,5,6);
+
+  // Cara superior (techo 2.5D — polígono)
+  ctx.fillStyle=ct;
+  ctx.beginPath();
+  ctx.moveTo(-sz/2,-wallH/2);
+  ctx.lineTo(-sz/2+topD,-wallH/2-topD);
+  ctx.lineTo( sz/2+topD,-wallH/2-topD);
+  ctx.lineTo( sz/2,     -wallH/2);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=0.8;ctx.stroke();
+
+  // Almenas 2.5D en la torre
+  const numA=nv<=3?3:4;
+  const aW=nv<=3?5:6, aH=nv<=3?7:9, aGap=(sz-4)/numA;
+  for(let i=0;i<numA;i++){
+    const ax=-sz/2+2+i*aGap;
+    // Frente de almena
+    ctx.fillStyle=cf;ctx.fillRect(ax,-wallH/2-aH,aW,aH);
+    // Techo de almena 2.5D
+    ctx.fillStyle=ct;
+    ctx.beginPath();
+    ctx.moveTo(ax,-wallH/2-aH);
+    ctx.lineTo(ax+topD*0.5,-wallH/2-aH-topD*0.5);
+    ctx.lineTo(ax+aW+topD*0.5,-wallH/2-aH-topD*0.5);
+    ctx.lineTo(ax+aW,-wallH/2-aH);
+    ctx.closePath();ctx.fill();
+    // Lateral de almena
+    ctx.fillStyle=cl;
+    ctx.beginPath();
+    ctx.moveTo(ax+aW,-wallH/2-aH);
+    ctx.lineTo(ax+aW+topD*0.5,-wallH/2-aH-topD*0.5);
+    ctx.lineTo(ax+aW+topD*0.5,-wallH/2-topD*0.5);
+    ctx.lineTo(ax+aW,-wallH/2);
+    ctx.closePath();ctx.fill();
+  }
+
+  // Asta de bandera con perspectiva
+  if(!flashRed){
+    const flagCol=nv>=4?'#7a7070':'#c9a84c';
+    ctx.strokeStyle=isMadera?'#6a3a10':'#555';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(sz/4,-wallH/2-aH);ctx.lineTo(sz/4,-wallH/2-aH-18);ctx.stroke();
+    ctx.fillStyle=flagCol;
+    ctx.fillRect(sz/4,-wallH/2-aH-18,10,6);
+    // Cruz en la bandera
+    ctx.fillStyle=nv>=4?'#333':'#8a4010';
+    ctx.fillRect(sz/4+4,-wallH/2-aH-18,2,6);
+    ctx.fillRect(sz/4+1,-wallH/2-aH-15,8,2);
+  }
+
+  if(flashRed){ctx.fillStyle='rgba(220,0,0,0.4)';ctx.fillRect(-sz/2,-wallH/2,sz,wallH);}
+  ctx.restore();
+}
+
+// ── Estado de puerta: noeDentroMuro ──────────────────────
+let noeDentroMuro=false;  // true cuando Noé está dentro del recinto
+let puertoAbierta=false;  // animación de apertura
+
+function drawPuertaMuro(sx,sy,isMadera,nv){
+  // Puerta en el muro NORTE — la cara más reforzada con artillería
+  // Ubicada en MURO_CY-MURO_R, centro X = MURO_CX
+  const T2=Date.now();
+  ctx.save();ctx.translate(sx,sy+TILE/2);
+
+  const cf=isMadera?'#3a1c08':'#1e1e1e';
+  const cl=isMadera?'#5a3010':'#2a2a2a';
+  const cm=nv>=4?'#888':'#6a5030';       // color metal/refuerzo
+  const topD=isMadera?8:11;
+
+  const FW=52; // ancho del marco de puerta
+  const FH=isMadera?34:40; // alto del marco
+  const DW=24; // ancho apertura
+  const DH=FH-6;
+
+  // Sombra
+  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(-FW/2+topD,FH/2-2,FW,6);
+
+  // Cara lateral derecha 2.5D (perspectiva)
+  ctx.fillStyle=isMadera?'#2a1204':'#161616';
+  ctx.beginPath();
+  ctx.moveTo(FW/2,-FH/2); ctx.lineTo(FW/2+topD,-FH/2-topD);
+  ctx.lineTo(FW/2+topD, FH/2-topD); ctx.lineTo(FW/2, FH/2);
+  ctx.closePath();ctx.fill();
+
+  // Cara frontal del marco
+  ctx.fillStyle=cf;ctx.fillRect(-FW/2,-FH/2,FW,FH);
+  // Refuerzo de piedra/madera alrededor del hueco
+  ctx.fillStyle=cl;ctx.fillRect(-FW/2+2,-FH/2+2,FW-4,FH-4);
+  // Refuerzo metálico horizontal
+  ctx.fillStyle=cm;ctx.fillRect(-FW/2,-4,FW,4);
+
+  // Apertura de la puerta
+  const abierta=puertoAbierta||noeDentroMuro;
+  if(!abierta){
+    // Puerta cerrada — doble hoja con arco apuntado
+    ctx.fillStyle=isMadera?'#4a2810':'#252525';
+    ctx.fillRect(-DW/2,-DH/2+2,DW,DH);
+    // Arco apuntado
+    ctx.fillStyle=cf;
+    ctx.beginPath();
+    ctx.moveTo(-DW/2,-DH/2+2);
+    ctx.quadraticCurveTo(0,-DH/2-8,DW/2,-DH/2+2);
+    ctx.closePath();ctx.fill();
+    ctx.fillStyle=isMadera?'#4a2810':'#252525';
+    ctx.beginPath();
+    ctx.moveTo(-DW/2+2,-DH/2+2);
+    ctx.quadraticCurveTo(0,-DH/2-4,DW/2-2,-DH/2+2);
+    ctx.closePath();ctx.fill();
+    // Bisagras
+    ctx.fillStyle=cm;
+    ctx.fillRect(-DW/2,-DH/2+4,3,5);ctx.fillRect(-DW/2,-DH/2+16,3,5);
+    ctx.fillRect(DW/2-3,-DH/2+4,3,5);ctx.fillRect(DW/2-3,-DH/2+16,3,5);
+    // Pomo central
+    ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(-2,-4,2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(2,-4,2,0,Math.PI*2);ctx.fill();
+    // Ranura central
+    ctx.fillStyle=cf;ctx.fillRect(-1,-DH/2+2,2,DH);
+  } else {
+    // Puerta abierta — túnel oscuro con perspectiva
+    // Fondo del túnel (interior del muro)
+    ctx.fillStyle='rgba(5,3,1,0.97)';
+    ctx.beginPath();
+    ctx.moveTo(-DW/2,-DH/2+2);
+    ctx.quadraticCurveTo(0,-DH/2-8,DW/2,-DH/2+2);
+    ctx.lineTo(DW/2,DH/2);ctx.lineTo(-DW/2,DH/2);
+    ctx.closePath();ctx.fill();
+    // Profundidad del pasaje
+    ctx.fillStyle='rgba(10,6,2,0.6)';
+    ctx.fillRect(-DW/2+4,-DH/2+8,DW-8,DH-10);
+    // Parpado de antorcha interior
+    const flicker=0.7+Math.sin(T2/120)*0.3;
+    ctx.fillStyle=`rgba(180,100,20,${0.15*flicker})`;
+    ctx.fillRect(-DW/2+4,-DH/2+8,DW-8,DH-10);
+  }
+
+  // Techo 2.5D del marco
+  ctx.fillStyle=isMadera?'#2a1204':'#111';
+  ctx.beginPath();
+  ctx.moveTo(-FW/2,-FH/2);
+  ctx.lineTo(-FW/2+topD,-FH/2-topD);
+  ctx.lineTo( FW/2+topD,-FH/2-topD);
+  ctx.lineTo( FW/2,     -FH/2);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=0.8;ctx.stroke();
+
+  // Indicador [E] para entrar/salir cuando Noé está cerca
+  const pWorldX=MURO_CX*TILE, pWorldY=(MURO_CY-MURO_R)*TILE;
+  const distP=Math.hypot(P.x-pWorldX,P.y-pWorldY);
+  if(distP<72){
+    const pulse=0.75+Math.sin(T2/200)*0.25;
+    ctx.globalAlpha=pulse;
+    ctx.fillStyle='rgba(0,0,0,0.75)';
+    ctx.beginPath();ctx.roundRect(-22,FH/2+6,44,14,4);ctx.fill();
+    ctx.font='bold 7px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+    ctx.fillText(noeDentroMuro?'[E] Salir':'[E] Entrar',0,FH/2+16);
+    ctx.globalAlpha=1;
+  }
+
+  // Texto REFUGIO en el arco superior
+  ctx.font='bold 5px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.7)';ctx.textAlign='center';
+  ctx.fillText('REFUGIO',0,-FH/2-2);
+
+  ctx.restore();
+}
+
+function drawMuroHPBar(){
+  if(nivelMuro<1||!hpMuro) return;
+  const nv=MURO_NIVELES[nivelMuro];
+  const pct=hpMuro/nv.HP;
+  const barW=180,barH=10;
+  const bx=(canvas.width-barW)/2, by=canvas.height-44;
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(bx-2,by-2,barW+4,barH+4);
+  const col=pct>0.6?'#4a8a30':pct>0.3?'#c87020':'#c83020';
+  ctx.fillStyle=col;ctx.fillRect(bx,by,Math.floor(barW*pct),barH);
+  ctx.strokeStyle='rgba(201,168,76,0.5)';ctx.lineWidth=1;ctx.strokeRect(bx,by,barW,barH);
+  ctx.font='bold 7px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+  ctx.fillText(`🏰 ${nv.nombre} — ${Math.ceil(hpMuro)}/${nv.HP} HP`,bx+barW/2,by-4);
 }
 
 function drawObjAt(o,sx,sy){
@@ -2051,20 +2513,347 @@ function drawStrAt(s,sx,sy){
       ctx.fillStyle='rgba(201,168,76,0.3)';
       ctx.beginPath();ctx.arc(0,-8,10,0,Math.PI*2);ctx.fill();
       break;}
-    case'arca1':
-      ctx.fillStyle='#5a3010';ctx.fillRect(-26,-7,52,22);
-      ctx.fillStyle='#7a4a20';ctx.fillRect(-24,-5,48,7);
-      ctx.fillStyle='#c9a84c';ctx.font='9px Cinzel,serif';ctx.textAlign='center';ctx.fillText('⚓ CIMIENTOS',0,12);break;
-    case'arca2':
-      ctx.fillStyle='#5a3010';ctx.fillRect(-30,-12,60,28);
-      ctx.fillStyle='#7a4a20';ctx.fillRect(-28,-10,56,10);
-      ctx.fillStyle='#8a5a28';ctx.fillRect(-28,-2,56,14);
-      ctx.fillStyle='#c9a84c';ctx.font='9px Cinzel,serif';ctx.textAlign='center';ctx.fillText('🏗️ CUBIERTA',0,16);break;
-    case'arca3':
-      ctx.fillStyle='#5a3010';ctx.fillRect(-34,-16,68,30);
-      ctx.fillStyle='#7a4a20';ctx.fillRect(-32,-14,64,12);
-      ctx.beginPath();ctx.moveTo(-30,-2);ctx.lineTo(0,-22);ctx.lineTo(30,-2);ctx.fillStyle='#6a3810';ctx.fill();
-      ctx.fillStyle='#c9a84c';ctx.font='10px Cinzel,serif';ctx.textAlign='center';ctx.fillText('⛵ EL ARCA',0,16);break;
+    // ══ ARCA MEJORADA ═══════════════════════════════════════
+    case'arca1':{
+      // ── CIMIENTOS 2.5D — plataforma elevada con profundidad ──
+      const topDA=6; // profundidad perspectiva
+      // Sombra
+      ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(-28+topDA,16,56,8);
+      // Cara lateral derecha (perspectiva)
+      ctx.fillStyle='#2a1404';
+      ctx.beginPath();ctx.moveTo(28,-6);ctx.lineTo(28+topDA,-6-topDA);
+      ctx.lineTo(28+topDA,16-topDA);ctx.lineTo(28,16);ctx.closePath();ctx.fill();
+      // Cara frontal — base
+      ctx.fillStyle='#3d2008';ctx.fillRect(-28,-6,56,22);
+      ctx.fillStyle='#5a3010';ctx.fillRect(-26,-4,52,18);
+      // Tablones de la base
+      for(let i=-24;i<24;i+=8){
+        ctx.fillStyle=i%16===0?'#4a2808':'#6a3a14';ctx.fillRect(i,-3,6,14);
+        ctx.fillStyle='#8a5020';ctx.fillRect(i+1,-3,3,3); // cabeza del clavo
+      }
+      // Cara superior (techo de la plataforma) 2.5D
+      ctx.fillStyle='#4a2808';
+      ctx.beginPath();ctx.moveTo(-28,-6);ctx.lineTo(-28+topDA,-6-topDA);
+      ctx.lineTo(28+topDA,-6-topDA);ctx.lineTo(28,-6);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=0.8;ctx.stroke();
+      // Cruz sobre la plataforma
+      ctx.fillStyle='#c9a84c';ctx.fillRect(-2,-14,4,10);ctx.fillRect(-6,-9,12,4);
+      ctx.font='7px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.9)';ctx.textAlign='center';
+      ctx.fillText('⚓ CIMIENTOS',0,26);
+      if(s.hp<s.mhp)hpBar(s,-22);
+      break;}
+    case'arca2':{
+      // ── CASCO 2.5D — barca con paredes y cubierta ──
+      const topD2=9;
+      ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(-30+topD2,14,62,10);
+      // Cara lateral derecha — perspectiva
+      ctx.fillStyle='#2a1204';
+      ctx.beginPath();ctx.moveTo(30,-16);ctx.lineTo(30+topD2,-16-topD2);
+      ctx.lineTo(30+topD2,16-topD2);ctx.lineTo(30,16);ctx.closePath();ctx.fill();
+      // Tablones laterales cara derecha
+      ctx.fillStyle='#3a1808';
+      for(let y=-12;y<12;y+=5){
+        ctx.fillRect(30,y,topD2,(y+4));
+      }
+      // Quilla (base del casco) — forma de bote
+      ctx.fillStyle='#3d2008';
+      ctx.beginPath();ctx.moveTo(-32,16);ctx.lineTo(-28,-4);ctx.lineTo(28,-4);ctx.lineTo(32,16);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#5a3010';
+      ctx.beginPath();ctx.moveTo(-30,14);ctx.lineTo(-26,-2);ctx.lineTo(26,-2);ctx.lineTo(30,14);ctx.closePath();ctx.fill();
+      // Casco tablones
+      for(let i=-24;i<24;i+=6){
+        const col=i%12===0?'#3a1808':'#6a3814';
+        ctx.fillStyle=col;
+        ctx.fillRect(i,-1,5,14);
+      }
+      // Paredes del casco
+      ctx.fillStyle='#4a2808';ctx.fillRect(-28,-16,10,14);ctx.fillRect(18,-16,10,14);
+      // Cubierta central
+      ctx.fillStyle='#5a3010';ctx.fillRect(-18,-14,36,26);
+      for(let i=-16;i<16;i+=6){ctx.fillStyle='#6a3814';ctx.fillRect(i,-13,4,24);}
+      // Cara superior 2.5D de la cubierta
+      ctx.fillStyle='#3a2008';
+      ctx.beginPath();ctx.moveTo(-18,-14);ctx.lineTo(-18+topD2,-14-topD2);
+      ctx.lineTo(18+topD2,-14-topD2);ctx.lineTo(18,-14);ctx.closePath();ctx.fill();
+      // Portón con perspectiva
+      ctx.fillStyle='#2a1008';ctx.fillRect(6,-12,10,18);
+      ctx.fillStyle='#5a3010';ctx.fillRect(6+topD2/2,-12-topD2/2,10,topD2/2+2);// techo portón
+      ctx.fillStyle='#c9a84c';ctx.fillRect(10,-6,2,2);
+      ctx.strokeStyle='#8a6030';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(8,-14);ctx.lineTo(8,-22);ctx.stroke();
+      ctx.font='7px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.9)';ctx.textAlign='center';
+      ctx.fillText('🏗️ CUBIERTA',0,28);
+      if(s.hp<s.mhp)hpBar(s,-28);
+      break;}
+    case'arca3':{
+      // ════ ARCA COMPLETA EN 2.5D ════
+      // Perspectiva isométrica leve: cara frontal + lateral + cubierta + tejado
+      const T25=Date.now();
+      const topD3=12;  // profundidad perspectiva
+      const BW=68,BH=20,WH=32,RH=24; // ancho base, alto base, alto paredes, alto techo
+
+      // ─ Sombra ─
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.beginPath();ctx.ellipse(topD3/2,BH/2+8,BW/2+8,7,0,0,Math.PI*2);ctx.fill();
+
+      // ─ Cara lateral derecha — perspectiva ─
+      // Quilla lateral
+      ctx.fillStyle='#2a1204';
+      ctx.beginPath();
+      ctx.moveTo(BW/2-4,BH/2+2);ctx.lineTo(BW/2-4+topD3,BH/2+2-topD3);
+      ctx.lineTo(BW/2-4+topD3,-WH+2-topD3);ctx.lineTo(BW/2-4,-WH+2);
+      ctx.closePath();ctx.fill();
+      // Tablones laterales
+      for(let y=-WH+4;y<BH/2;y+=6){
+        ctx.fillStyle=y%12===0?'#3a1808':'#4a2410';
+        ctx.beginPath();
+        ctx.moveTo(BW/2-4,y);ctx.lineTo(BW/2-4+topD3,y-topD3);
+        ctx.lineTo(BW/2-4+topD3,y+5-topD3);ctx.lineTo(BW/2-4,y+5);
+        ctx.closePath();ctx.fill();
+      }
+
+      // ─ Quilla (base del casco) ─
+      ctx.fillStyle='#3d2008';
+      ctx.beginPath();ctx.moveTo(-BW/2+4,BH/2+4);ctx.lineTo(-BW/2,-2);
+      ctx.lineTo(BW/2,-2);ctx.lineTo(BW/2+4,BH/2+4);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#5a3010';
+      ctx.beginPath();ctx.moveTo(-BW/2+6,BH/2+2);ctx.lineTo(-BW/2+2,-1);
+      ctx.lineTo(BW/2-2,-1);ctx.lineTo(BW/2+2,BH/2+2);ctx.closePath();ctx.fill();
+      // Clavos brea
+      ctx.fillStyle='#1a0800';ctx.fillRect(-BW/2,-1,BW,2);
+      ctx.fillStyle='#8a8a6a';
+      for(let x=-BW/2+6;x<BW/2;x+=14){ctx.fillRect(x,0,2,4);}
+
+      // ─ Paredes del casco ─
+      ctx.fillStyle='#4a2a08';ctx.fillRect(-BW/2+2,-WH,10,WH);ctx.fillRect(BW/2-12,-WH,10,WH);
+      ctx.fillStyle='#5a3410';ctx.fillRect(-BW/2+3,-WH+1,7,WH-2);ctx.fillRect(BW/2-11,-WH+1,7,WH-2);
+
+      // ─ Cubierta central ─
+      ctx.fillStyle='#5a3210';ctx.fillRect(-BW/2+12,-WH+2,BW-24,WH);
+      for(let i=-BW/2+14;i<BW/2-12;i+=6){
+        ctx.fillStyle=i%12===0?'#4a2808':'#6a3814';ctx.fillRect(i,-WH+3,4,WH-4);
+      }
+
+      // ─ Cara superior de cubierta 2.5D ─
+      ctx.fillStyle='#3a2008';
+      ctx.beginPath();
+      ctx.moveTo(-BW/2+12,-WH+2);ctx.lineTo(-BW/2+12+topD3,-WH+2-topD3);
+      ctx.lineTo(BW/2-12+topD3,-WH+2-topD3);ctx.lineTo(BW/2-12,-WH+2);
+      ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=0.8;ctx.stroke();
+
+      // ─ Ventanas en paredes ─
+      ctx.fillStyle='#2a1608';ctx.fillRect(-BW/2+14,-WH+8,8,7);
+      ctx.fillStyle='rgba(180,200,255,0.2)';ctx.fillRect(-BW/2+15,-WH+9,6,5);
+      ctx.fillStyle='#2a1608';ctx.fillRect(BW/2-22,-WH+8,8,7);
+      ctx.fillStyle='rgba(180,200,255,0.2)';ctx.fillRect(BW/2-21,-WH+9,6,5);
+
+      // ─ Techo a dos aguas 2.5D ─
+      // Cara frontal del tejado
+      ctx.fillStyle='#4a2808';
+      ctx.beginPath();ctx.moveTo(-BW/2+12,-WH+2);ctx.lineTo(0,-WH-RH);ctx.lineTo(BW/2-12,-WH+2);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#5a3010';
+      ctx.beginPath();ctx.moveTo(-BW/2+16,-WH+2);ctx.lineTo(0,-WH-RH+4);ctx.lineTo(BW/2-16,-WH+2);ctx.closePath();ctx.fill();
+      // Cara lateral del tejado 2.5D
+      ctx.fillStyle='#3a1c08';
+      ctx.beginPath();
+      ctx.moveTo(BW/2-12,-WH+2);ctx.lineTo(0,-WH-RH);
+      ctx.lineTo(topD3,-WH-RH-topD3);ctx.lineTo(BW/2-12+topD3,-WH+2-topD3);
+      ctx.closePath();ctx.fill();
+      // Cumbrera 2.5D (línea en el tope del tejado)
+      ctx.fillStyle='#2a1404';
+      ctx.beginPath();
+      ctx.moveTo(0,-WH-RH);ctx.lineTo(topD3,-WH-RH-topD3);
+      ctx.lineWidth=2;ctx.strokeStyle='#2a1404';ctx.stroke();
+      // Tablillas del tejado (líneas diagonales)
+      ctx.strokeStyle='#3a1808';ctx.lineWidth=0.8;
+      for(let i=-BW/2+18;i<BW/2-12;i+=8){
+        ctx.beginPath();
+        ctx.moveTo(i,-WH+2);ctx.lineTo(Math.max(-BW/2+12,i/2),-WH-RH+2);ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(i,-WH+2);ctx.lineTo(Math.min(BW/2-12,i/2),-WH-RH+2);ctx.stroke();
+      }
+
+      // ─ Ventana de la buhardilla ─
+      ctx.fillStyle='#6a4820';ctx.fillRect(-5,-WH-RH+6,10,8);
+      ctx.fillStyle='rgba(200,220,255,0.25)';ctx.fillRect(-4,-WH-RH+7,8,6);
+      ctx.fillStyle='#4a2808';ctx.fillRect(-1,-WH-RH+6,2,8);ctx.fillRect(-4,-WH-RH+10,10,2);
+
+      // ─ Puerta lateral 2.5D ─
+      ctx.fillStyle='#2a1008';ctx.fillRect(BW/2-28,-WH+4,12,20);
+      ctx.fillStyle='#3a1808';ctx.fillRect(BW/2-28+topD3/2,-WH+4-topD3/2,12,topD3/2);
+      ctx.fillStyle='#c9a84c';ctx.fillRect(BW/2-20,-WH+14,2,2);
+
+      // ─ Bandera en el tope ─
+      ctx.strokeStyle='#8a6030';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(0,-WH-RH);ctx.lineTo(0,-WH-RH-18);ctx.stroke();
+      ctx.fillStyle='#c9a84c';ctx.fillRect(0,-WH-RH-18,10,6);
+      ctx.font='5px Cinzel,serif';ctx.fillStyle='#1a0800';ctx.textAlign='left';ctx.fillText('✝',2,-WH-RH-13);
+
+      // ─ Cuerdas de tensión ─
+      ctx.strokeStyle='rgba(120,80,20,0.6)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-BW/2+2,-WH/2);ctx.lineTo(-BW/2+12,-WH+2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(BW/2-2,-WH/2);ctx.lineTo(BW/2-12,-WH+2);ctx.stroke();
+
+      // ─ Reflejo/luz ambiental en cubierta ─
+      const timeGlow=Math.sin(T25/3000)*0.5+0.5;
+      ctx.fillStyle=`rgba(201,168,76,${timeGlow*0.06})`;
+      ctx.fillRect(-BW/2+12,-WH+2,BW-24,WH);
+
+      ctx.font='7px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.95)';ctx.textAlign='center';
+      ctx.fillText('⛵ EL ARCA',0,BH/2+16);
+      if(s.hp<s.mhp)hpBar(s,-WH-RH-24);
+      break;}
+
+    // ══ CERCAS ESCALABLES ═══════════════════════════════════
+    case'cerca_m1':case'cerca_m2':case'cerca_m3':{
+      const nv=s.tipo==='cerca_m1'?1:s.tipo==='cerca_m2'?2:3;
+      const hp=s.hp??s.mhp;const mhp=s.mhp||100;
+      // Post izquierdo
+      ctx.fillStyle='#4a2808';ctx.fillRect(-15,-18,5,30);
+      ctx.fillStyle='#6a3a10';ctx.fillRect(-14,-17,3,26);
+      // Post derecho
+      ctx.fillStyle='#4a2808';ctx.fillRect(10,-18,5,30);
+      ctx.fillStyle='#6a3a10';ctx.fillRect(11,-17,3,26);
+      // Tablones horizontales según nivel
+      const boards=nv===1?[[-8,-14],[10,-14],[-8,-4],[10,-4]]:
+                   nv===2?[[-8,-16],[10,-16],[-8,-8],[10,-8],[-8,0],[10,0]]:
+                          [[-8,-16],[10,-16],[-8,-10],[10,-10],[-8,-4],[10,-4],[-8,2],[10,2]];
+      ctx.fillStyle=nv===1?'#7a4818':nv===2?'#5a3010':'#3a1c08';
+      if(nv===1){
+        // Básica — 2 tablones
+        ctx.fillRect(-14,-14,28,4);ctx.fillRect(-14,-4,28,4);
+      } else if(nv===2){
+        // Reforzada — 3 tablones más gruesos
+        ctx.fillRect(-14,-16,28,5);ctx.fillRect(-14,-7,28,5);ctx.fillRect(-14,2,28,5);
+        ctx.fillStyle='#7a4818';ctx.fillRect(-13,-15,26,2);ctx.fillRect(-13,-6,26,2);
+      } else {
+        // Robusta — 4 tablones, clavos visibles
+        ctx.fillRect(-14,-16,28,5);ctx.fillRect(-14,-9,28,5);ctx.fillRect(-14,-2,28,5);ctx.fillRect(-14,5,28,5);
+        ctx.fillStyle='#9a6828';ctx.fillRect(-13,-15,26,2);ctx.fillRect(-13,-8,26,2);ctx.fillRect(-13,-1,26,2);
+        // Clavos pixel
+        ctx.fillStyle='#7a7060';
+        [[-8,-13],[0,-13],[8,-13],[-8,-6],[0,-6],[8,-6]].forEach(([cx,cy])=>ctx.fillRect(cx,cy,2,2));
+      }
+      // Punta del post
+      ctx.fillStyle='#2a1204';ctx.fillRect(-15,-20,5,4);ctx.fillRect(10,-20,5,4);
+      if(hp<mhp)hpBar(s,-28);
+      break;}
+
+    case'cerca_p1':case'cerca_p2':case'cerca_p3':{
+      const nv=s.tipo==='cerca_p1'?1:s.tipo==='cerca_p2'?2:3;
+      const hp=s.hp??s.mhp;const mhp=s.mhp||500;
+      // Muro base
+      const mH=nv===1?18:nv===2?24:30;
+      // Bloques de piedra pixel art
+      const bColors=['#2a2a2a','#3d3d3d','#4a4a4a'];
+      ctx.fillStyle=bColors[0];ctx.fillRect(-16,-mH,32,mH+4);
+      // Filas de bloques
+      for(let row=0;row<Math.ceil(mH/8);row++){
+        const y=-mH+row*8;
+        const offset=row%2===0?0:8;
+        for(let bx=-16+offset;bx<16;bx+=16){
+          ctx.fillStyle=bColors[row%2+1];
+          ctx.fillRect(bx+1,y+1,13,6);
+        }
+      }
+      if(nv>=2){
+        // Refuerzo — borde más oscuro y mortero visible
+        ctx.strokeStyle='#1a1a1a';ctx.lineWidth=1;
+        for(let row=0;row<Math.ceil(mH/8);row++){
+          ctx.beginPath();ctx.moveTo(-16,-mH+row*8);ctx.lineTo(16,-mH+row*8);ctx.stroke();
+        }
+      }
+      if(nv===3){
+        // Almenas en la cima
+        ctx.fillStyle='#2a2a2a';
+        [[-14,-mH-8],[-6,-mH-8],[2,-mH-8],[10,-mH-8]].forEach(([x,y])=>ctx.fillRect(x,y,6,8));
+        ctx.fillStyle='#3d3d3d';
+        [[-14,-mH-7],[-6,-mH-7],[2,-mH-7],[10,-mH-7]].forEach(([x,y])=>ctx.fillRect(x,y,4,5));
+      }
+      // Musgo en la base
+      ctx.fillStyle='#2a4a14';ctx.fillRect(-15,-2,6,3);ctx.fillRect(-4,-3,5,2);ctx.fillRect(6,-2,4,3);
+      if(hp<mhp)hpBar(s,-mH-12);
+      break;}
+
+    // ══ ARTILLERÍA DEL MURO ══════════════════════════════════
+    case'arco_muro':{
+      // Base de madera
+      ctx.fillStyle='#4a2808';ctx.fillRect(-10,0,20,10);
+      ctx.fillStyle='#6a3a10';ctx.fillRect(-8,1,16,7);
+      // Soporte vertical
+      ctx.fillStyle='#3a2008';ctx.fillRect(-2,-16,4,18);
+      // Arco curvado pixel art
+      ctx.strokeStyle='#7a4818';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(0,-20,10,Math.PI*0.15,Math.PI*0.85);ctx.stroke();
+      ctx.strokeStyle='#9a6030';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(0,-20,10,Math.PI*0.15,Math.PI*0.85);ctx.stroke();
+      // Cuerda del arco
+      ctx.strokeStyle='#c8a870';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-9,-17);ctx.lineTo(0,-22);ctx.lineTo(9,-17);ctx.stroke();
+      // Flecha lista
+      ctx.fillStyle='#8a8a6a';ctx.fillRect(-1,-24,2,8);
+      ctx.fillStyle='#c84020';ctx.fillRect(-2,-25,4,3);
+      // Nivel
+      ctx.font='6px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+      ctx.fillText('Nv'+(s.nivel||1),0,18);
+      if(s.hp<s.mhp)hpBar(s,-30);
+      break;}
+
+    case'ballista':{
+      // Base giratoria
+      ctx.fillStyle='#3a2008';ctx.fillRect(-14,2,28,10);ctx.fillRect(-10,0,20,4);
+      ctx.fillStyle='#5a3010';ctx.fillRect(-12,3,24,7);
+      // Ruedas
+      ctx.fillStyle='#2a1408';ctx.beginPath();ctx.arc(-12,12,6,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(12,12,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#4a2808';ctx.beginPath();ctx.arc(-12,12,4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(12,12,4,0,Math.PI*2);ctx.fill();
+      // Riel central
+      ctx.fillStyle='#4a2808';ctx.fillRect(-14,-10,8,14);ctx.fillRect(6,-10,8,14);
+      // Barra de disparo
+      ctx.fillStyle='#2a1008';ctx.fillRect(-12,-8,24,5);
+      ctx.fillStyle='#5a3010';ctx.fillRect(-10,-7,20,3);
+      // Perno de ballesta
+      ctx.fillStyle='#8a8a6a';ctx.fillRect(-2,-18,4,12);
+      ctx.fillStyle='#aaaaaa';ctx.fillRect(-1,-17,2,3);
+      // Nivel
+      ctx.font='6px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+      ctx.fillText('Nv'+(s.nivel||1),0,22);
+      if(s.hp<s.mhp)hpBar(s,-22);
+      break;}
+
+    case'catapulta':{
+      // Base robusta con ruedas
+      ctx.fillStyle='#3a2008';ctx.fillRect(-18,4,36,12);
+      ctx.fillStyle='#5a3010';ctx.fillRect(-16,5,32,9);
+      ctx.fillStyle='#2a1408';
+      ctx.beginPath();ctx.arc(-15,16,7,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(15,16,7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#4a2808';
+      ctx.beginPath();ctx.arc(-15,16,4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(15,16,4,0,Math.PI*2);ctx.fill();
+      // Brazo de catapulta (posición cargada)
+      ctx.fillStyle='#4a2808';ctx.save();ctx.translate(-4,2);ctx.rotate(-Math.PI*0.3);
+      ctx.fillRect(-2,0,4,28);ctx.restore();
+      // Cuenco (en punta del brazo)
+      ctx.save();ctx.translate(-14,-12);
+      ctx.fillStyle='#3d3d3a';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI);ctx.fill();
+      ctx.fillStyle='#555';ctx.beginPath();ctx.arc(0,0,5,0,Math.PI);ctx.fill();
+      // Proyectil en el cuenco
+      ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(0,-2,4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#484848';ctx.beginPath();ctx.arc(-1,-3,2,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+      // Cuerda de tensión
+      ctx.strokeStyle='#c8a870';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(-2,2);ctx.lineTo(-8,-2);ctx.stroke();
+      // Nivel
+      ctx.font='6px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+      ctx.fillText('Nv'+(s.nivel||1),0,26);
+      if(s.hp<s.mhp)hpBar(s,-28);
+      break;}
+
+
   }
   ctx.restore();
 }
@@ -2074,6 +2863,97 @@ function hpBar(o,oy){
   ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(-w/2-1,oy-1,w+2,6);
   ctx.fillStyle=o.hp/o.mhp>0.5?'#2a8a30':'#cc2a20';ctx.fillRect(-w/2,oy,f,4);
   ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(-w/2,oy,f,1);
+}
+
+// ── NPCs defensores de la familia de Noé ──────────────────
+function drawFamiliaDefensores(cx,cy){
+  if(!familia.length) return;
+  const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
+  if(!arca) return;
+  const T2=Date.now();
+  const isNight=wTime>0.78||wTime<0.25;
+  if(!isNight) return; // Solo de noche (en defensa activa)
+
+  // Posiciones de defensa alrededor del arca
+  const postDef=[
+    {dx:-2.5,dy:0},{dx:2.5,dy:0},{dx:0,dy:-2},{dx:0,dy:2},{dx:-1.5,dy:-1.5},{dx:1.5,dy:1.5}
+  ];
+
+  familia.forEach((m,i)=>{
+    const post=postDef[i%postDef.length];
+    const wx=(arca.tx+post.dx)*TILE, wy=(arca.ty+post.dy)*TILE;
+    // Scroll wrap
+    let sx=wx-cx, sy=wy-cy;
+    while(sx > MW*TILE/2) sx-=MW*TILE; while(cx-sx > MW*TILE*0.5) sx+=MW*TILE;
+    while(sy > MH*TILE/2) sy-=MH*TILE; while(cy-sy > MH*TILE*0.5) sy+=MH*TILE;
+    if(Math.abs(sx)>canvas.width||Math.abs(sy)>canvas.height) return;
+
+    const bob=Math.floor(T2/180)%2===0?0:1;
+    // Alerta de combate — ¿hay nefilim cerca?
+    const inCombat=nefilim.some(n=>Math.hypot(n.x-wx,n.y-wy)<200);
+    const alpha=0.85+Math.sin(T2/400)*0.1;
+
+    ctx.save();ctx.translate(sx,sy);ctx.globalAlpha=alpha;
+
+    // Sombra
+    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(0,6,9,3,0,0,Math.PI*2);ctx.fill();
+
+    // Color de piel del NPC según id
+    const skinCol=m.id==='shem'?'#c8845a':m.id==='cam'?'#b07040':'#a86030';
+    const tunicCol=m.id==='shem'?'#3a5a8a':m.id==='cam'?'#5a3a8a':'#3a8a5a';
+
+    // Piernas
+    ctx.fillStyle='#4a2808';ctx.fillRect(-5,6+bob,4,7);ctx.fillRect(1,6+bob,4,7);
+
+    // Cuerpo — túnica de color del personaje
+    ctx.fillStyle=tunicCol;ctx.fillRect(-6,-8+bob,12,16);
+    ctx.fillStyle=tunicCol.replace('#','');
+    ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(-5,-8+bob,5,14);
+
+    // Arma según NPC (cada hijo tiene arma distinta)
+    if(inCombat){
+      ctx.save();ctx.translate(8,-4+bob);ctx.rotate(Math.sin(T2/200)*0.4);
+      if(m.id==='shem'){
+        // Sem — arco
+        ctx.strokeStyle='#7a4818';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,10,Math.PI*0.2,Math.PI*0.8);ctx.stroke();
+        ctx.strokeStyle='#c8a870';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-8,3);ctx.lineTo(8,3);ctx.stroke();
+        ctx.fillStyle='#8a8a6a';ctx.fillRect(-1,-2,2,8);
+      } else if(m.id==='cam'){
+        // Cam — lanza
+        ctx.fillStyle='#5a3008';ctx.fillRect(-1,-14,2,20);
+        ctx.fillStyle='#8a8a6a';ctx.beginPath();ctx.moveTo(-4,-14);ctx.lineTo(0,-20);ctx.lineTo(4,-14);ctx.closePath();ctx.fill();
+      } else {
+        // Jafet — espada
+        ctx.fillStyle='#5a3008';ctx.fillRect(-1,-12,2,16);
+        ctx.fillStyle='#aaaaaa';ctx.fillRect(-1,-14,2,8);
+        ctx.fillStyle='#7a4818';ctx.fillRect(-6,-8,12,3);
+      }
+      ctx.restore();
+    } else {
+      // En reposo — arma apoyada al hombro
+      ctx.fillStyle='#5a3008';ctx.fillRect(7,-10+bob,2,18);
+    }
+
+    // Cabeza
+    ctx.fillStyle=skinCol;ctx.fillRect(-5,-18+bob,10,10);
+    ctx.fillStyle='#1a0a00';ctx.fillRect(-3,-15+bob,2,2);ctx.fillRect(2,-15+bob,2,2);
+
+    // Cabello corto
+    ctx.fillStyle='#3a1c08';ctx.fillRect(-5,-22+bob,10,6);
+
+    // Si en combate — halo de alerta rojo
+    if(inCombat){
+      ctx.fillStyle=`rgba(255,0,0,${0.3+Math.sin(T2/150)*0.2})`;
+      ctx.beginPath();ctx.arc(0,-10,14,0,Math.PI*2);ctx.fill();
+    }
+
+    // Nombre del NPC
+    ctx.globalAlpha=0.8;
+    ctx.font='6px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+    ctx.fillText(m.n,-1,-28+bob);
+
+    ctx.restore();
+  });
 }
 
 function drawPlayer(cx,cy){
@@ -2514,10 +3394,14 @@ function loop(){
   drawAnimales(cx,cy);
   drawNefilim(cx,cy);
   drawPlayer(cx,cy);
+  // Dibujar NPCs familia defensores
+  drawFamiliaDefensores(cx,cy);
   drawRain();
   drawDiluvio(cx,cy);
   drawNightVision(cx,cy);
+  drawRefugioOverlay(cx,cy);
   drawParts(cx,cy);
+  drawProyectiles(cx,cy);
   drawNearIndicator(cx,cy);
   drawMinimap();
   drawPortrait();
@@ -2624,6 +3508,7 @@ function update(){
   spawnNefilim();
   updateDiluvio();
   if(tick%120===0){checkMisiones();updateMisionHUD();}
+  if(tick%60===0) updateHudMuro();
   ganarSiclosPorAccion();
   tickBuffs();
   // Durabilidad del fogón (1 minuto = 3600 ticks)
@@ -2765,6 +3650,28 @@ function drawNearIndicator(cx,cy){
 }
 
 window.doInteract=function(){
+  // ── Puerta del muro norte — entrar/salir ─────────────
+  if(nivelMuro>0){
+    const pWorldX=MURO_CX*TILE, pWorldY=(MURO_CY-MURO_R)*TILE;
+    const distPuerta=Math.hypot(P.x-pWorldX, P.y-pWorldY);
+    if(distPuerta<80){
+      noeDentroMuro=!noeDentroMuro;
+      puertoAbierta=noeDentroMuro;
+      if(noeDentroMuro){
+        // Teletransportar a Noé dentro del recinto
+        P.x=(MURO_CX)*TILE; P.y=(MURO_CY-MURO_R+3)*TILE;
+        notif('🏰 Noé entró al recinto. Seguro del diluvio y los Nefilim.','gld');
+        // Contar animales dentro del recinto
+        contarAnimalesDentroDelMuro();
+      } else {
+        // Salir al norte del muro
+        P.x=(MURO_CX)*TILE; P.y=(MURO_CY-MURO_R-2)*TILE;
+        notif('🚪 Noé salió del recinto.','');
+      }
+      return;
+    }
+  }
+
   // Si hay animal cercano (no en Arca) y el jugador tiene arma, puede cazarlo
   if(!nearObj){
     const px=Math.floor(P.x/TILE),py=Math.floor(P.y/TILE);
@@ -2901,6 +3808,61 @@ window.doInteract=function(){
     notif('🛏️ La cama se desgastó — crea otra si necesitas descansar','');
   }
   else if(o.tipo==='cofre'){toggleP('inv');}
+  else if(o.tipo&&o.tipo.startsWith('cerca_')){
+    // Interacción con sección de cerca: mejorar o reparar
+    const hpPct=Math.floor((o.hp/o.mhp)*100);
+    const nomCerca={cerca_m1:'Madera I',cerca_m2:'Madera II',cerca_m3:'Madera III',cerca_p1:'Piedra I',cerca_p2:'Piedra II',cerca_p3:'Piedra III'};
+    const upgMap={cerca_m1:'cerca_m2',cerca_m2:'cerca_m3',cerca_m3:'cerca_p1',cerca_p1:'cerca_p2',cerca_p2:'cerca_p3',cerca_p3:null};
+    const nextNom=upgMap[o.tipo]?nomCerca[upgMap[o.tipo]]:'MAX';
+    const costsUpg={cerca_m1:'🪵×8+〰️×2',cerca_m2:'🪵×12+📋×2',cerca_m3:'🪵×14+🪨×4+🟡×2',cerca_p1:'🪨×10+🧱×3',cerca_p2:'🪨×18+🧱×6',cerca_p3:null};
+    const costoStr=costsUpg[o.tipo]||'—';
+    const html=`<div style="text-align:center;padding:10px">
+      <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#c9a84c;margin-bottom:8px">🏗️ Cerca ${nomCerca[o.tipo]||o.tipo}</div>
+      <div style="font-size:0.72rem;color:#c8c0a8;margin-bottom:12px">HP: ${Math.ceil(o.hp)}/${o.mhp} (${hpPct}%)</div>
+      ${upgMap[o.tipo]?`<button class="mbtn pri" style="width:100%;margin-bottom:8px;font-size:0.78rem" onclick="upgradeCerca('${o.tipo}');closePopup()">⬆️ Mejorar → ${nextNom}<br><span style='font-size:0.65rem;opacity:0.7'>Costo: ${costoStr}</span></button>`:'<div style="color:#c9a84c;font-size:0.72rem;margin-bottom:8px">✅ Nivel máximo</div>'}
+      ${o.hp<o.mhp?`<button class="mbtn" style="width:100%;font-size:0.78rem" onclick="repararCerca('${o.tipo}');closePopup()">🔧 Reparar (${Math.ceil((o.mhp-o.hp)/10)*2}🪵)</button>`:''}
+    </div>`;
+    showPopup(html);
+  }
+  else if(o.tipo==='arco_muro'||o.tipo==='ballista'||o.tipo==='catapulta'){
+    const nombres={arco_muro:'Arco del Muro',ballista:'Ballista',catapulta:'Catapulta'};
+    const nv=o.nivel||1;
+    const costoUpg=`🪵×${nv*8} 🪨×${nv*4} ⚙️×${nv*3}`;
+    const html=`<div style="text-align:center;padding:10px">
+      <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#c9a84c;margin-bottom:8px">⚙️ ${nombres[o.tipo]} Nv.${nv}</div>
+      <div style="font-size:0.72rem;color:#c8c0a8;margin-bottom:12px">Rango: ${o.rango||220}px · Daño: ${o.tipo==='arco_muro'?8+nv*4:o.tipo==='ballista'?18+nv*8:12+nv*5}</div>
+      ${nv<5?`<button class="mbtn pri" style="width:100%;margin-bottom:8px;font-size:0.78rem" onclick="upgradeArtilleria('${o.tipo}');closePopup()">⬆️ Mejorar a Nv.${nv+1}<br><span style='font-size:0.65rem;opacity:0.7'>Costo: ${costoUpg}</span></button>`:'<div style="color:#c9a84c;font-size:0.72rem">✅ Nivel máximo (5)</div>'}
+    </div>`;
+    showPopup(html);
+  }
+};
+
+// ── Popup genérico de interacción ────────────────────────────
+function showPopup(html){
+  let p=document.getElementById('_generic_popup');
+  if(!p){
+    p=document.createElement('div');
+    p.id='_generic_popup';
+    p.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.5);border-radius:14px;padding:20px;z-index:9500;min-width:240px;max-width:300px;box-shadow:0 4px 30px rgba(0,0,0,0.7)';
+    document.body.appendChild(p);
+  }
+  gPause=true;
+  p.innerHTML=html+`<button class="mbtn" style="width:100%;margin-top:10px;font-size:0.75rem" onclick="closePopup()">✖ Cerrar</button>`;
+  p.style.display='block';
+}
+window.closePopup=function(){
+  const p=document.getElementById('_generic_popup');
+  if(p) p.style.display='none';
+  gPause=false;
+};
+window.repararCerca=function(tipo){
+  const s=structs.find(st=>st.tipo===tipo&&st.hp<st.mhp);
+  if(!s){notif('No hay cercas dañadas de ese tipo','');return;}
+  const madNecesaria=Math.ceil((s.mhp-s.hp)/10)*2;
+  if(!hasItem('madera',madNecesaria)){notif(`Necesitas 🪵×${madNecesaria} para reparar`,'red');return;}
+  removeItem('madera',madNecesaria);
+  s.hp=s.mhp;
+  notif('🔧 Cerca reparada al 100%','grn');
 };
 
 function removeObj(o){
@@ -2920,6 +3882,7 @@ function removeItem(id,qty){
   return false;
 }
 function hasItem(id,qty=1){return inv.some(s=>s&&s.id===id&&s.qty>=qty);}
+function countItem(id){const s=inv.find(s=>s&&s.id===id);return s?s.qty:0;}
 function cntItem(id){const s=inv.find(s=>s&&s.id===id);return s?s.qty:0;}
 
 function renderInv(){
@@ -2992,6 +3955,44 @@ function renderCraft(){
     cc.appendChild(b);
   });
   const cl=document.getElementById('cList');cl.innerHTML='';
+
+  // — Muro Perimetral (botón especial en 'edificios') —
+  if(cCat==='edificios'){
+    const nvActual=nivelMuro;
+    const siguiente=nvActual+1;
+    const nvDef=MURO_NIVELES[siguiente];
+    const nvNom=MURO_NIVELES[nvActual]?.nombre||'No construido';
+    const murodiv=document.createElement('div');
+    murodiv.style.cssText='padding:12px;margin-bottom:10px;border:2px solid rgba(201,168,76,0.5);border-radius:10px;background:rgba(201,168,76,0.07)';
+    let muHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:1.4rem">🏰</span>
+      <div>
+        <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#c9a84c">Muro Perimetral del Arca</div>
+        <div style="font-size:0.68rem;color:${nvActual>0?'#80c860':'var(--muted)'}">Nivel actual: ${nvNom} ${nvActual>0?`· HP: ${Math.ceil(hpMuro)}/${MURO_NIVELES[nvActual].HP}`:''}</div>
+      </div>
+    </div>`;
+    if(nvActual>0&&hpMuro<MURO_NIVELES[nvActual].HP){
+      const dan=MURO_NIVELES[nvActual].HP-hpMuro;
+      const mNec=nvActual<=3?Math.ceil(dan/50)*2:0;
+      const pNec=nvActual>=4?Math.ceil(dan/50)*3:0;
+      muHtml+=`<button class="cbtn" style="width:100%;margin-bottom:6px" onclick="repararMuro()">🔧 Reparar${mNec?` (🪵×${mNec})`:''}${pNec?` (🪨×${pNec})`:''}</button>`;
+    }
+    if(nvDef){
+      const reqStr=Object.entries(nvDef.req).map(([k,v])=>{
+        const ok=cntItem(k)>=v;
+        return `<span style="color:${ok?'#80c860':'#c83020'}">${ITEMS[k]?.e||k}×${v}</span>`;
+      }).join(' ');
+      const canBuild=Object.entries(nvDef.req).every(([k,v])=>cntItem(k)>=v);
+      muHtml+=`<div style="font-size:0.68rem;color:#c8c0a8;margin-bottom:6px">Siguiente: ${nvDef.nombre} — HP ${nvDef.HP}</div>
+        <div style="margin-bottom:8px;font-size:0.68rem">${reqStr}</div>
+        <button class="cbtn" ${!canBuild?'disabled':''} onclick="construirMuro()">${nvActual===0?'🏗️ Construir':'⬆️ Mejorar'} → ${nvDef.nombre}</button>`;
+    } else {
+      muHtml+=`<div style="color:#c9a84c;font-size:0.72rem;text-align:center">✅ Muro al nivel máximo (Piedra III)</div>`;
+    }
+    murodiv.innerHTML=muHtml;
+    cl.appendChild(murodiv);
+  }
+
   RECETAS.filter(r=>r.cat===cCat).forEach(r=>{
     const it=ITEMS[r.r];
     const can=Object.entries(r.req).every(([id,q])=>cntItem(id)>=q);
@@ -3035,13 +4036,26 @@ function placeSt(tipo){
       if(tipo==='arca1'){arcaProgress=Math.max(arcaProgress,1);arcaHP[1]=100;updateArcaHUD();document.getElementById('arca-hud').style.display='block';}
       if(tipo==='arca2'){arcaProgress=Math.max(arcaProgress,2);arcaHP[2]=100;updateArcaHUD();}
       if(tipo==='arca3'){arcaProgress=Math.max(arcaProgress,3);arcaHP[3]=100;updateArcaHUD();notif('⛵ ¡El Arca está completa!','gld');sndLevelUp();}
+      // Cercas — asignar HP según tipo
+      const cercaHP={cerca_m1:100,cerca_m2:200,cerca_m3:350,cerca_p1:500,cerca_p2:750,cerca_p3:1000};
+      if(cercaHP[tipo]){sData.hp=cercaHP[tipo];sData.mhp=cercaHP[tipo];}
+      // Artillería — asignar nivel y cooldown
+      if(tipo==='arco_muro'){sData.nivel=1;sData.cdTiro=0;sData.rango=220;}
+      if(tipo==='ballista') {sData.nivel=1;sData.cdTiro=0;sData.rango=300;}
+      if(tipo==='catapulta'){sData.nivel=1;sData.cdTiro=0;sData.rango=250;}
       return;
     }
   }
   notif('❌ No hay espacio para colocar esto','red');
 }
 
-function hasSkill(id){return SKILLS.find(s=>s.id===id)?.u||false;}
+function hasSkill(id){
+  // Solo activa si fue aprendida Y está equipada en un slot de habilidad
+  const sk=SKILLS.find(s=>s.id===id);
+  if(!sk||!sk.u) return false;
+  return equipSkills.includes(id);
+}
+function hasSkillLearned(id){return SKILLS.find(s=>s.id===id)?.u||false;}
 
 function renderSkills(){
   document.getElementById('sPts').textContent=`Puntos disponibles: ${P.sp}`;
@@ -3628,7 +4642,7 @@ window.toggleFamiliaPanel=function(){
   document.body.appendChild(el);
   gPause=true;
 };
-window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;noahAction='idle';noahActionTimer=0;_noahFrame=0;_noahTick=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,_dying:false});startGame();};
+window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;nivelMuro=0;hpMuro=0;noeDentroMuro=false;puertoAbierta=false;proyectiles=[];misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;noahAction='idle';noahActionTimer=0;_noahFrame=0;_noahTick=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,_dying:false});startGame();};
 window.doManualSave=async function(){
   const btn=document.querySelector('.hbtn[title="Guardar"]');
   if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
@@ -4686,7 +5700,7 @@ async function saveGame(){
   if(!cu)return;
   try{
     await fbUpdate(ref(db,`rpg2/${cu.uid}`),{
-      day:wDay,facing:P.facing||'down',lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,siclos,armasEstado,skillsEstado,
+      day:wDay,facing:P.facing||'down',lv:P.lv,xp:P.xp,hp:P.hp,hunger:P.hunger,thirst:P.thirst,energy:P.energy,sp:P.sp,arcaP:arcaProgress,mision:misionActual,misionC:misionCompletada,siclos,armasEstado,skillsEstado,nivelMuro,hpMuro,noeDentroMuro,
       skills:SKILLS.filter(s=>s.u).map(s=>s.id),
       inventory:inv.filter(Boolean),structs:structs,invSz:INV_SZ,
       familia:familia.map(m=>({id:m.id,nivel:m.nivel,intervalo:m.intervalo})),
@@ -4706,10 +5720,12 @@ async function loadGame(){
     wDay=d.day||1;P.facing=d.facing||'down';P.lv=d.lv||1;P.xp=d.xp||0;P.hp=d.hp||100;
     arcaProgress=d.arcaP||0;misionActual=d.mision||0;misionCompletada=d.misionC||[];
     if(d.siclos) siclos=d.siclos;
+    if(d.nivelMuro!==undefined){nivelMuro=d.nivelMuro||0;hpMuro=d.hpMuro||0;noeDentroMuro=d.noeDentroMuro||false;}
     if(d.armasEstado) Object.assign(armasEstado,d.armasEstado);
     if(d.skillsEstado) Object.assign(skillsEstado,d.skillsEstado);
     // Re-aplicar efectos de armas al cargar
-    Object.keys(armasEstado).forEach(id=>aplicarEfectoArma(id,armasEstado[id].nivel));
+    // Solo aplicar efectos pasivos de armas que estén en slots de equipo
+equipWeapons.forEach(id=>{ if(armasEstado[id]) aplicarEfectoArma(id,armasEstado[id].nivel); });
       P.hunger=d.hunger||100;P.thirst=d.thirst||100;P.energy=d.energy||100;P.sp=d.sp||0;
     if(d.skills)d.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk)sk.u=true;});
     if(d.inventory)d.inventory.forEach((it,i)=>{if(i<INV_SZ)inv[i]=it;});
@@ -5297,48 +6313,83 @@ function spawnNefilim(){
 
 function updateNefilim(){
   const isNight=wTime>0.78||wTime<0.25;
-  // De día desaparecen
   if(!isNight){nefilim=[];return;}
-  // Antorcha ahuyenta SOLO si está equipada en algún slot, no solo en bolsa
-  const torchEquipped=Object.values(armasEstado).some(a=>a&&a.id&&String(a.id).includes('antorcha'));
-  const fogonNear=structs.some(s=>{
-    if(s.tipo!=='fogon') return false;
-    return Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<180;
-  });
+
+  // Antorcha solo si equipada
+  const torchEquipped=equipWeapons.some(id=>id&&String(id).includes('antorcha'));
+  const fogonNear=structs.some(s=>s.tipo==='fogon'&&Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<180);
+
+  // — Artillería: disparo automático de arco_muro, ballista, catapulta —
+  tickArtilleria();
+  tickProyectiles();
+
   nefilim.forEach((n,idx)=>{
     if(n.stunT>0){n.stunT--;return;}
     const distP=Math.hypot(n.x-P.x,n.y-P.y);
-    // Antorcha equipada o fogón cerca los ahuyentan
     if(torchEquipped&&distP<150){
       const fx=(n.x-P.x)/distP,fy=(n.y-P.y)/distP;
       n.x+=fx*n.spd*1.5;n.y+=fy*n.spd*1.5;return;
     }
     if(fogonNear&&distP<200){n.stunT=60;return;}
-    // Siempre van al jugador; si hay arca cerca y HP alto, la atacan
+
+    // Targeting: muro perimetral > arca > jugador
     const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
     const distArca=arca?Math.hypot(arca.tx*TILE-n.x,arca.ty*TILE-n.y):9999;
-    if(arca&&distArca<120&&distP>180&&Math.random()<0.4){n.target='arca';}
-    else{n.target='jugador';}
+
+    // ¿El Nefilim está cerca del muro perimetral?
+    const muroTX=MURO_CX*TILE, muroTY=MURO_CY*TILE, muroRad=MURO_R*TILE;
+    const dxMuro=n.x-muroTX, dyMuro=n.y-muroTY;
+    const enPerimetro=(Math.abs(dxMuro)<muroRad+80||Math.abs(dyMuro)<muroRad+80);
+    const fueraDentro=(Math.abs(dxMuro)>muroRad-40||Math.abs(dyMuro)>muroRad-40);
+    const cercaDeMuro=nivelMuro>0&&enPerimetro&&fueraDentro;
+
+    if(cercaDeMuro){
+      n.target='muro';n._targetStruct=null;
+    } else if(arca&&distArca<200&&distP>200&&Math.random()<0.45){
+      n.target='arca';n._targetStruct=arca;
+    } else {
+      n.target='jugador';n._targetStruct=null;
+    }
+
     let tx,ty;
-    if(n.target==='arca'&&arca){tx=arca.tx*TILE;ty=arca.ty*TILE;}
+    if(n.target==='muro'){
+      // Moverse hacia el punto del muro más cercano
+      const clampX=Math.max(muroTX-muroRad,Math.min(muroTX+muroRad,n.x));
+      const clampY=Math.max(muroTY-muroRad,Math.min(muroTY+muroRad,n.y));
+      tx=clampX;ty=clampY;
+    } else if(n.target==='arca'&&arca){tx=arca.tx*TILE;ty=arca.ty*TILE;}
     else{tx=P.x;ty=P.y;}
+
     const dx=tx-n.x,dy=ty-n.y,dist=Math.hypot(dx,dy);
-    if(dist>60){
+    if(dist>55){
       n.x+=dx/dist*n.spd*1.2;n.y+=dy/dist*n.spd*1.2;
     } else {
-      // Atacar
       n.attackT++;
       if(n.attackT>40){
         n.attackT=0;
-        if(n.target==='jugador'){
-          const defBonus=getArmaBonus('def');
-          const reduc=getBuff('escudo_div')?1:(defBonus>0?Math.max(0.1,1-defBonus/300):hasItem('armadura')?0.5:1);
+        if(n.target==='muro'&&nivelMuro>0){
+          // Daño al muro perimetral
+          const muroDmg=Math.floor(n.dmg*(1+n.lider?0.5:0));
+          hpMuro=Math.max(0,hpMuro-muroDmg);
+          addPart(n.x,n.y-20,`-${muroDmg}`);
+          if(tick%120===0) notif(`👹 ¡Gigante ataca el muro! -${muroDmg}`,'red');
+          if(hpMuro<=0){
+            nivelMuro=Math.max(0,nivelMuro-1);
+            if(nivelMuro>0){hpMuro=MURO_NIVELES[nivelMuro].HP;}
+            sndNotifBad();
+            notif('💥 ¡El muro fue degradado a un nivel inferior!','red');
+          }
+        } else if(n.target==='jugador'){
+          // Si Noé está dentro del recinto protegido, los Nefilim no alcanzan al jugador
+          if(noeDentroMuro){n.target='muro';}
+          const defBonus=getEquippedArmaBonus('def');
+          const reduc=getBuff('escudo_div')?0.3:(defBonus>0?Math.max(0.1,1-defBonus/300):hasItem('armadura')?0.5:1);
           const dmgFinal=Math.max(0,Math.floor(n.dmg*reduc));
           P.hp=Math.max(0,P.hp-dmgFinal);
           sndNotifBad();
-          notif(`👹 ¡Un gigante te golpea! -${n.dmg} HP`,'red');
+          notif(`👹 ¡Un gigante te golpea! -${dmgFinal} HP`,'red');
           if(P.hp<=0) gameOver();
-        } else if(arca){
+        } else if(arca&&n.target==='arca'){
           const k=arca.tipo==='arca1'?1:arca.tipo==='arca2'?2:3;
           arcaHP[k]=Math.max(0,(arcaHP[k]||100)-15);
           updateArcaHUD();
@@ -5346,12 +6397,227 @@ function updateNefilim(){
           if(arcaHP[k]<=0){
             structs=structs.filter(s=>s!==arca);
             arcaProgress=Math.max(0,arcaProgress-1);
-            notif('💥 ¡Una parte del Arca fue destruida! Reconstrúyela.','red');
+            notif('💥 ¡Una parte del Arca fue destruida!','red');
           }
         }
       }
     }
     n.animT++;if(n.animT>8){n.animF=(n.animF+1)%2;n.animT=0;}
+  });
+
+  // — NPCs familia defienden el muro —
+  tickFamiliaDefensa();
+}
+
+// — Artillería automática del muro ——————————————————————
+// ════ ARTILLERÍA DEL MURO — disparo automático ════════════
+// La artillería detecta Nefilim en su perímetro y lanza
+// proyectiles reales que viajan hasta el objetivo.
+function tickArtilleria(){
+  if(nivelMuro<1) return;  // sin muro = sin artillería fija
+  const ARTY=['arco_muro','ballista','catapulta'];
+  const isNight=wTime>0.78||wTime<0.25;
+  if(!isNight||!nefilim.length) return;
+
+  ARTY.forEach(tipo=>{
+    structs.filter(s=>s.tipo===tipo).forEach(s=>{
+      s.cdTiro=(s.cdTiro||0)+1;
+      const cd=tipo==='arco_muro'?50:tipo==='ballista'?80:130;
+      if(s.cdTiro<cd) return;
+      const rango=tipo==='arco_muro'?280:tipo==='ballista'?380:320;
+      // Buscar nefilim dentro del rango
+      let closest=null,minD=rango;
+      nefilim.forEach(n=>{
+        if(n.hp<=0) return;
+        const d=Math.hypot(s.tx*TILE-n.x,s.ty*TILE-n.y);
+        if(d<minD){minD=d;closest=n;}
+      });
+      if(!closest) return;
+      s.cdTiro=0;
+      const nv=s.nivel||1;
+      // Disparar proyectil visual
+      const ox=s.tx*TILE+TILE/2, oy=s.ty*TILE+TILE/2;
+      if(tipo==='arco_muro'){
+        const dmg=Math.floor((8+nv*4)*(1+nv*0.18));
+        proyectiles.push({x:ox,y:oy-10,tx:closest.x,ty:closest.y-10,
+          spd:9,tipo:'flecha',dmg,targetRef:closest,life:120,splash:false});
+      } else if(tipo==='ballista'){
+        const dmg=Math.floor((18+nv*8)*(1+nv*0.15));
+        proyectiles.push({x:ox,y:oy-8,tx:closest.x,ty:closest.y-8,
+          spd:12,tipo:'perno',dmg,targetRef:closest,life:120,splash:false});
+      } else { // catapulta
+        const dmg=Math.floor(12+nv*5);
+        proyectiles.push({x:ox,y:oy-6,tx:closest.x,ty:closest.y,
+          spd:5,tipo:'roca',dmg,targetRef:closest,life:180,splash:true,splashR:100});
+      }
+    });
+  });
+}
+
+// ── Actualizar proyectiles (mover + impacto) ──────────────
+function tickProyectiles(){
+  proyectiles=proyectiles.filter(p=>{
+    p.life--;
+    if(p.life<=0) return false;
+    const dx=p.tx-p.x, dy=p.ty-p.y;
+    const dist=Math.hypot(dx,dy);
+    if(dist<p.spd+2){
+      // Impacto
+      if(p.splash){
+        // Catapulta — daño en área
+        nefilim.forEach(n=>{
+          if(Math.hypot(n.x-p.tx,n.y-p.ty)<(p.splashR||100)){
+            n.hp-=p.dmg;
+          }
+        });
+        // Explosión visual
+        for(let i=0;i<6;i++){
+          const ang=i/6*Math.PI*2;
+          parts.push({x:p.tx+Math.cos(ang)*14,y:p.ty+Math.sin(ang)*14,
+            vy:-0.8-Math.random()*1.2,vx:Math.cos(ang)*1.5,
+            life:30,ml:30,e:'flash',isFlash:true});
+        }
+        addPart(p.tx,p.ty-4,'💥');
+      } else {
+        // Flecha/perno — daño directo
+        if(p.targetRef&&p.targetRef.hp>0){
+          p.targetRef.hp-=p.dmg;
+          addFlash(p.tx,p.ty);
+        }
+      }
+      return false;
+    }
+    // Mover el proyectil
+    p.x+=dx/dist*p.spd;
+    p.y+=dy/dist*p.spd;
+    if(p.tipo==='roca') p.y+=0.3; // gravedad leve en roca
+    return true;
+  });
+}
+
+// ── Dibujar proyectiles en pantalla ───────────────────────
+function drawProyectiles(cx,cy){
+  if(!proyectiles.length) return;
+  const T2=Date.now();
+  proyectiles.forEach(p=>{
+    const sx=p.x-cx, sy=p.y-cy;
+    const a=Math.min(1,p.life/20);
+    ctx.save();
+    if(p.tipo==='flecha'){
+      // Flecha pixel art — pequeño segmento girado hacia el objetivo
+      const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
+      ctx.translate(sx,sy);ctx.rotate(ang);
+      ctx.fillStyle=`rgba(180,140,60,${a})`;ctx.fillRect(-6,-1,10,2);
+      ctx.fillStyle=`rgba(220,60,20,${a})`;ctx.fillRect(-6,-2,4,4); // plumas
+      ctx.fillStyle=`rgba(180,180,130,${a})`;ctx.fillRect(4,-1,3,2); // punta
+    } else if(p.tipo==='perno'){
+      // Perno de ballesta — más grueso y oscuro
+      const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
+      ctx.translate(sx,sy);ctx.rotate(ang);
+      ctx.fillStyle=`rgba(100,90,70,${a})`;ctx.fillRect(-8,-1.5,12,3);
+      ctx.fillStyle=`rgba(180,180,160,${a})`;ctx.fillRect(4,-2,5,4); // punta metal
+      ctx.fillStyle=`rgba(80,60,30,${a})`;ctx.fillRect(-8,-2,4,4); // culata
+    } else {
+      // Roca de catapulta — círculo oscuro con trayectoria parabólica
+      const pulse=0.85+Math.sin(T2/80)*0.15;
+      ctx.globalAlpha=a*pulse;
+      ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(sx,sy,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#444';ctx.beginPath();ctx.arc(sx-1,sy-1,2.5,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=a*0.3;
+      ctx.fillStyle='#666';ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    ctx.restore();
+  });
+}
+
+// ── Animales dentro del muro = embarcados al arca ────────
+function contarAnimalesDentroDelMuro(){
+  if(!noeDentroMuro) return;
+  // Los animales en el área del recinto (radio MURO_R-2 tiles desde MURO_CX,CY)
+  const radioTiles=(MURO_R-2)*TILE;
+  const mwx=MURO_CX*TILE, mwy=MURO_CY*TILE;
+  let embarcados=0;
+  // animalesCapturados = array de {tipo, x, y, capturado}
+  if(typeof animalesCapturados!=='undefined'){
+    animalesCapturados.forEach(a=>{
+      if(!a.capturado) return;
+      const d=Math.hypot(a.x-mwx,a.y-mwy);
+      if(d<radioTiles){
+        embarcados++;
+        // Marcar como embarcado en el arca
+        if(!a.embarcado){
+          a.embarcado=true;
+          notif(`🐾 ${a.tipo||'Animal'} embarcado en el Arca ✅`,'gld');
+          addXP(25);
+        }
+      }
+    });
+  }
+  // También cualquier animal del mundo cercano al recinto
+  wObjs.filter(o=>o.tipo&&['oveja','vaca','cabra','pollo','cerdo','paloma','cuervo'].includes(o.tipo)).forEach(a=>{
+    const ax=a.tx*TILE,ay=a.ty*TILE;
+    if(Math.hypot(ax-mwx,ay-mwy)<radioTiles){
+      if(!a.embarcado){
+        a.embarcado=true;
+        notif(`🐾 ${a.tipo} ingresó al Arca ✅`,'gld');
+        addXP(20);
+      }
+    }
+  });
+  if(embarcados>0){
+    notif(`⛵ ${embarcados} animal(es) embarcado(s) en el Arca`,'gld');
+  }
+}
+
+// Overlay visual cuando Noé está dentro del muro
+function drawRefugioOverlay(cx,cy){
+  if(!noeDentroMuro) return;
+  // Dibujar suelo especial dentro del recinto
+  const mwx=MURO_CX*TILE-cx, mwy=MURO_CY*TILE-cy;
+  const rPx=(MURO_R-1)*TILE;
+  // Vignette interior — efecto de estar dentro
+  const T2=Date.now();
+  const pulse=Math.sin(T2/2000)*0.04+0.08;
+  const grad=ctx.createRadialGradient(mwx,mwy,10,mwx,mwy,rPx);
+  grad.addColorStop(0,'rgba(201,168,76,0)');
+  grad.addColorStop(1,`rgba(40,20,5,${pulse})`);
+  ctx.fillStyle=grad;
+  ctx.fillRect(mwx-rPx,mwy-rPx,rPx*2,rPx*2);
+  // Indicador en HUD
+  const T3=Date.now();
+  const pls=0.7+Math.sin(T3/400)*0.3;
+  ctx.globalAlpha=pls;
+  ctx.fillStyle='rgba(0,0,0,0.65)';
+  const lbl='🏰 REFUGIO — SEGURO';
+  const lW=ctx.measureText(lbl).width+24;
+  ctx.beginPath();ctx.roundRect((canvas.width-lW)/2,8,lW,20,6);ctx.fill();
+  ctx.font='bold 9px Cinzel,serif';ctx.fillStyle='#c9a84c';ctx.textAlign='center';
+  ctx.fillText(lbl,canvas.width/2,22);
+  ctx.globalAlpha=1;ctx.textAlign='left';
+}
+
+// — NPCs defienden el muro y arca ————————————————————
+let _npcDefTick=0;
+function tickFamiliaDefensa(){
+  if(!familia.length) return;
+  _npcDefTick++;
+  if(_npcDefTick%45!==0) return; // cada ~45 ticks (0.75s)
+
+  const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
+  familia.forEach(m=>{
+    // Cada NPC tiene un "puesto" de defensa cerca de alguna cerca o del arca
+    const nearNef=nefilim.find(n=>{
+      if(arca) return Math.hypot(n.x-arca.tx*TILE,n.y-arca.ty*TILE)<350;
+      return Math.hypot(n.x-P.x,n.y-P.y)<300;
+    });
+    if(!nearNef) return;
+    // El NPC ataca al nefilim más cercano al arca
+    const nv=m.nivel||1;
+    // Bonus de arma del NPC según habilidad
+    const npcDmg=Math.floor((5+nv*3)*(m.id==='shem'?1.3:m.id==='cam'?1.1:1.0));
+    nearNef.hp-=npcDmg;
+    addPart(nearNef.x,nearNef.y-10,`${m.e}-${npcDmg}`);
   });
 }
 
@@ -6222,19 +7488,45 @@ function aplicarEfectoArma(id,nivel){
   switch(id){
     case 'amuleto_c': P.mhp=100+bonus; P.hp=Math.min(P.mhp,P.hp+bonus); break;
     case 'botas':     P.speed=2.4+(bonus*0.008); break;
-    case 'escudo_s':  break; // handled in combat
-    default: break; // daño manejado en attackNefilim
+    case 'escudo_s':  break;
+    default: break;
+  }
+}
+function revertirEfectoArma(id){
+  // Revertir stats pasivos cuando se desequipa
+  switch(id){
+    case 'amuleto_c': P.mhp=100; P.hp=Math.min(P.mhp,P.hp); break;
+    case 'botas':     P.speed=2.4; break;
+    default: break;
   }
 }
 
 function getArmaBonus(stat){
-  // Suma bonuses de todas las armas/habilidades activas para un stat dado
+  // LEGACY — ahora solo suma armas/skills que estén equipadas en slots
+  return getEquippedArmaBonus(stat);
+}
+function getEquippedArmaBonus(stat){
+  // Solo cuentan armas en equipWeapons y skills en equipSkills
   let total=0;
-  [...SHOP_WEAPONS,...SHOP_SKILLS_TIENDA].forEach(item=>{
-    const est=armasEstado[item.id]||skillsEstado[item.id];
+  // Armas equipadas
+  equipWeapons.forEach(id=>{
+    const item=[...SHOP_WEAPONS,...SHOP_SKILLS_TIENDA].find(w=>w.id===id);
+    if(!item) return;
+    const est=armasEstado[id]||skillsEstado[id];
     if(!est||!est.nivel) return;
     if(item.stat===stat){
-      const rarMult=1+(est.rareza||0)*0.35; // rareza da 35% más por nivel
+      const rarMult=1+(est.rareza||0)*0.35;
+      total+=getStatBonus(est.nivel)*rarMult;
+    }
+  });
+  // Skills equipadas
+  equipSkills.forEach(id=>{
+    const item=[...SHOP_WEAPONS,...SHOP_SKILLS_TIENDA].find(w=>w.id===id);
+    if(!item) return;
+    const est=armasEstado[id]||skillsEstado[id];
+    if(!est||!est.nivel) return;
+    if(item.stat===stat){
+      const rarMult=1+(est.rareza||0)*0.35;
       total+=getStatBonus(est.nivel)*rarMult;
     }
   });
@@ -6264,6 +7556,62 @@ function getBuff(key){return (buffsActivos[key]||0)>0;}
 
 // ── Bonus activos de edificios ───────────────────────────────
 function tieneEdificio(id){ return structs.some(s=>s.tipo===id); }
+
+// ── Mejorar artillería del muro ────────────────────────────
+window.upgradeArtilleria=function(tipo){
+  const s=structs.find(st=>st.tipo===tipo);
+  if(!s){notif('Primero coloca la estructura en el mapa','red');return;}
+  const nv=s.nivel||1;
+  if(nv>=5){notif('¡Ya está al nivel máximo!','gld');return;}
+  // Costo de mejora: escala con nivel
+  const costoMadera=nv*8, costoPiedra=nv*4, costoMetal=nv*3;
+  if(!hasItems({madera:costoMadera,piedra:costoPiedra,metal:costoMetal})){
+    notif(`Necesitas 🪵×${costoMadera} 🪨×${costoPiedra} ⚙️×${costoMetal}`,'red');return;
+  }
+  removeItem('madera',costoMadera);removeItem('piedra',costoPiedra);removeItem('metal',costoMetal);
+  s.nivel=nv+1;
+  const nombres={arco_muro:'Arco del Muro',ballista:'Ballista',catapulta:'Catapulta'};
+  notif(`⬆️ ${nombres[tipo]||tipo} mejorada a Nv.${s.nivel}`,'gld');
+  addXP(20);
+};
+
+// ── Construir y mejorar el muro perimetral (desde el taller) ─
+window.construirMuro=function(){
+  if(nivelMuro>=6){notif('¡El muro está al nivel máximo!','gld');return;}
+  const siguiente=nivelMuro+1;
+  const nv=MURO_NIVELES[siguiente];
+  if(!nv){return;}
+  if(!hasItems(nv.req)){
+    const msg=Object.entries(nv.req).map(([k,v])=>`${ITEMS[k]?.e||k}×${v}`).join(' ');
+    notif(`🏰 Necesitas: ${msg}`,'red');return;
+  }
+  Object.entries(nv.req).forEach(([k,v])=>removeItem(k,v));
+  nivelMuro=siguiente;
+  hpMuro=nv.HP;
+  sndLevelUp();addXP(30);
+  if(nivelMuro===1) notif(`🏰 ¡Muro construido! ${nv.nombre}`,'gld');
+  else notif(`⬆️ ¡Muro mejorado a ${nv.nombre}!`,'gld');
+  renderCraft(); // actualizar botón en taller
+};
+window.repararMuro=function(){
+  if(nivelMuro<1){notif('Primero construye el muro','red');return;}
+  const nv=MURO_NIVELES[nivelMuro];
+  if(hpMuro>=nv.HP){notif('El muro está en perfecto estado','');return;}
+  const danyo=nv.HP-hpMuro;
+  const madNec=Math.ceil(danyo/50)*(nivelMuro<=3?2:0);
+  const pieNec=Math.ceil(danyo/50)*(nivelMuro>=4?3:0);
+  if(madNec>0&&!hasItem('madera',madNec)){notif(`Necesitas 🪵×${madNec} para reparar`,'red');return;}
+  if(pieNec>0&&!hasItem('piedra',pieNec)){notif(`Necesitas 🪨×${pieNec} para reparar`,'red');return;}
+  if(madNec>0) removeItem('madera',madNec);
+  if(pieNec>0) removeItem('piedra',pieNec);
+  hpMuro=nv.HP;
+  notif('🔧 ¡Muro reparado al 100%!','grn');
+};
+
+// Helper: verificar si hay items suficientes
+function hasItems(obj){
+  return Object.entries(obj).every(([k,v])=>countItem(k)>=v);
+}
 function getBonusEdificio(tipo){
   switch(tipo){
     case 'forja':   return tieneEdificio('forja')?1.5:1;
@@ -6332,35 +7680,365 @@ function renderEquip(){
     const arma=SHOP_WEAPONS.find(w=>w.id===id)||{n:id,e:'⚔️'};
     const d=document.createElement('div');
     d.style.cssText='padding:6px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(255,255,255,0.03)';
-    d.innerHTML=`<span style="cursor:pointer" onclick="showItemInfo('${id}','arma')">${arma.e||'⚔️'}</span><span style="font-size:0.72rem;flex:1;cursor:pointer" onclick="showItemInfo('${id}','arma')">${arma.n} <span style="font-size:0.6rem;color:var(--muted)">· info</span></span><button class="sbtn" style="font-size:0.62rem;padding:2px 6px" onclick="equiparArma('${id}')">Equipar ⚔️</button>`;
+    d.innerHTML=`<span style="cursor:pointer" onclick="showItemInfo('${id}','arma')">${arma.e||'⚔️'}</span><span style="font-size:0.72rem;flex:1;cursor:pointer" onclick="showItemInfo('${id}','arma')">${arma.n} <span style="background:rgba(231,76,60,0.2);color:#e07060;font-size:0.58rem;padding:1px 4px;border-radius:4px;margin-left:2px">INACTIVO</span></span><button class="sbtn pri" style="font-size:0.62rem;padding:2px 6px" onclick="equiparArma('${id}')">Equipar ⚔️</button>`;
     aEl.appendChild(d);
   });
   // Habilidades aprendidas no equipadas
   SKILLS.filter(s=>s.u&&!equipSkills.includes(s.id)).forEach(sk=>{
     const d=document.createElement('div');
     d.style.cssText='padding:6px 10px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(255,255,255,0.03)';
-    d.innerHTML=`<span style="cursor:pointer" onclick="showItemInfo('${sk.id}','skill_tienda')">${sk.e}</span><span style="font-size:0.72rem;flex:1;cursor:pointer" onclick="showItemInfo('${sk.id}','skill_tienda')">${sk.n} <span style="font-size:0.6rem;color:var(--muted)">· info</span></span><button class="sbtn" style="font-size:0.62rem;padding:2px 6px" onclick="equiparSkill('${sk.id}')">Equipar ✨</button>`;
+    d.innerHTML=`<span style="cursor:pointer" onclick="showItemInfo('${sk.id}','skill_tienda')">${sk.e}</span><span style="font-size:0.72rem;flex:1;cursor:pointer" onclick="showItemInfo('${sk.id}','skill_tienda')">${sk.n} <span style="background:rgba(231,76,60,0.2);color:#e07060;font-size:0.58rem;padding:1px 4px;border-radius:4px;margin-left:2px">INACTIVO</span></span><button class="sbtn pri" style="font-size:0.62rem;padding:2px 6px" onclick="equiparSkill('${sk.id}')">Equipar ✨</button>`;
     aEl.appendChild(d);
   });
+  // Aviso de bonus inactivos
+  const inactiveW=Object.keys(armasEstado).filter(id=>!equipWeapons.includes(id));
+  const inactiveSk=SKILLS.filter(s=>s.u&&!equipSkills.includes(s.id));
+  if(inactiveW.length||inactiveSk.length){
+    const warn=document.createElement('div');
+    warn.style.cssText='margin-top:10px;padding:8px 10px;border-radius:8px;border:1px solid rgba(231,76,60,0.4);background:rgba(231,76,60,0.07);font-size:0.68rem;color:#e07060;line-height:1.5';
+    warn.innerHTML=`⚠️ <b>${inactiveW.length+inactiveSk.length}</b> arma(s)/habilidad(es) sin equipar — sus bonuses están <b>inactivos</b>. Equípalas para activarlos.`;
+    aEl.appendChild(warn);
+  }
   if(!aEl.innerHTML) aEl.innerHTML='<div style="color:var(--muted);font-size:0.72rem">Aprende habilidades o consigue armas primero</div>';
 }
 
 window.equiparArma=function(id){
   if(equipWeapons.includes(id)){notif('Ya equipada','');return;}
   if(equipWeapons.length>=MAX_EQUIP_WEAPONS){notif(`Solo puedes equipar ${MAX_EQUIP_WEAPONS} armas a la vez`,'red');return;}
-  equipWeapons.push(id); renderEquip(); notif('⚔️ Arma equipada','grn');
+  equipWeapons.push(id);
+  // Activar efecto pasivo al equipar
+  if(armasEstado[id]) aplicarEfectoArma(id,armasEstado[id].nivel);
+  renderEquip();
+  const arma=SHOP_WEAPONS.find(w=>w.id===id);
+  notif(`⚔️ ${arma?arma.n:'Arma'} equipada — bonuses activados`,'grn');
 };
 window.desequiparArma=function(id){
-  equipWeapons=equipWeapons.filter(x=>x!==id); renderEquip();
+  equipWeapons=equipWeapons.filter(x=>x!==id);
+  // Revertir efectos pasivos
+  revertirEfectoArma(id);
+  renderEquip();
+  notif('↩️ Arma desequipada — bonuses desactivados','');
 };
 window.equiparSkill=function(id){
   if(equipSkills.includes(id)){notif('Ya equipada','');return;}
   if(equipSkills.length>=MAX_EQUIP_SKILLS){notif(`Solo puedes equipar ${MAX_EQUIP_SKILLS} habilidades a la vez`,'red');return;}
-  equipSkills.push(id); renderEquip(); notif('✨ Habilidad equipada','grn');
+  equipSkills.push(id); renderEquip();
+  const sk=SKILLS.find(s=>s.id===id)||{n:id};
+  notif(`✨ ${sk.n} equipada — habilidad activa`,'grn');
 };
 window.desequiparSkill=function(id){
   equipSkills=equipSkills.filter(x=>x!==id); renderEquip();
+  notif('↩️ Habilidad desequipada','');
 };
+
+
+// ════════════════════════════════════════════════════════════
+//  PANEL DEL MURO PERIMETRAL — icono HUD + ventana modal
+// ════════════════════════════════════════════════════════════
+
+function updateHudMuro(){
+  const btn=document.getElementById('hud-muro-btn');
+  const lvEl=document.getElementById('hud-muro-lv');
+  const hpEl=document.getElementById('hud-muro-hppct');
+  if(!btn) return;
+  if(nivelMuro<1){btn.style.display='none';return;}
+  btn.style.display='block';
+  const nv=MURO_NIVELES[nivelMuro];
+  const pct=nv?Math.round(hpMuro/nv.HP*100):0;
+  if(lvEl) lvEl.textContent='Nv.'+nivelMuro;
+  if(hpEl){
+    hpEl.textContent=pct+'%';
+    hpEl.style.color=pct>60?'#80c860':pct>30?'#c8a040':'#c83020';
+  }
+  // Pulso rojo si HP bajo
+  btn.style.borderColor=pct<30?'rgba(200,40,40,0.8)':'rgba(201,168,76,0.55)';
+}
+
+window.abrirPanelMuro=function(){
+  const p=document.getElementById('panel-muro');
+  if(!p) return;
+  gPause=true;
+  p.style.display='block';
+  renderPanelMuro();
+};
+window.cerrarPanelMuro=function(){
+  const p=document.getElementById('panel-muro');
+  if(p) p.style.display='none';
+  gPause=false;
+};
+
+function renderPanelMuro(){
+  const nvA=nivelMuro;
+  const nvNom=MURO_NIVELES[nvA]?.nombre||'Sin construir';
+  const nvHP=MURO_NIVELES[nvA]?.HP||0;
+  const pct=nvA>0&&nvHP?Math.round(hpMuro/nvHP*100):0;
+  const siguiente=nvA+1;
+  const nvSig=MURO_NIVELES[siguiente];
+
+  // Estado actual
+  const stEl=document.getElementById('pm-estado');
+  if(stEl){
+    const barColor=pct>60?'#4a8a30':pct>30?'#c87020':'#c83020';
+    stEl.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-family:Cinzel,serif;color:#c9a84c">${nvNom}</span>
+        <span style="color:${barColor};font-weight:bold">${pct}% HP</span>
+      </div>
+      ${nvA>0?`
+      <div style="background:rgba(0,0,0,0.4);border-radius:4px;height:6px;margin-bottom:4px">
+        <div style="height:100%;border-radius:4px;background:${barColor};width:${pct}%;transition:width 0.3s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:var(--muted)">
+        <span>HP: ${Math.ceil(hpMuro)} / ${nvHP}</span>
+        <span>Nivel ${nvA}/6</span>
+      </div>`:'<span style="color:var(--muted)">El muro aún no ha sido construido</span>'}`;
+  }
+
+  // Preview 2.5D del siguiente nivel
+  const cv=document.getElementById('pm-preview');
+  if(cv&&nvSig) renderMuroPreview25D(cv,siguiente);
+  else if(cv&&!nvSig){
+    const px=cv.getContext('2d');
+    px.clearRect(0,0,280,120);
+    px.fillStyle='#0a0806';px.fillRect(0,0,280,120);
+    px.font='bold 14px Cinzel,serif';px.fillStyle='#c9a84c';px.textAlign='center';
+    px.fillText('✅ Nivel máximo alcanzado',140,65);
+  }
+
+  // Stats
+  const stDiv=document.getElementById('pm-stats');
+  if(stDiv){
+    if(nvSig){
+      const isMadA=nvA>0&&nvA<=3,isMadS=siguiente<=3;
+      stDiv.innerHTML=`
+      <div style="font-family:Cinzel,serif;font-size:0.68rem;color:#c9a84c;margin-bottom:6px">Comparación de estadísticas</div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="color:var(--muted);font-size:0.62rem"><th style="text-align:left">Stat</th><th>Actual</th><th style="color:#c9a84c">Siguiente</th></tr>
+        <tr><td style="font-size:0.66rem;padding:3px 0">❤️ HP máximo</td>
+            <td style="text-align:center;font-size:0.66rem">${nvHP||'—'}</td>
+            <td style="text-align:center;font-size:0.66rem;color:#80c860;font-weight:bold">+${nvSig.HP-(nvHP||0)} → ${nvSig.HP}</td></tr>
+        <tr><td style="font-size:0.66rem;padding:3px 0">🪨 Material</td>
+            <td style="text-align:center;font-size:0.66rem">${nvA>0?(isMadA?'Madera':'Piedra'):'—'}</td>
+            <td style="text-align:center;font-size:0.66rem;color:#80c860">${isMadS?'Madera':'⬆️ Piedra'}</td></tr>
+        <tr><td style="font-size:0.66rem;padding:3px 0">🏹 Arma bonus</td>
+            <td style="text-align:center;font-size:0.66rem">${nvA===0?'—':'+'+nvA*8+'%'}</td>
+            <td style="text-align:center;font-size:0.66rem;color:#80c860">+${siguiente*8}%</td></tr>
+      </table>`;
+    } else {
+      stDiv.innerHTML='<span style="color:#c9a84c;font-size:0.7rem">🏆 ¡Fortaleza máxima!</span>';
+    }
+  }
+
+  // Costo
+  const csDiv=document.getElementById('pm-costo');
+  if(csDiv){
+    if(nvSig){
+      const reqRows=Object.entries(nvSig.req).map(([k,v])=>{
+        const ok=countItem(k)>=v;
+        return `<span style="color:${ok?'#80c860':'#c83020'};margin-right:8px">${ITEMS[k]?.e||k} ${ITEMS[k]?.n||k} ×${v} (${countItem(k)}/${v})</span>`;
+      }).join('<br>');
+      const canBuild=Object.entries(nvSig.req).every(([k,v])=>countItem(k)>=v);
+      csDiv.innerHTML=`
+        <div style="font-family:Cinzel,serif;font-size:0.68rem;color:#c9a84c;margin-bottom:6px">
+          Materiales requeridos:
+        </div>
+        <div style="line-height:1.8">${reqRows}</div>`;
+    } else {
+      csDiv.innerHTML='';
+    }
+  }
+
+  // Botones
+  const btDiv=document.getElementById('pm-botones');
+  if(btDiv){
+    let html='';
+    const canBuild=nvSig&&Object.entries(nvSig.req).every(([k,v])=>countItem(k)>=v);
+    if(nvSig){
+      html+=`<button class="mbtn pri" style="font-size:0.8rem" ${!canBuild?'disabled':''}
+        onclick="construirMuro();renderPanelMuro()">
+        ${nvA===0?'🏗️ Construir':'⬆️ Mejorar'} → ${nvSig.nombre}
+      </button>`;
+    }
+    if(nvA>0&&hpMuro<MURO_NIVELES[nvA].HP){
+      html+=`<button class="mbtn" style="font-size:0.78rem"
+        onclick="repararMuro();renderPanelMuro()">
+        🔧 Reparar muro
+      </button>`;
+    }
+    html+=`<button class="mbtn" style="font-size:0.72rem;border-color:rgba(255,255,255,0.15)"
+      onclick="cerrarPanelMuro()">✕ Cerrar</button>`;
+    btDiv.innerHTML=html;
+  }
+}
+
+// ── Render 2.5D del muro en miniatura ─────────────────────
+function renderMuroPreview25D(cv, nv){
+  const W=cv.width, H=cv.height;
+  const px=cv.getContext('2d');
+  px.clearRect(0,0,W,H);
+
+  // Fondo — cielo nocturno
+  const sky=px.createLinearGradient(0,0,0,H*0.55);
+  sky.addColorStop(0,'#04060e');sky.addColorStop(1,'#0a1020');
+  px.fillStyle=sky;px.fillRect(0,0,W,H*0.55);
+  // Suelo
+  px.fillStyle='#1a2a0e';px.fillRect(0,H*0.55,W,H*0.45);
+  px.fillStyle='#243510';px.fillRect(0,H*0.55,W,4);
+  // Estrellas
+  [[20,8],[60,14],[100,6],[150,10],[200,12],[240,7],[270,15]].forEach(([x,y])=>{
+    px.fillStyle='rgba(255,255,255,0.6)';px.fillRect(x,y,1.5,1.5);
+  });
+
+  const isMad=nv<=3;
+  const wallH=isMad?34:42;
+  const wallY=H*0.55-wallH+4; // base del muro sobre el suelo
+
+  // Perspectiva 2.5D: dibujar segmentos con profundidad
+  // Segmento trasero (norte) — más pequeño, más alto
+  const rearY=wallY-12;
+  const rearH=wallH*0.65;
+  drawMuroPreviewWall(px, 30, rearY, W-60, rearH, nv, isMad, 0.55);
+
+  // Segmentos laterales — perspectiva trapezoidal
+  // Izquierdo
+  drawMuroPreviewSide(px, 10, rearY, 30, wallY, rearH, wallH, nv, isMad, 0.65, 'left');
+  // Derecho
+  drawMuroPreviewSide(px, W-40, rearY, W-40, wallY, rearH, wallH, nv, isMad, 0.65, 'right');
+
+  // Segmento frontal (sur) — más grande, más bajo — con puerta
+  drawMuroPreviewFront(px, 10, wallY, W-20, wallH, nv, isMad);
+
+  // Torres de esquina izquierda y derecha
+  drawPreviewTorre(px, 8, wallY-8, nv, isMad, 0.9);
+  drawPreviewTorre(px, W-32, wallY-8, nv, isMad, 0.9);
+
+  // Artillería en el muro frontal
+  if(structs.some(s=>s.tipo==='arco_muro')){
+    drawPreviewArma(px, W/2-40, wallY-12, 'arco');
+  }
+  if(structs.some(s=>s.tipo==='ballista')){
+    drawPreviewArma(px, W/2, wallY-14, 'ballista');
+  }
+  if(structs.some(s=>s.tipo==='catapulta')){
+    drawPreviewArma(px, W/2+35, wallY-10, 'catapulta');
+  }
+
+  // Label
+  px.font='bold 8px Cinzel,serif';px.fillStyle='rgba(201,168,76,0.9)';px.textAlign='center';
+  px.fillText(MURO_NIVELES[nv]?.nombre||'Nv.'+nv, W/2, H-6);
+}
+
+function drawMuroPreviewWall(px,x,y,w,h,nv,isMad,alpha){
+  px.save();px.globalAlpha=alpha;
+  if(isMad){
+    const c1=nv===1?'#3d2008':nv===2?'#2a1404':'#1a0c02';
+    const c2=nv===1?'#5a3010':nv===2?'#4a2808':'#3a1c08';
+    px.fillStyle=c1;px.fillRect(x,y,w,h);
+    const n=nv===1?4:nv===2?6:8;
+    for(let i=0;i<n;i++){
+      px.fillStyle=c2;px.fillRect(x+2+i*(w-4)/n,y+2,(w-4)/n-2,h-4);
+    }
+    px.fillStyle=c1;px.fillRect(x,y+h/2,w,2);
+    // Almenas
+    if(nv>=2){for(let i=0;i<5;i++){px.fillStyle=c1;px.fillRect(x+4+i*(w-8)/5,y-5,(w-8)/5*0.5,5);}}
+  } else {
+    const c1=nv===4?'#222':nv===5?'#1a1a1a':'#111';
+    const c2=nv===4?'#333':nv===5?'#272727':'#1e1e1e';
+    px.fillStyle=c1;px.fillRect(x,y,w,h);
+    // Sillares
+    for(let row=0;row<2;row++){
+      const ry=y+row*(h/2);const off=row%2===0?0:w/6;
+      for(let bx=x+off;bx<x+w;bx+=w/4){
+        px.fillStyle=c2;px.fillRect(bx+1,ry+1,w/4-2,h/2-2);
+      }
+    }
+    // Almenas para nivel 6
+    if(nv===6){for(let i=0;i<6;i++){px.fillStyle=c1;px.fillRect(x+2+i*(w/6),y-7,w/6*0.45,7);}}
+  }
+  px.restore();
+}
+
+function drawMuroPreviewSide(px,x1,y1,x2,y2,h1,h2,nv,isMad,alpha,side){
+  px.save();px.globalAlpha=alpha;
+  const c=isMad?(nv===1?'#2a1404':nv===2?'#1e0e02':'#140a00'):
+                (nv===4?'#1a1a1a':nv===5?'#141414':'#0e0e0e');
+  px.fillStyle=c;
+  px.beginPath();
+  if(side==='left'){
+    px.moveTo(x1,y1);px.lineTo(x2,y2);px.lineTo(x2,y2+h2);px.lineTo(x1,y1+h1);
+  } else {
+    px.moveTo(x1,y1);px.lineTo(x2,y2);px.lineTo(x2,y2+h2);px.lineTo(x1,y1+h1);
+  }
+  px.closePath();px.fill();
+  px.restore();
+}
+
+function drawMuroPreviewFront(px,x,y,w,h,nv,isMad){
+  // Pared frontal con puerta central
+  drawMuroPreviewWall(px,x,y,w,h,nv,isMad,1.0);
+  // Puerta
+  const pw=32,ph=h*0.72;
+  const px2=x+w/2-pw/2,py2=y+h-ph;
+  px.fillStyle='rgba(5,3,1,0.95)';
+  // Arco
+  px.beginPath();
+  px.moveTo(px2,y+h);px.lineTo(px2,py2+pw/2);
+  px.arc(px2+pw/2,py2+pw/2,pw/2,Math.PI,0,false);
+  px.lineTo(px2+pw,y+h);px.closePath();px.fill();
+  // Refuerzo metálico de la puerta
+  const mc=nv>=4?'#888':'#6a5030';
+  px.fillStyle=mc;px.fillRect(px2,py2+pw/2,2,ph-pw/2);px.fillRect(px2+pw-2,py2+pw/2,2,ph-pw/2);
+  px.fillRect(px2,y+h-4,pw,2);
+  // Cruz de bisagra
+  px.fillStyle=mc;px.fillRect(px2+pw/2-1,py2+pw/2,2,ph-pw/2-4);
+}
+
+function drawPreviewTorre(px,x,y,nv,isMad,alpha){
+  px.save();px.globalAlpha=alpha;
+  const sz=isMad?20:24;
+  const col=isMad?(nv===1?'#2a1404':nv===2?'#1e0e02':'#100802'):
+                  (nv===4?'#1e1e1e':nv===5?'#181818':'#111');
+  const col2=isMad?(nv===1?'#4a2808':nv===2?'#3a1c08':'#2a1404'):
+                   (nv===4?'#2a2a2a':nv===5?'#222':'#1a1a1a');
+  // Cuerpo torre
+  px.fillStyle=col;px.fillRect(x,y,sz,sz+8);
+  px.fillStyle=col2;px.fillRect(x+2,y+2,sz-4,sz+4);
+  // Troneras
+  px.fillStyle='rgba(0,0,0,0.8)';
+  px.fillRect(x+sz/3,y+sz/3,4,4);
+  // Almenas
+  for(let i=0;i<3;i++){px.fillStyle=col;px.fillRect(x+3+i*6,y-5,4,5);}
+  // Bandera
+  if(nv>=1){
+    px.strokeStyle='#6a3a10';px.lineWidth=1;
+    px.beginPath();px.moveTo(x+sz/2,y);px.lineTo(x+sz/2,y-10);px.stroke();
+    px.fillStyle=nv>=4?'#8a8080':'#c9a84c';px.fillRect(x+sz/2,y-10,8,5);
+  }
+  px.restore();
+}
+
+function drawPreviewArma(px,x,y,tipo){
+  px.save();px.translate(x,y);
+  if(tipo==='arco'){
+    px.fillStyle='#3a2008';px.fillRect(-4,0,8,6);
+    px.strokeStyle='#8a5020';px.lineWidth=2;
+    px.beginPath();px.arc(0,-4,7,Math.PI*0.2,Math.PI*0.8);px.stroke();
+    px.strokeStyle='#c8a870';px.lineWidth=1;
+    px.beginPath();px.moveTo(-6,-1);px.lineTo(0,-8);px.lineTo(6,-1);px.stroke();
+  } else if(tipo==='ballista'){
+    px.fillStyle='#2a1404';px.fillRect(-8,2,16,5);
+    px.fillStyle='#3d2008';px.fillRect(-7,0,14,4);
+    px.fillStyle='#8a8a6a';px.fillRect(-1,-8,2,10);
+    px.fillStyle='#aaa';px.fillRect(-1,-8,2,3);
+  } else {
+    px.fillStyle='#2a1404';px.fillRect(-9,2,18,6);
+    px.fillStyle='#3d2008';px.save();px.translate(-3,1);px.rotate(-0.4);
+    px.fillRect(-1,0,2,12);px.restore();
+    px.fillStyle='#3d3d3a';px.beginPath();px.arc(-10,-4,5,0,Math.PI);px.fill();
+    px.fillStyle='#2a2a2a';px.beginPath();px.arc(-10,-6,3,0,Math.PI*2);px.fill();
+  }
+  px.restore();
+}
 
 // ════════════════════════════════════════════════════════════
 //  FAMILIA DE NOÉ — recolección automática
@@ -6967,6 +8645,47 @@ window.addEventListener('DOMContentLoaded',initBgMenu);
 
 <!-- BOTÓN FLOTANTE para cambiar de mundo (siempre visible durante juego) -->
 <!-- mundo-switcher integrado en hud-float-btns -->
+
+<!-- ══ PANEL MURO PERIMETRAL ══════════════════════════════ -->
+<div id="panel-muro" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(8,6,3,0.97);border:2px solid rgba(201,168,76,0.6);border-radius:16px;
+  padding:20px;z-index:9800;width:320px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 6px 40px rgba(0,0,0,0.8)">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="font-family:Cinzel,serif;font-size:1rem;color:#c9a84c">🏰 Muro del Arca</div>
+    <button class="sbtn" onclick="cerrarPanelMuro()" style="font-size:0.7rem">✕</button>
+  </div>
+
+  <!-- Estado actual -->
+  <div id="pm-estado" style="background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.2);
+    border-radius:8px;padding:10px;margin-bottom:14px;font-size:0.72rem;color:#c8c0a8">
+  </div>
+
+  <!-- Preview 2.5D del siguiente nivel -->
+  <div style="margin-bottom:14px">
+    <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#c9a84c;margin-bottom:6px">
+      Vista previa — siguiente nivel:
+    </div>
+    <canvas id="pm-preview" width="280" height="120"
+      style="border-radius:8px;border:1px solid rgba(201,168,76,0.3);
+      background:#0a0806;image-rendering:pixelated;width:100%">
+    </canvas>
+  </div>
+
+  <!-- Stats comparación -->
+  <div id="pm-stats" style="margin-bottom:14px;font-size:0.7rem;color:#c8c0a8">
+  </div>
+
+  <!-- Costo -->
+  <div id="pm-costo" style="background:rgba(255,255,255,0.04);border-radius:8px;
+    padding:10px;margin-bottom:12px;font-size:0.7rem;color:#c8c0a8">
+  </div>
+
+  <!-- Botones -->
+  <div id="pm-botones" style="display:flex;flex-direction:column;gap:8px">
+  </div>
+</div>
 
 </body>
 </html>
