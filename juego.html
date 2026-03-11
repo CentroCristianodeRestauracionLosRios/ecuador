@@ -3435,7 +3435,7 @@ window.doManualSave=async function(){
   if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
   await saveGame();
 };
-window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none'showS('s-menu');};
+window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none';showS('s-menu');};
 window.doLogout=async function(){await signOut(auth);};
 
 
