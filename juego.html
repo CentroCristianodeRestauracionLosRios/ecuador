@@ -594,7 +594,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <button class="hbtn"            onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
       <button class="hbtn"            onclick="showTutorial()" title="Tutorial" style="border-color:rgba(201,168,76,0.4)">📖</button>
       <button class="hbtn"            onclick="toggleStatsPanel()" title="Estadísticas" style="border-color:rgba(80,180,80,0.4)">📊</button>
-      <button class="hbtn"            onclick="openArcaView()" title="Ver Arca" style="border-color:rgba(100,160,255,0.4)">⛵</button>
+
 
     </div>
     <div id="hud-row2" style="display:none"></div>
@@ -791,11 +791,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 
 <!-- Botones flotantes: guardar y salir (opción en Ajustes) -->
 <div id="hud-float-btns" style="display:none">
-  <button class="hfloat" onclick="doManualSave()" title="Guardar progreso">
-    <span class="hfloat-icon">💾</span><span class="hfloat-label">Guardar</span>
-  </button>
-  <button class="hfloat" onclick="doSaveQuit()" title="Guardar y salir al menú" style="border-color:rgba(231,100,60,0.5)">
-    <span class="hfloat-icon">🚪</span><span class="hfloat-label">Salir</span>
+  <button class="hfloat" onclick="openArcaView()" id="btn-mundo-arca"
+    title="Ver el Arca" style="border-color:rgba(100,160,255,0.5)">
+    <span class="hfloat-icon">⛵</span><span class="hfloat-label">Ver Arca</span>
   </button>
 </div>
 
@@ -3433,11 +3431,11 @@ window.toggleFamiliaPanel=function(){
 };
 window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;noahAction='idle';noahActionTimer=0;_noahFrame=0;_noahTick=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,_dying:false});startGame();};
 window.doManualSave=async function(){
-  const btn=document.querySelector('#hud-float-btns .hfloat');
+  const btn=document.querySelector('.hbtn[title="Guardar"]');
   if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
   await saveGame();
 };
-window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none';const ms=document.getElementById('mundo-switcher');if(ms)ms.style.display='none';showS('s-menu');};
+window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none'showS('s-menu');};
 window.doLogout=async function(){await signOut(auth);};
 
 
@@ -4336,8 +4334,6 @@ function beginLoop(){
   if(hud) hud.style.display='flex';
   if(mpad) mpad.style.display='flex';
   const fb=document.getElementById('hud-float-btns'); if(fb) fb.style.display='flex';
-  // Mostrar botón flotante de mundo/arca
-  const ms=document.getElementById('mundo-switcher'); if(ms) ms.style.display='block';
   try{ applyAllSettings(); }catch(e){}
   gRun=true;gPause=false;godVoiceActive=false;
   // Cargar sprites solo si no se han cargado antes
@@ -6765,13 +6761,7 @@ window.addEventListener('DOMContentLoaded',initBgMenu);
 </div>
 
 <!-- BOTÓN FLOTANTE para cambiar de mundo (siempre visible durante juego) -->
-<div id="mundo-switcher" style="display:none;position:fixed;bottom:90px;left:10px;z-index:500;display:none">
-  <button onclick="openArcaView()" id="btn-switch-mundo"
-    style="background:linear-gradient(135deg,#0d1a2e,#1a0d2e);border:1.5px solid rgba(201,168,76,0.5);border-radius:12px;color:#c9a84c;font-size:0.65rem;padding:7px 10px;cursor:pointer;font-family:Cinzel,serif;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 2px 12px rgba(0,0,0,0.5)">
-    <span style="font-size:1.1rem">⛵</span>
-    <span>Ver Arca</span>
-  </button>
-</div>
+<!-- mundo-switcher integrado en hud-float-btns -->
 
 </body>
 </html>
