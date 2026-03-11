@@ -1434,24 +1434,28 @@ function genMundo(){
     }
     if(t===T.WATER||t===T.SAND)if(Math.random()<0.035)addObj(x,y,'cana');
   }
-  const cx=30,cy=30;
-  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
-    const tx=cx+dx,ty=cy+dy;
-    if(wMap[ty]&&wMap[ty][tx]){wMap[ty][tx].t=T.GRASS;wMap[ty][tx].obj=null;}
-  }
-  wObjs=wObjs.filter(o=>!(Math.abs(o.tx-cx)<=4&&Math.abs(o.ty-cy)<=4));
-  P.x=cx*TILE+20;P.y=cy*TILE+20;
-
-  // — Zona de construcción del Arca — pradera 18×18 despejada al noreste —
-  const ZONA_TX=46, ZONA_TY=38;   // centro de la zona del arca
-  for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
-    const tx2=ZONA_TX+dx, ty2=ZONA_TY+dy;
+  // ── Zona central del Arca — pradera despejada en el centro del mapa ──
+  // Muro en centro (40,40), radio 14 tiles → despejar 17 tiles en cada dir.
+  const ZONA_CX=40, ZONA_CY=40, ZONA_R=17;
+  for(let dy=-ZONA_R;dy<=ZONA_R;dy++)for(let dx=-ZONA_R;dx<=ZONA_R;dx++){
+    const tx2=ZONA_CX+dx, ty2=ZONA_CY+dy;
     if(wMap[ty2]&&wMap[ty2][tx2]){
       wMap[ty2][tx2].t=T.GRASS;
       wMap[ty2][tx2].obj=null;
     }
   }
-  wObjs=wObjs.filter(o=>!(Math.abs(o.tx-ZONA_TX)<=10&&Math.abs(o.ty-ZONA_TY)<=10));
+  wObjs=wObjs.filter(o=>!(Math.abs(o.tx-ZONA_CX)<=ZONA_R+1&&Math.abs(o.ty-ZONA_CY)<=ZONA_R+1));
+
+  // ── Spawn de Noé al sur del muro (FUERA, a salvo) ──
+  // MURO_R=14, Noé aparece en tile (40, 40+14+4) = (40, 58) — bien afuera
+  const spawnX=40, spawnY=58;
+  // Despejar zona de spawn
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){
+    const tx=spawnX+dx,ty=spawnY+dy;
+    if(wMap[ty]&&wMap[ty][tx]){wMap[ty][tx].t=T.GRASS;wMap[ty][tx].obj=null;}
+  }
+  wObjs=wObjs.filter(o=>!(Math.abs(o.tx-spawnX)<=4&&Math.abs(o.ty-spawnY)<=4));
+  P.x=spawnX*TILE+16; P.y=spawnY*TILE+16;
   initDrops();
   initSprites();      // pre-generar sprites pixel art
 }
@@ -1953,7 +1957,7 @@ function drawObjs(cx,cy){
     drawStrAt(s,sx,sy);
   });
   // Dibujar el muro perimetral si está construido
-  if(nivelMuro>0) drawMuroPerimetral(cx,cy);
+  if(nivelMuro>0){ drawSueloDentroMuro(cx,cy); drawMuroPerimetral(cx,cy); }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1961,7 +1965,55 @@ function drawObjs(cx,cy){
 // Centro de la zona: ZONA_TX=46, ZONA_TY=38
 // Borde del muro: radio 10 tiles alrededor del centro
 // ════════════════════════════════════════════════════════════
-const MURO_CX=46, MURO_CY=38, MURO_R=10; // tiles
+const MURO_CX=40, MURO_CY=40, MURO_R=14; // tiles — centro del mapa 80×80, radio épico
+
+// ── Suelo especial dentro del recinto del muro ──────────
+function drawSueloDentroMuro(cx,cy){
+  const T2=Date.now();
+  // Área interior = desde (CX-R+1) hasta (CX+R-1) en tiles
+  const x0=(MURO_CX-MURO_R+1)*TILE-cx;
+  const y0=(MURO_CY-MURO_R+1)*TILE-cy;
+  const W2=(MURO_R*2-2)*TILE;
+  const H2=(MURO_R*2-2)*TILE;
+
+  // Piso de tierra batida con variación
+  ctx.save();
+  // Capa base: tierra oscura
+  ctx.fillStyle='#2a1e0e'; ctx.fillRect(x0,y0,W2,H2);
+  // Bloques de tierra con variación
+  const bT=TILE;
+  for(let dy=0;dy<MURO_R*2-2;dy++){
+    for(let dx=0;dx<MURO_R*2-2;dx++){
+      const tx=MURO_CX-MURO_R+1+dx, ty=MURO_CY-MURO_R+1+dy;
+      const rnd=((tx*17+ty*31)*2654435761)&0xff;
+      const shade=rnd/255;
+      const col=`rgba(${Math.floor(50+shade*20)},${Math.floor(35+shade*15)},${Math.floor(15+shade*8)},0.6)`;
+      ctx.fillStyle=col;
+      ctx.fillRect(x0+dx*bT+1,y0+dy*bT+1,bT-2,bT-2);
+    }
+  }
+  // Sendero de piedra central (camino desde la puerta norte hasta el arca)
+  ctx.fillStyle='rgba(80,70,55,0.5)';
+  const pathX=x0+(MURO_R-1)*TILE-TILE/2;
+  ctx.fillRect(pathX, y0, TILE*2, H2);
+  // Textura del sendero
+  ctx.fillStyle='rgba(100,85,65,0.3)';
+  for(let py=0;py<MURO_R*2-2;py+=2){
+    ctx.fillRect(pathX+2, y0+py*bT+2, bT*2-4, bT*0.7);
+  }
+  // Borde interior del muro — sombra proyectada hacia adentro
+  const shadowW=14;
+  const grad=ctx.createLinearGradient(x0,y0,x0+shadowW,y0);
+  grad.addColorStop(0,'rgba(0,0,0,0.45)');grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad;ctx.fillRect(x0,y0,shadowW,H2);
+  const grad2=ctx.createLinearGradient(x0+W2,y0,x0+W2-shadowW,y0);
+  grad2.addColorStop(0,'rgba(0,0,0,0.45)');grad2.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad2;ctx.fillRect(x0+W2-shadowW,y0,shadowW,H2);
+  const grad3=ctx.createLinearGradient(x0,y0,x0,y0+shadowW);
+  grad3.addColorStop(0,'rgba(0,0,0,0.45)');grad3.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grad3;ctx.fillRect(x0,y0,W2,shadowW);
+  ctx.restore();
+}
 
 function drawMuroPerimetral(cx,cy){
   if(nivelMuro<1) return;
@@ -2019,119 +2071,186 @@ function drawMuroPerimetral(cx,cy){
 }
 
 function drawMuroSegmento(sx,sy,horiz,isMadera,nv,flashRed,T2,tx,ty){
-  // No dibujar en la apertura de la puerta sur
+  // Apertura de la puerta norte — 3 tiles en el centro
   if(horiz && ty===MURO_CY-MURO_R && tx>=MURO_CX-1 && tx<=MURO_CX+1) return;
 
-  const W=TILE, H=TILE;
-  const wallH=isMadera?28:36;       // altura visible del muro en px
-  const topD=isMadera?8:10;         // profundidad de la cara superior (2.5D)
+  const W=TILE;
+  // Altura y profundidad escalan visiblemente con el nivel
+  // Nv1: 30px  Nv2: 36px  Nv3: 44px  Nv4: 52px  Nv5: 60px  Nv6: 70px
+  const wallH=[0,30,36,44,52,60,70][nv]||30;
+  const topD =[0, 7, 8,10,12,14,16][nv]||7;
 
-  // Colores según nivel
-  let cf,cl,ct; // frente, luz, techo
-  if(isMadera){
-    cf=nv===1?'#5a3010':nv===2?'#4a2808':'#3a1c08';
-    cl=nv===1?'#7a4820':nv===2?'#6a3a12':'#5a2e0a';
-    ct=nv===1?'#3a2008':nv===2?'#2a1404':'#1a0c02';
-  } else {
-    cf=nv===4?'#3d3d3d':nv===5?'#2e2e2e':'#222';
-    cl=nv===4?'#555':nv===5?'#444':'#333';
-    ct=nv===4?'#1e1e1e':nv===5?'#181818':'#111';
-  }
+  // ── Paleta completa por nivel ──────────────────────────
+  // cf=cara frontal, cl=cara lateral, ct=cara techo, cd=detalle, ca=almena
+  const PAL={
+    1:{cf:'#6a3a10',cl:'#4a2208',ct:'#3a1c08',cd:'#8a5020',ca:'#4a2808'},// madera cruda
+    2:{cf:'#5a3010',cl:'#3d1e08',ct:'#2a1204',cd:'#7a4018',ca:'#3a1c08'},// madera oscura
+    3:{cf:'#4a2808',cl:'#301804',ct:'#1e0e02',cd:'#6a3010',ca:'#2a1404'},// madera negra c/brea
+    4:{cf:'#484848',cl:'#2a2a2a',ct:'#1a1a1a',cd:'#606060',ca:'#383838'},// piedra gris
+    5:{cf:'#363636',cl:'#1e1e1e',ct:'#111',   cd:'#4a4a4a',ca:'#282828'},// piedra oscura
+    6:{cf:'#282828',cl:'#141414',ct:'#0a0a0a',cd:'#3c3c3c',ca:'#1e1e1e'},// fortaleza negra
+  };
+  const p=PAL[nv]||PAL[1];
 
-  ctx.save();ctx.translate(sx+TILE/2, sy+TILE/2);
-  if(flashRed){ctx.globalAlpha=0.75;}
+  ctx.save();ctx.translate(sx+W/2, sy+W/2);
+  if(flashRed) ctx.globalAlpha=0.72;
 
-  // ── Sombra en el suelo ──
-  ctx.fillStyle='rgba(0,0,0,0.28)';
-  ctx.fillRect(-W/2,2,W,6);
+  // ── Sombra ──
+  ctx.fillStyle='rgba(0,0,0,0.32)';
+  ctx.fillRect(-W/2+2, wallH/2-2, W-4, 7);
 
-  // ── Cara superior (techo 2.5D inclinado) ──
-  ctx.fillStyle=ct;
+  // ── Cara lateral derecha (perspectiva 2.5D) ──
+  ctx.fillStyle=p.cl;
   ctx.beginPath();
-  ctx.moveTo(-W/2,-wallH/2);
-  ctx.lineTo(-W/2+topD,-wallH/2-topD);
-  ctx.lineTo( W/2+topD,-wallH/2-topD);
-  ctx.lineTo( W/2,     -wallH/2);
+  ctx.moveTo( W/2,  wallH/2);
+  ctx.lineTo( W/2+topD,  wallH/2-topD);
+  ctx.lineTo( W/2+topD, -wallH/2-topD);
+  ctx.lineTo( W/2,      -wallH/2);
   ctx.closePath();ctx.fill();
-  // Borde del techo
-  ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=0.8;ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,0.35)';ctx.lineWidth=0.5;ctx.stroke();
 
   // ── Cara frontal ──
-  ctx.fillStyle=cf;
-  ctx.fillRect(-W/2,-wallH/2,W,wallH);
+  ctx.fillStyle=p.cf;
+  ctx.fillRect(-W/2, -wallH/2, W, wallH);
 
-  if(isMadera){
-    // Tablones verticales
+  // ── Detalles por nivel ──────────────────────────────────
+  if(nv<=3){
+    // ── MADERA — tablones verticales ──
     const numT=nv===1?3:nv===2?4:5;
+    const tW=(W-4)/numT;
     for(let i=0;i<numT;i++){
-      const bx=-W/2+2+i*(W-4)/numT;
-      ctx.fillStyle=cl;ctx.fillRect(bx,-wallH/2+2,(W-4)/numT-2,wallH-4);
+      ctx.fillStyle=i%2===0?p.cd:p.cf;
+      ctx.fillRect(-W/2+2+i*tW, -wallH/2+2, tW-1, wallH-4);
     }
-    // Travesaños
-    ctx.fillStyle=ct;ctx.fillRect(-W/2,-2,W,3);
-    if(nv===3){ctx.fillRect(-W/2,-wallH/4,W,2);ctx.fillRect(-W/2,wallH/4-2,W,2);}
-    // Almenas de madera (niveles 2 y 3)
+    // Travesaño(s) horizontal(es)
+    ctx.fillStyle=p.cl;
+    ctx.fillRect(-W/2, -2, W, 3);
+    if(nv>=2) ctx.fillRect(-W/2, -wallH/4, W, 2);
+    if(nv===3){ ctx.fillRect(-W/2, -wallH/3, W, 2); ctx.fillRect(-W/2, wallH/4, W, 2); }
+    // Clavos en travesaños (nivel 2+)
     if(nv>=2){
-      for(let i=0;i<3;i++){
-        const ax=-W/2+4+i*(W-8)/3;
-        // Frente del diente
-        ctx.fillStyle=cf;ctx.fillRect(ax,-wallH/2-7,(W-8)/3*0.55,7);
-        // Techo del diente 2.5D
-        ctx.fillStyle=ct;
+      ctx.fillStyle='#6a6050';
+      for(let i=0;i<3;i++) ctx.fillRect(-W/2+6+i*10, -3, 2, 2);
+    }
+    // Brea visible en juntas (nivel 3)
+    if(nv===3){
+      ctx.fillStyle='rgba(10,5,2,0.55)';
+      for(let i=0;i<numT-1;i++) ctx.fillRect(-W/2+2+(i+1)*tW-1, -wallH/2, 2, wallH);
+    }
+    // ── Almenas de madera ──
+    if(nv>=2){
+      const na=nv===2?2:3;
+      const aW=nv===2?7:6, aH=nv===2?8:10, gap=(W-4)/na;
+      for(let i=0;i<na;i++){
+        const ax=-W/2+2+i*gap;
+        // Frente
+        ctx.fillStyle=p.ca; ctx.fillRect(ax,-wallH/2-aH,aW,aH);
+        // Techo 2.5D
+        ctx.fillStyle=p.ct;
         ctx.beginPath();
-        const aw=(W-8)/3*0.55;
-        ctx.moveTo(ax,-wallH/2-7);
-        ctx.lineTo(ax+topD*0.7,-wallH/2-7-topD*0.7);
-        ctx.lineTo(ax+aw+topD*0.7,-wallH/2-7-topD*0.7);
-        ctx.lineTo(ax+aw,-wallH/2-7);
+        ctx.moveTo(ax,-wallH/2-aH);
+        ctx.lineTo(ax+topD*0.65,-wallH/2-aH-topD*0.65);
+        ctx.lineTo(ax+aW+topD*0.65,-wallH/2-aH-topD*0.65);
+        ctx.lineTo(ax+aW,-wallH/2-aH);
+        ctx.closePath();ctx.fill();
+        // Lateral
+        ctx.fillStyle=p.cl;
+        ctx.beginPath();
+        ctx.moveTo(ax+aW,-wallH/2-aH);
+        ctx.lineTo(ax+aW+topD*0.65,-wallH/2-aH-topD*0.65);
+        ctx.lineTo(ax+aW+topD*0.65,-wallH/2-topD*0.65);
+        ctx.lineTo(ax+aW,-wallH/2);
         ctx.closePath();ctx.fill();
       }
     }
   } else {
-    // Sillares de piedra
-    const rowH=wallH/2;
-    for(let row=0;row<2;row++){
-      const yBase=-wallH/2+row*rowH;
-      const offset=row%2===0?0:(W/3);
-      for(let bx2=-W/2+offset;bx2<W/2;bx2+=W/3){
-        ctx.fillStyle=row%2===0?cl:cf;
-        ctx.fillRect(bx2+1,yBase+1,W/3-2,rowH-2);
+    // ── PIEDRA — sillares con mortero ──
+    const rows=nv===4?2:nv===5?3:4;
+    const rH=wallH/rows;
+    for(let row=0;row<rows;row++){
+      const yB=-wallH/2+row*rH;
+      const off=row%2===0?0:W/4;
+      for(let bx=-W/2+off;bx<W/2;bx+=W/3){
+        ctx.fillStyle=row%2===0?p.cd:p.cf;
+        ctx.fillRect(bx+1,yB+1, W/3-2, rH-2);
+        // Textura piedra (nivel 5 y 6)
+        if(nv>=5){
+          ctx.fillStyle='rgba(0,0,0,0.12)';
+          ctx.fillRect(bx+3,yB+3,W/3-6,2);
+        }
       }
     }
-    // Juntas de mortero
-    ctx.strokeStyle=ct;ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(-W/2,-wallH/2+rowH);ctx.lineTo(W/2,-wallH/2+rowH);ctx.stroke();
-    // Almenas de piedra (nivel 6)
-    if(nv===6){
-      for(let i=0;i<3;i++){
-        const ax=-W/2+3+i*(W-6)/3;
-        const aw=(W-6)/3*0.5;
-        ctx.fillStyle=cf;ctx.fillRect(ax,-wallH/2-9,aw,9);
-        ctx.fillStyle=ct;
-        ctx.beginPath();
-        ctx.moveTo(ax,-wallH/2-9);
-        ctx.lineTo(ax+topD*0.6,-wallH/2-9-topD*0.6);
-        ctx.lineTo(ax+aw+topD*0.6,-wallH/2-9-topD*0.6);
-        ctx.lineTo(ax+aw,-wallH/2-9);
-        ctx.closePath();ctx.fill();
+    // Juntas de mortero horizontales
+    ctx.strokeStyle=p.ct; ctx.lineWidth=1;
+    for(let row=1;row<rows;row++){
+      const yM=-wallH/2+row*rH;
+      ctx.beginPath();ctx.moveTo(-W/2,yM);ctx.lineTo(W/2,yM);ctx.stroke();
+    }
+    // Cadena de hierro decorativa (nivel 5+)
+    if(nv>=5){
+      ctx.fillStyle='#5a5a50';
+      for(let iy=0;iy<3;iy++) ctx.fillRect(-W/2+1,-wallH/2+4+iy*10,3,3);
+      ctx.fillRect(-W/2+1,-wallH/2+2,3,wallH-4);
+    }
+    // ── Almenas de piedra (nivel 4+) ──
+    const na=nv===4?2:nv===5?3:4;
+    const aW=nv===4?8:nv===5?6:5, aH=nv===4?10:nv===5?12:14, gap=(W-4)/na;
+    for(let i=0;i<na;i++){
+      const ax=-W/2+2+i*gap;
+      ctx.fillStyle=p.ca; ctx.fillRect(ax,-wallH/2-aH,aW,aH);
+      ctx.fillStyle=p.cd; ctx.fillRect(ax+1,-wallH/2-aH+1,aW-2,3);// detalle
+      // Techo 2.5D
+      ctx.fillStyle=p.ct;
+      ctx.beginPath();
+      ctx.moveTo(ax,-wallH/2-aH);
+      ctx.lineTo(ax+topD*0.7,-wallH/2-aH-topD*0.7);
+      ctx.lineTo(ax+aW+topD*0.7,-wallH/2-aH-topD*0.7);
+      ctx.lineTo(ax+aW,-wallH/2-aH);
+      ctx.closePath();ctx.fill();
+      // Lateral almena
+      ctx.fillStyle=p.cl;
+      ctx.beginPath();
+      ctx.moveTo(ax+aW,-wallH/2-aH);
+      ctx.lineTo(ax+aW+topD*0.7,-wallH/2-aH-topD*0.7);
+      ctx.lineTo(ax+aW+topD*0.7,-wallH/2-topD*0.7);
+      ctx.lineTo(ax+aW,-wallH/2);
+      ctx.closePath();ctx.fill();
+      // Tronera pequeña en almena (nivel 6)
+      if(nv===6){
+        ctx.fillStyle='rgba(0,0,0,0.8)';
+        ctx.fillRect(ax+2,-wallH/2-aH+4,aW-4,3);
       }
     }
   }
 
-  // Outline de la cara frontal
-  ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=0.8;
+  // ── Cara superior / techo 2.5D ──
+  ctx.fillStyle=p.ct;
+  ctx.beginPath();
+  ctx.moveTo(-W/2, -wallH/2);
+  ctx.lineTo(-W/2+topD, -wallH/2-topD);
+  ctx.lineTo( W/2+topD, -wallH/2-topD);
+  ctx.lineTo( W/2,      -wallH/2);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.4)';ctx.lineWidth=0.7;ctx.stroke();
+
+  // Outline cara frontal
+  ctx.strokeStyle='rgba(0,0,0,0.55)';ctx.lineWidth=0.8;
   ctx.strokeRect(-W/2,-wallH/2,W,wallH);
 
-  if(flashRed){ctx.fillStyle='rgba(220,0,0,0.35)';ctx.fillRect(-W/2,-wallH/2,W,wallH);}
+  if(flashRed){
+    ctx.fillStyle='rgba(220,20,20,0.35)';
+    ctx.fillRect(-W/2,-wallH/2,W,wallH);
+  }
   ctx.restore();
 }
 
 function drawTorreMuro(sx,sy,isMadera,nv,flashRed){
-  // Torre de esquina en 2.5D — cara frontal + cara superior + cara lateral
+  // ── TORRE DE ESQUINA — 2.5D épica, escala con nivel ──
   ctx.save();ctx.translate(sx+TILE/2, sy+TILE/2);
-  const sz=nv<=3?24:30;
-  const topD=nv<=3?9:12; // profundidad perspectiva
-  const wallH=nv<=3?38:46;
+  // Torres crecen significativamente con el nivel
+  const sz=[0,28,32,38,44,50,58][nv]||28;
+  const topD=[0,8,10,12,14,16,18][nv]||8;
+  const wallH=[0,40,50,62,74,86,100][nv]||40;
 
   // Colores
   let cf,cl,ct; // frente, lateral, techo
@@ -2868,20 +2987,16 @@ function hpBar(o,oy){
 // ── NPCs defensores de la familia de Noé ──────────────────
 function drawFamiliaDefensores(cx,cy){
   if(!familia.length) return;
-  const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
-  if(!arca) return;
   const T2=Date.now();
-  const isNight=wTime>0.78||wTime<0.25;
-  if(!isNight) return; // Solo de noche (en defensa activa)
-
-  // Posiciones de defensa alrededor del arca
+  // Posiciones fijas DENTRO del muro, alrededor del arca
+  // Usamos coordenadas absolutas relativas al centro del muro
   const postDef=[
-    {dx:-2.5,dy:0},{dx:2.5,dy:0},{dx:0,dy:-2},{dx:0,dy:2},{dx:-1.5,dy:-1.5},{dx:1.5,dy:1.5}
+    {dx:-3,dy:1},{dx:3,dy:1},{dx:0,dy:-3},{dx:-2,dy:3},{dx:2,dy:3},{dx:0,dy:1}
   ];
 
   familia.forEach((m,i)=>{
     const post=postDef[i%postDef.length];
-    const wx=(arca.tx+post.dx)*TILE, wy=(arca.ty+post.dy)*TILE;
+    const wx=(MURO_CX+post.dx)*TILE, wy=(MURO_CY+post.dy)*TILE;
     // Scroll wrap
     let sx=wx-cx, sy=wy-cy;
     while(sx > MW*TILE/2) sx-=MW*TILE; while(cx-sx > MW*TILE*0.5) sx+=MW*TILE;
@@ -3956,43 +4071,6 @@ function renderCraft(){
   });
   const cl=document.getElementById('cList');cl.innerHTML='';
 
-  // — Muro Perimetral (botón especial en 'edificios') —
-  if(cCat==='edificios'){
-    const nvActual=nivelMuro;
-    const siguiente=nvActual+1;
-    const nvDef=MURO_NIVELES[siguiente];
-    const nvNom=MURO_NIVELES[nvActual]?.nombre||'No construido';
-    const murodiv=document.createElement('div');
-    murodiv.style.cssText='padding:12px;margin-bottom:10px;border:2px solid rgba(201,168,76,0.5);border-radius:10px;background:rgba(201,168,76,0.07)';
-    let muHtml=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span style="font-size:1.4rem">🏰</span>
-      <div>
-        <div style="font-family:Cinzel,serif;font-size:0.85rem;color:#c9a84c">Muro Perimetral del Arca</div>
-        <div style="font-size:0.68rem;color:${nvActual>0?'#80c860':'var(--muted)'}">Nivel actual: ${nvNom} ${nvActual>0?`· HP: ${Math.ceil(hpMuro)}/${MURO_NIVELES[nvActual].HP}`:''}</div>
-      </div>
-    </div>`;
-    if(nvActual>0&&hpMuro<MURO_NIVELES[nvActual].HP){
-      const dan=MURO_NIVELES[nvActual].HP-hpMuro;
-      const mNec=nvActual<=3?Math.ceil(dan/50)*2:0;
-      const pNec=nvActual>=4?Math.ceil(dan/50)*3:0;
-      muHtml+=`<button class="cbtn" style="width:100%;margin-bottom:6px" onclick="repararMuro()">🔧 Reparar${mNec?` (🪵×${mNec})`:''}${pNec?` (🪨×${pNec})`:''}</button>`;
-    }
-    if(nvDef){
-      const reqStr=Object.entries(nvDef.req).map(([k,v])=>{
-        const ok=cntItem(k)>=v;
-        return `<span style="color:${ok?'#80c860':'#c83020'}">${ITEMS[k]?.e||k}×${v}</span>`;
-      }).join(' ');
-      const canBuild=Object.entries(nvDef.req).every(([k,v])=>cntItem(k)>=v);
-      muHtml+=`<div style="font-size:0.68rem;color:#c8c0a8;margin-bottom:6px">Siguiente: ${nvDef.nombre} — HP ${nvDef.HP}</div>
-        <div style="margin-bottom:8px;font-size:0.68rem">${reqStr}</div>
-        <button class="cbtn" ${!canBuild?'disabled':''} onclick="construirMuro()">${nvActual===0?'🏗️ Construir':'⬆️ Mejorar'} → ${nvDef.nombre}</button>`;
-    } else {
-      muHtml+=`<div style="color:#c9a84c;font-size:0.72rem;text-align:center">✅ Muro al nivel máximo (Piedra III)</div>`;
-    }
-    murodiv.innerHTML=muHtml;
-    cl.appendChild(murodiv);
-  }
-
   RECETAS.filter(r=>r.cat===cCat).forEach(r=>{
     const it=ITEMS[r.r];
     const can=Object.entries(r.req).every(([id,q])=>cntItem(id)>=q);
@@ -4642,7 +4720,7 @@ window.toggleFamiliaPanel=function(){
   document.body.appendChild(el);
   gPause=true;
 };
-window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;nivelMuro=0;hpMuro=0;noeDentroMuro=false;puertoAbierta=false;proyectiles=[];misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;noahAction='idle';noahActionTimer=0;_noahFrame=0;_noahTick=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,_dying:false});startGame();};
+window.doRestart=function(){inv.fill(null);SKILLS.forEach(s=>s.u=false);animales=[];nefilim=[];arcaProgress=0;arcaHP={1:100,2:100,3:100};floodLevel=0;nivelMuro=1;hpMuro=MURO_NIVELES[1].HP;noeDentroMuro=false;puertoAbierta=false;proyectiles=[];misionActual=0;misionCompletada=[];victoryAchieved=false;animalesEnArca=0;noahAction='idle';noahActionTimer=0;_noahFrame=0;_noahTick=0;Object.assign(P,{hp:100,mhp:100,hunger:100,thirst:100,energy:100,xp:0,lv:1,sp:0,_dying:false});startGame();};
 window.doManualSave=async function(){
   const btn=document.querySelector('.hbtn[title="Guardar"]');
   if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
@@ -5371,6 +5449,8 @@ function startGame(){
   siclos=0; armasEstado={}; skillsEstado={};
   familia.length=0;
   arcaProgress=0; arcaHP={1:100,2:100,3:100}; floodLevel=0;
+  // El muro aparece desde el día 1 — nivel 1, HP completo
+  nivelMuro=1; hpMuro=MURO_NIVELES[1].HP; noeDentroMuro=false; puertoAbierta=false; proyectiles=[];
   misionActual=0; misionCompletada=[]; victoryAchieved=false; animalesEnArca=0;
   structs.length=0; wDay=1;
   genMundo();
@@ -7890,7 +7970,7 @@ function renderMuroPreview25D(cv, nv){
   });
 
   const isMad=nv<=3;
-  const wallH=isMad?34:42;
+  const wallH=[0,30,36,44,52,60,70][nv]||30;
   const wallY=H*0.55-wallH+4; // base del muro sobre el suelo
 
   // Perspectiva 2.5D: dibujar segmentos con profundidad
@@ -7930,30 +8010,34 @@ function renderMuroPreview25D(cv, nv){
 
 function drawMuroPreviewWall(px,x,y,w,h,nv,isMad,alpha){
   px.save();px.globalAlpha=alpha;
+  const PAL2={
+    1:{cf:'#6a3a10',ct:'#3a1c08',cd:'#8a5020'},
+    2:{cf:'#5a3010',ct:'#2a1204',cd:'#7a4018'},
+    3:{cf:'#4a2808',ct:'#1e0e02',cd:'#6a3010'},
+    4:{cf:'#484848',ct:'#1a1a1a',cd:'#606060'},
+    5:{cf:'#363636',ct:'#111',   cd:'#4a4a4a'},
+    6:{cf:'#282828',ct:'#0a0a0a',cd:'#3c3c3c'},
+  };
+  const pp=PAL2[nv]||PAL2[1];
+  px.fillStyle=pp.cf;px.fillRect(x,y,w,h);
   if(isMad){
-    const c1=nv===1?'#3d2008':nv===2?'#2a1404':'#1a0c02';
-    const c2=nv===1?'#5a3010':nv===2?'#4a2808':'#3a1c08';
-    px.fillStyle=c1;px.fillRect(x,y,w,h);
-    const n=nv===1?4:nv===2?6:8;
-    for(let i=0;i<n;i++){
-      px.fillStyle=c2;px.fillRect(x+2+i*(w-4)/n,y+2,(w-4)/n-2,h-4);
+    const n=nv===1?3:nv===2?4:5;
+    for(let i=0;i<n;i++){px.fillStyle=pp.cd;px.fillRect(x+2+i*(w-4)/n,y+2,(w-4)/n-2,h-4);}
+    px.fillStyle=pp.ct;px.fillRect(x,y+h/2,w,2);
+    // Almenas madera (nv>=2)
+    if(nv>=2){
+      const na=nv===2?3:4, aW=6, aH=nv===2?7:9, gap=(w-4)/na;
+      for(let i=0;i<na;i++){px.fillStyle=pp.ct;px.fillRect(x+2+i*gap,y-aH,aW,aH);}
     }
-    px.fillStyle=c1;px.fillRect(x,y+h/2,w,2);
-    // Almenas
-    if(nv>=2){for(let i=0;i<5;i++){px.fillStyle=c1;px.fillRect(x+4+i*(w-8)/5,y-5,(w-8)/5*0.5,5);}}
   } else {
-    const c1=nv===4?'#222':nv===5?'#1a1a1a':'#111';
-    const c2=nv===4?'#333':nv===5?'#272727':'#1e1e1e';
-    px.fillStyle=c1;px.fillRect(x,y,w,h);
-    // Sillares
-    for(let row=0;row<2;row++){
-      const ry=y+row*(h/2);const off=row%2===0?0:w/6;
-      for(let bx=x+off;bx<x+w;bx+=w/4){
-        px.fillStyle=c2;px.fillRect(bx+1,ry+1,w/4-2,h/2-2);
-      }
+    const rows=nv===4?2:nv===5?3:4, rH=h/rows;
+    for(let row=0;row<rows;row++){
+      const ry=y+row*rH; const off=row%2===0?0:w/5;
+      for(let bx=x+off;bx<x+w;bx+=w/3){px.fillStyle=pp.cd;px.fillRect(bx+1,ry+1,w/3-2,rH-2);}
     }
-    // Almenas para nivel 6
-    if(nv===6){for(let i=0;i<6;i++){px.fillStyle=c1;px.fillRect(x+2+i*(w/6),y-7,w/6*0.45,7);}}
+    // Almenas piedra
+    const na=nv<=4?2:nv===5?3:4, aW=7, aH=nv===4?9:nv===5?11:14, gap=(w-4)/na;
+    for(let i=0;i<na;i++){px.fillStyle=pp.ct;px.fillRect(x+2+i*gap,y-aH,aW,aH);}
   }
   px.restore();
 }
