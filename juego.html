@@ -792,9 +792,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
   <button class="hfloat" onclick="doManualSave()" title="Guardar progreso">
     <span class="hfloat-icon">💾</span><span class="hfloat-label">Guardar</span>
   </button>
-  <button class="hfloat" onclick="showTutorial()" title="Ver Tutorial" style="border-color:rgba(201,168,76,0.5)">
-    <span class="hfloat-icon">📖</span><span class="hfloat-label">Tutorial</span>
-  </button>
   <button class="hfloat" onclick="doSaveQuit()" title="Guardar y salir al menú" style="border-color:rgba(231,100,60,0.5)">
     <span class="hfloat-icon">🚪</span><span class="hfloat-label">Salir</span>
   </button>
@@ -2299,6 +2296,21 @@ function drawParts(cx,cy){
       ctx.fillRect(px2-3,py2+1,2,2);ctx.fillRect(px2+1,py2+1,2,2);
       ctx.fillStyle=`rgba(255,255,200,${a*0.8})`;
       ctx.fillRect(px2-2,py2-2,4,4);
+    } else if(p.isLoot){
+      // Botín — icono grande con pastilla de fondo
+      const fs = Math.min(18, 10 + (p.life/p.ml)*8);
+      ctx.globalAlpha = a;
+      ctx.font = `bold ${fs}px serif`;
+      ctx.textAlign = 'center';
+      // Medir para el fondo
+      const tw = ctx.measureText(p.e).width;
+      const pad = 4;
+      ctx.fillStyle = `rgba(0,0,0,${a*0.55})`;
+      ctx.beginPath();
+      ctx.roundRect(px2 - tw/2 - pad, py2 - fs + 2, tw + pad*2, fs + pad, 5);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      ctx.fillText(p.e, px2, py2);
     } else {
       ctx.globalAlpha=a;ctx.font='14px serif';ctx.textAlign='center';
       ctx.fillText(p.e,px2,py2);
@@ -2310,6 +2322,24 @@ function drawParts(cx,cy){
 function addPart(x,y,e){
   const isFlash=e==='flash';
   parts.push({x,y,vy:-1.2,life:40,ml:40,e,isFlash});
+}
+// Animación de botín — muestra iconos flotantes con cantidad
+function addLootAnim(x, y, items){
+  // items = [{e:'🥩', qty:2}, {e:'🟤', qty:1}, ...]
+  items.forEach((item, i) => {
+    const offsetX = (i - (items.length-1)/2) * 18;
+    parts.push({
+      x: x + offsetX,
+      y: y - 10,
+      vy: -1.5 - Math.random()*0.5,
+      vx: offsetX * 0.03,
+      life: 65,
+      ml: 65,
+      e: item.qty > 1 ? item.e + '×' + item.qty : item.e,
+      isFlash: false,
+      isLoot: true,
+    });
+  });
 }
 function addFlash(x,y){
   for(let i=0;i<4;i++){
@@ -2620,8 +2650,19 @@ window.doInteract=function(){
         animalCerca.hp-=25;
         addFlash(animalCerca.x,animalCerca.y-20);
         sndAxe();
-        if(animalCerca.hp<=0) notif('🎯 Animal cazado','grn');
-        else notif('🎯 Golpeaste al animal — vuelve a presionar E','');
+        if(animalCerca.hp<=0){
+          const qty=hasSkill('caz')?2:1;
+          let loot=[];
+          if(animalCerca.tipo==='oveja'){addItem('carne',qty);addItem('piel',qty);addItem('cuero',1);loot=[{e:'🥩',qty},{e:'🟤',qty}];}
+          else if(animalCerca.tipo==='vaca'){addItem('carne',qty+1);addItem('piel',qty);addItem('cuero',2);loot=[{e:'🥩',qty:qty+1},{e:'🟤',qty}];}
+          else if(animalCerca.tipo==='paloma'){addItem('carne',1);loot=[{e:'🥩',qty:1}];}
+          else {addItem('carne',1);loot=[{e:'🥩',qty:1}];}
+          sndCollect();addXP(20);
+          addLootAnim(animalCerca.x,animalCerca.y-30,loot);
+          animales=animales.filter(a=>a!==animalCerca);
+        } else {
+          addLootAnim(animalCerca.x, animalCerca.y-20, [{e:'⚔️',qty:1}]);
+        }
       } else notif('🐑 Necesitas una lanza o espada para cazar animales','');
       return;
     }
@@ -2634,24 +2675,58 @@ window.doInteract=function(){
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
     if(hasItem('hacha')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('hacha',1);notif('🪓 La hacha se rompió — crea otra','red');}
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪵');
-    sndAxe();addFlash(P.x,P.y-20); if(o.hp<=0){addItem('madera',5+Math.floor(Math.random()*4));if(Math.random()<0.3)addItem('resina',1);removeObj(o);sndCollect();notif('🪵 Madera','');addXP(10);}
-    else addItem('madera',1);
+    sndAxe();addFlash(P.x,P.y-20);
+    if(o.hp<=0){
+      const madQty=5+Math.floor(Math.random()*4);
+      const resQty=Math.random()<0.3?1:0;
+      addItem('madera',madQty);if(resQty)addItem('resina',resQty);
+      removeObj(o);sndCollect();addXP(10);
+      const loot=[{e:'🪵',qty:madQty}];if(resQty)loot.push({e:'🟡',qty:resQty});
+      addLootAnim(o.tx*TILE,o.ty*TILE-20,loot);
+    } else {
+      addItem('madera',1);
+      addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪵',qty:1}]);
+    }
   }else if(o.tipo==='roca'){
     triggerNoahAction('crush');
     const c=(hasItem('pico')?3:1)*bon;o.hp-=c;
     if(hasItem('pico')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('pico',1);notif('⛏️ El pico se rompió — crea otro','red');}
     addPart(o.tx*TILE+20,o.ty*TILE+20,'🪨');
-    sndRock();addFlash(P.x,P.y-20); if(o.hp<=0){addItem('piedra',4+Math.floor(Math.random()*3));addItem('barro',Math.random()<0.4?2:1);removeObj(o);sndCollect();notif('🪨 Piedra','');addXP(8);}
-    else addItem('piedra',1);
+    sndRock();addFlash(P.x,P.y-20);
+    if(o.hp<=0){
+      const pieQty=4+Math.floor(Math.random()*3);
+      const barQty=Math.random()<0.4?2:1;
+      addItem('piedra',pieQty);addItem('barro',barQty);
+      removeObj(o);sndCollect();addXP(8);
+      addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪨',qty:pieQty},{e:'🟫',qty:barQty}]);
+    } else {
+      addItem('piedra',1);
+      addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪨',qty:1}]);
+    }
   }else if(o.tipo==='arbusto'||o.tipo==='cana'){
     triggerNoahAction('collect');
-    sndPickPlant();addItem('fibra',2+Math.floor(Math.random()*2));if(Math.random()<0.3)addItem('semilla',1);removeObj(o);sndCollect();notif('🌿 Fibra','');addXP(5);
+    sndPickPlant();
+    const fibQty=2+Math.floor(Math.random()*2);
+    const semQty=Math.random()<0.3?1:0;
+    addItem('fibra',fibQty);if(semQty)addItem('semilla',semQty);
+    removeObj(o);sndCollect();addXP(5);
+    const lootArb=[{e:'🌿',qty:fibQty}];if(semQty)lootArb.push({e:'🌱',qty:semQty});
+    addLootAnim(o.tx*TILE,o.ty*TILE-20,lootArb);
   }else if(o.tipo==='bayas'){
     triggerNoahAction('collect');
-    sndPickPlant();addItem('bayas',3+Math.floor(Math.random()*3));if(hasSkill('colm')&&Math.random()<0.4)addItem('miel',1);removeObj(o);sndCollect();notif('🫐 Bayas','');addXP(5);
+    sndPickPlant();
+    const bayQty=3+Math.floor(Math.random()*3);
+    const mielQ=hasSkill('colm')&&Math.random()<0.4?1:0;
+    addItem('bayas',bayQty);if(mielQ)addItem('miel',mielQ);
+    removeObj(o);sndCollect();addXP(5);
+    const lootBay=[{e:'🫐',qty:bayQty}];if(mielQ)lootBay.push({e:'🍯',qty:mielQ});
+    addLootAnim(o.tx*TILE,o.ty*TILE-20,lootBay);
   }else if(o.tipo==='frutal'){
     triggerNoahAction('collect');
-    sndPickPlant();addItem('fruta',2+Math.floor(Math.random()*2));removeObj(o);sndCollect();notif('🍎 Fruta','');addXP(5);
+    sndPickPlant();
+    const fruQty=2+Math.floor(Math.random()*2);
+    addItem('fruta',fruQty);removeObj(o);sndCollect();addXP(5);
+    addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🍎',qty:fruQty}]);
   }else if(o.tipo==='agua'){
     if(hasItem('jarra')){triggerNoahAction('collect');removeItem('jarra',1);addItem('agua',1);sndDrink();
       addSplash(P.x,P.y);notif('🫙 ¡Jarra llena de agua!','grn');}
@@ -2663,7 +2738,7 @@ window.doInteract=function(){
       if(tileAdj||tileAqui?.wt==='fish'){
         triggerNoahAction('fish');
         removeItem('fibra',1);addItem('pez',1);sndCollect();
-        addSplash(P.x,P.y);notif('🐟 ¡Pescaste un pez!','grn');addXP(8);
+        addSplash(P.x,P.y);addLootAnim(P.x,P.y-20,[{e:'🐟',qty:1}]);addXP(8);
       } else {
         notif('🐟 Necesitas agua profunda para pescar (busca zonas azul oscuro)','');
       }
@@ -3211,12 +3286,44 @@ function updateHUD(){
   drawPortrait();
 }
 
-function notif(msg,tipo){
+function _showNotif(msg,tipo){
   const s=document.getElementById('nstack');
+  if(!s) return;
   const el=document.createElement('div');
   el.className='notif'+(tipo?' '+tipo:'');el.textContent=msg;s.appendChild(el);
   setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.4s';setTimeout(()=>el.remove(),400);},2600);
   if(s.children.length>5)s.children[0].remove();
+}
+
+function notif(msg,tipo){
+  // Filtros según configuración de ajustes
+  if(typeof gameSettings !== 'undefined'){
+    const m = msg.toLowerCase();
+    if(!gameSettings.notifCollect){
+      // Notificaciones de recursos al recolectar
+      if(/🪵|🪨|🌿|🍎|🫐|🐟|🌾|🍯|🌱|semillas|fibra|madera|piedra|bayas|fruta|trigo|miel|pez|barro|resina|cuero/.test(m)||
+         m.includes('recoger')||m.includes('cortaste')||m.includes('recolect')) return;
+    }
+    if(!gameSettings.notifFamilia){
+      // Notificaciones de familia
+      if(m.includes('familia')||m.includes('sem ')||m.includes('cam ')||
+         m.includes('jafet')||m.includes('reclutad')||m.includes('miembro')||
+         /👨|👩|🧑|🐑.*arca|🐄.*arca|animal.*arca/.test(msg)) return;
+    }
+    if(!gameSettings.notifMision){
+      if(m.includes('misión')||m.includes('mision')||m.includes('mandato')||
+         m.includes('cumplid')||/dios|señor|señ/.test(m)&&m.includes('✨')) return;
+    }
+    if(!gameSettings.notifCombat){
+      if(m.includes('gigante')||m.includes('nefilim')||m.includes('derrotad')||
+         m.includes('daño')||m.includes('golpe')||/⚔️|👹/.test(msg)) return;
+    }
+    if(!gameSettings.notifLevel){
+      if(m.includes('nivel')||m.includes('subiste')||m.includes('xp')||
+         m.includes('talento')||m.includes('habilidad')||/⬆️|🏆/.test(msg)) return;
+    }
+  }
+  _showNotif(msg, tipo);
 }
 window.notif=notif;
 
@@ -3678,10 +3785,13 @@ let _tutIdx = 0;
 function showTutorial(){
   _tutIdx = 0;
   gPause = true;
-  const el=document.getElementById('s-tutorial');
-  if(el) el.style.display='flex';
+  // Asegurar que el overlay está por encima de todo
+  const el = document.getElementById('s-tutorial');
+  if(!el) return;
+  el.style.cssText = 'display:flex !important;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);overflow-y:auto;align-items:center;justify-content:center;padding:20px 0;';
   renderTutStep();
 }
+window.showTutorial = showTutorial;
 
 function renderTutStep(){
   const s = TUTORIAL_STEPS[_tutIdx];
@@ -4025,19 +4135,7 @@ window.addEventListener('orientationchange', ()=>{
   }, 400);
 });
 
-// ── Notificaciones filtradas ──────────────
-// Capturar la función original de forma segura
-const _origNotif = typeof notif === 'function' ? notif : (m,t)=>{};
-window.notif = function(msg, tipo){
-  // Filtrar según configuración
-  const m = msg.toLowerCase();
-  if(!gameSettings.notifCollect && (m.includes('cortaste') || m.includes('recolect') || m.includes('madera') || m.includes('piedra') || m.includes('fibra') || m.includes('agua'))) return;
-  if(!gameSettings.notifMision  && (m.includes('misión') || m.includes('mision') || m.includes('dios') || m.includes('cumplida'))) return;
-  if(!gameSettings.notifCombat  && (m.includes('gigante') || m.includes('nefilim') || m.includes('golpe') || m.includes('daño'))) return;
-  if(!gameSettings.notifLevel   && (m.includes('nivel') || m.includes('xp') || m.includes('talento'))) return;
-  if(!gameSettings.notifFamilia && (m.includes('sem') || m.includes('cam') || m.includes('jafet') || m.includes('recolect') || m.includes('familia'))) return;
-  _origNotif(msg, tipo);
-};
+// notif filtrada — integrada directamente en la función base
 
 // Cargar ajustes al iniciar
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -4874,11 +4972,11 @@ function updateAnimales(){
       if(nd<60){a.hp-=0.3;if(a.hp<=0){
         // Drop al morir
         const qty=hasSkill('caz')?2:1;
-        if(a.tipo==='oveja'){addItem('carne',qty);addItem('piel',qty);sndCollect();notif('🐑 Oveja — 🥩+'+qty+' 🟤+'+qty,'');}
-        else if(a.tipo==='vaca'){addItem('carne',qty+1);addItem('piel',qty);sndCollect();notif('🐄 Vaca — 🥩+'+(qty+1)+' 🟤+'+qty,'');}
-        else if(a.tipo==='paloma'){addItem('carne',1);sndCollect();notif('🕊️ Paloma — 🥩+1','');}
+        if(a.tipo==='oveja'){addItem('carne',qty);addItem('piel',qty);sndCollect();addLootAnim(a.x,a.y-20,[{e:'🥩',qty:qty},{e:'🟤',qty:qty}]);animales=animales.filter(x=>x!==a);}
+        else if(a.tipo==='vaca'){addItem('carne',qty+1);addItem('piel',qty);sndCollect();addLootAnim(a.x,a.y-20,[{e:'🥩',qty:qty+1},{e:'🟤',qty:qty}]);animales=animales.filter(x=>x!==a);}
+        else if(a.tipo==='paloma'){addItem('carne',1);sndCollect();addLootAnim(a.x,a.y-20,[{e:'🥩',qty:1}]);animales=animales.filter(x=>x!==a);}
         addXP(15);
-        animales=animales.filter(x=>x!==a);
+        // (animal ya removido en el case correspondiente)
       }}
     });
   });
