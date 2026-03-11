@@ -213,6 +213,64 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
   .level-grid{grid-template-columns:repeat(3,1fr);}
   .menu-wrap{gap:7px;}
 }
+
+/* ══ NIVEL LEYENDA ══ */
+.lv-card.leyenda{
+  background:linear-gradient(135deg,#1a0a2e 0%,#2d1060 50%,#1a0a2e 100%);
+  border:2px solid #c084fc;
+  box-shadow:0 0 30px rgba(192,132,252,0.4),inset 0 0 30px rgba(192,132,252,0.05);
+  position:relative;overflow:hidden;
+}
+.lv-card.leyenda::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(45deg,transparent 30%,rgba(192,132,252,0.1) 50%,transparent 70%);
+  animation:shimmer-leyenda 3s infinite;
+}
+@keyframes shimmer-leyenda{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+.lv-card.leyenda .lv-icon{font-size:2.5rem;filter:drop-shadow(0 0 12px #c084fc);}
+.lv-card.leyenda .lv-name{
+  color:#c084fc;font-size:1.4rem;letter-spacing:0.3em;
+  text-shadow:0 0 20px rgba(192,132,252,0.8);
+}
+.nivel-leyenda{color:#c084fc!important;text-shadow:0 0 10px rgba(192,132,252,0.6);}
+
+/* Escenario épico modo leyenda */
+body.mode-leyenda #s-game{
+  background:linear-gradient(180deg,#0a0015 0%,#1a0040 40%,#0d0025 100%);
+}
+body.mode-leyenda .question-card{
+  background:linear-gradient(135deg,rgba(26,0,46,0.95),rgba(45,16,96,0.95));
+  border-color:rgba(192,132,252,0.4);
+  box-shadow:0 0 40px rgba(192,132,252,0.2),0 20px 60px rgba(0,0,0,0.8);
+}
+body.mode-leyenda .opt-btn:hover{
+  border-color:#c084fc;
+  box-shadow:0 0 15px rgba(192,132,252,0.4);
+}
+.leyenda-particles{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:1;overflow:hidden;
+}
+.ley-particle{
+  position:absolute;width:2px;height:2px;border-radius:50%;
+  background:#c084fc;animation:ley-fall linear infinite;
+  opacity:0;
+}
+@keyframes ley-fall{
+  0%{transform:translateY(-10px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0;}
+}
+.leyenda-bolt{
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  width:4px;height:100vh;
+  background:linear-gradient(180deg,#c084fc,transparent);
+  pointer-events:none;z-index:5;opacity:0;
+  animation:bolt-flash 0.15s ease-out;
+}
+@keyframes bolt-flash{0%{opacity:0.8}100%{opacity:0}}
+body.mode-leyenda .timer-bar{background:linear-gradient(90deg,#c084fc,#7c3aed);}
+body.mode-leyenda .g-streak{color:#c084fc;text-shadow:0 0 10px rgba(192,132,252,0.6);}
+
 </style>
 </head>
 <body>
@@ -288,6 +346,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
         <div class="lv-name" style="color:#e74c3c">Difícil</div>
         <div class="lv-desc">10 preguntas · 15s c/u</div>
       </div>
+      <div class="lv-card leyenda" onclick="iniciarJuego('leyenda')">
+        <div class="lv-icon">👑</div>
+        <div class="lv-name">LEYENDA</div>
+        <div class="lv-desc">10 preguntas · 15s · 400pts · Épico</div>
+      </div>
     </div>
     <button class="btn-ranking" onclick="showRanking()">🏆 &nbsp;Ver Tabla de Líderes</button>
     <div id="user-status" style="font-size:0.72rem;color:rgba(201,168,76,0.45);text-align:center;font-family:'Cinzel',serif;"></div>
@@ -359,19 +422,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-fami
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getDatabase,ref,set,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getAuth,onAuthStateChanged,signInAnonymously}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app=initializeApp({apiKey:"AIzaSyCHznVAG8HyaAwzTMcYXrEjS4ikcgf9Nx0",authDomain:"chat-ccrlr.firebaseapp.com",databaseURL:"https://chat-ccrlr-default-rtdb.firebaseio.com",projectId:"chat-ccrlr",messagingSenderId:"832816032978",appId:"1:832816032978:web:08721a677cff57b0d9110b"});
 const db=getDatabase(app),auth=getAuth(app);
 let cu=null,userNick='Anónimo';
 
 onAuthStateChanged(auth,async u=>{
-  cu=u;
   if(u){
-    try{const s=await get(ref(db,`usuarios/${u.uid}/nickname`));userNick=s.val()||u.email.split('@')[0];}catch(e){userNick=u.email.split('@')[0];}
-    document.getElementById('user-status').textContent=`✝ Jugando como ${userNick}`;
+    cu=u;
+    if(u.isAnonymous){
+      // Anónimo — nick por defecto
+      userNick='Jugador';
+      document.getElementById('user-status').textContent='';
+    }else{
+      try{
+        const s=await get(ref(db,`usuarios/${u.uid}/nickname`));
+        userNick=s.val()||(u.email?u.email.split('@')[0]:'Jugador');
+      }catch(e){userNick=u.email?u.email.split('@')[0]:'Jugador';}
+      document.getElementById('user-status').textContent=`✝ Jugando como ${userNick}`;
+    }
   }else{
-    document.getElementById('user-status').textContent='Inicia sesión para guardar tu puntaje';
+    // Sin sesión → login anónimo automático para poder guardar ranking
+    try{await signInAnonymously(auth);}catch(e){console.warn('Anon auth failed:',e);}
   }
 });
 
@@ -394,11 +467,46 @@ facil:[
   {q:"¿Con qué arma venció David a Goliat?",ops:["Una honda y una piedra","Una espada","Una lanza","Sus manos"],a:0,exp:"David usó una honda y una piedra para derribar al gigante filisteo Goliat (1 Samuel 17:50).",ref:"1 Samuel 17:50"},
   {q:"¿Cuál fue la primera plaga de Egipto?",ops:["El agua se convierte en sangre","Ranas","Piojos","Langostas"],a:0,exp:"La primera plaga fue cuando Dios convirtió las aguas del Nilo en sangre (Éxodo 7:20).",ref:"Éxodo 7:20"},
   {q:"¿Cómo se llamaba la madre de Jesús?",ops:["María","Marta","Ester","Rut"],a:0,exp:"María fue la joven de Nazaret elegida por Dios para ser la madre de Jesús (Lucas 1:27).",ref:"Lucas 1:27"},
-  {q:"¿Qué significa 'Emmanuel'?",ops:["Dios con nosotros","El Salvador","Hijo de Dios","Príncipe de Paz"],a:0,exp:"Emmanuel significa 'Dios con nosotros', nombre profético dado a Jesús (Isaías 7:14, Mateo 1:23).",ref:"Mateo 1:23"},
+  {q:"¿Qué significa Emmanuel?",ops:["Dios con nosotros","El Salvador","Hijo de Dios","Príncipe de Paz"],a:0,exp:"Emmanuel significa Dios con nosotros, nombre profético dado a Jesús (Isaías 7:14, Mateo 1:23).",ref:"Mateo 1:23"},
+  {q:"¿Cuántos días creó Dios el mundo según Génesis?",ops:["6 días","7 días","3 días","10 días"],a:0,exp:"Dios creó el mundo en seis días y descansó el séptimo (Génesis 1:31-2:2).",ref:"Génesis 1:31"},
+  {q:"¿Qué animal habló con Eva en el jardín del Edén?",ops:["La serpiente","El águila","El burro","El cordero"],a:0,exp:"La serpiente tentó a Eva ofreciéndole el fruto prohibido del árbol del conocimiento (Génesis 3:1).",ref:"Génesis 3:1"},
+  {q:"¿Quién fue el primer hombre creado por Dios?",ops:["Adán","Noé","Abraham","Caín"],a:0,exp:"Dios formó al hombre del polvo de la tierra y sopló en su nariz aliento de vida (Génesis 2:7).",ref:"Génesis 2:7"},
+  {q:"¿De qué material fue creada Eva?",ops:["Una costilla de Adán","Barro","Polvo","Agua"],a:0,exp:"Dios tomó una costilla de Adán y de ella formó a la mujer (Génesis 2:22).",ref:"Génesis 2:22"},
+  {q:"¿Qué cruzó Moisés al salir de Egipto?",ops:["Mar Rojo","Río Nilo","Río Jordán","Río Éufrates"],a:0,exp:"Dios abrió el Mar Rojo para que los israelitas cruzaran mientras escapaban del ejército del Faraón (Éxodo 14:21).",ref:"Éxodo 14:21"},
+  {q:"¿Cuántas plagas envió Dios a Egipto?",ops:["10","7","5","12"],a:0,exp:"Dios envió diez plagas sobre Egipto para que el Faraón dejara ir al pueblo de Israel (Éxodo 7-12).",ref:"Éxodo 7-12"},
+  {q:"¿Quién fue el hermano de Moisés?",ops:["Aarón","Josué","Caleb","Samuel"],a:0,exp:"Aarón fue el hermano de Moisés y su portavoz ante el Faraón (Éxodo 4:14).",ref:"Éxodo 4:14"},
+  {q:"¿Qué instrumento tocaba el rey David?",ops:["El arpa","La flauta","El tambor","La trompeta"],a:0,exp:"David era hábil tocando el arpa y su música calmaba el espíritu de Saúl (1 Samuel 16:23).",ref:"1 Samuel 16:23"},
+  {q:"¿Cuántos libros tiene el Antiguo Testamento?",ops:["39","27","40","33"],a:0,exp:"El Antiguo Testamento contiene 39 libros en la Biblia protestante, desde Génesis hasta Malaquías.",ref:""},
+  {q:"¿Quién fue el padre de David?",ops:["Isaí","Samuel","Saúl","Boaz"],a:0,exp:"David era hijo de Isaí, de la tribu de Judá, de Belén de Judá (1 Samuel 16:1).",ref:"1 Samuel 16:1"},
+  {q:"¿En qué monte fue transfigurado Jesús?",ops:["Monte Tabor","Monte Sinaí","Monte de los Olivos","Monte Carmelo"],a:0,exp:"La tradición ubica la transfiguración en el Monte Tabor, donde Jesús brilló como el sol (Mateo 17:1-2).",ref:"Mateo 17:1-2"},
+  {q:"¿Cuántos panes usó Jesús para alimentar a cinco mil personas?",ops:["5","2","10","7"],a:0,exp:"Jesús tomó cinco panes y dos peces para alimentar a cinco mil hombres (Mateo 14:17-21).",ref:"Mateo 14:17"},
+  {q:"¿Quién bautizó a Jesús?",ops:["Juan el Bautista","Pedro","Andrés","Felipe"],a:0,exp:"Juan el Bautista bautizó a Jesús en el río Jordán, y el Espíritu Santo descendió en forma de paloma (Mateo 3:13-16).",ref:"Mateo 3:13"},
+  {q:"¿Cuántos días estuvo Jesús en el desierto siendo tentado?",ops:["40 días","3 días","7 días","10 días"],a:0,exp:"El Espíritu llevó a Jesús al desierto donde fue tentado por el diablo durante cuarenta días (Lucas 4:2).",ref:"Lucas 4:2"},
+  {q:"¿Qué declaró Jesús que era el camino la verdad y la vida?",ops:["Yo soy","La ley","La Biblia","Los profetas"],a:0,exp:"Jesús declaró: Yo soy el camino, la verdad y la vida; nadie viene al Padre sino por mí (Juan 14:6).",ref:"Juan 14:6"},
+  {q:"¿Cuántos días después de morir resucitó Jesús?",ops:["3 días","7 días","1 día","40 días"],a:0,exp:"Jesús resucitó al tercer día, cumpliendo las Escrituras (1 Corintios 15:4).",ref:"1 Corintios 15:4"},
+  {q:"¿Quién lavó sus manos declarando que era inocente de la muerte de Jesús?",ops:["Poncio Pilato","Herodes","Caifás","Anás"],a:0,exp:"Pilato tomó agua y se lavó las manos diciendo: Soy inocente de la sangre de este justo (Mateo 27:24).",ref:"Mateo 27:24"},
+  {q:"¿Cómo se llamaba el discípulo que dudó de la resurrección de Jesús?",ops:["Tomás","Pedro","Felipe","Andrés"],a:0,exp:"Tomás dijo que no creería hasta meter el dedo en las marcas de los clavos. Jesús se le apareció y lo convenció (Juan 20:25-27).",ref:"Juan 20:25"},
+  {q:"¿Qué animal usó Jesús para entrar a Jerusalén el domingo de Ramos?",ops:["Un asno","Un caballo","Un camello","Un buey"],a:0,exp:"Jesús entró triunfalmente a Jerusalén montado en un asno, cumpliendo la profecía de Zacarías 9:9 (Mateo 21:7).",ref:"Mateo 21:7"},
+  {q:"¿Quién fue el primer mártir cristiano mencionado en Hechos?",ops:["Esteban","Santiago","Pablo","Bernabé"],a:0,exp:"Esteban fue apedreado por el pueblo al acusarle de blasfemia, siendo el primer mártir del cristianismo (Hechos 7:59).",ref:"Hechos 7:59"},
+  {q:"¿Qué libro de la Biblia comienza con En el principio era el Verbo?",ops:["Juan","Génesis","Apocalipsis","Hebreos"],a:0,exp:"El Evangelio de Juan comienza: En el principio era el Verbo, y el Verbo era con Dios, y el Verbo era Dios (Juan 1:1).",ref:"Juan 1:1"},
+  {q:"¿Quién fue la esposa de Abraham?",ops:["Sara","Rebeca","Raquel","Lea"],a:0,exp:"Sara fue la esposa principal de Abraham. Dios le prometió un hijo en su vejez y nació Isaac (Génesis 17:19).",ref:"Génesis 17:19"},
+  {q:"¿Cuántas veces negó Pedro a Jesús antes del canto del gallo?",ops:["3 veces","2 veces","1 vez","4 veces"],a:0,exp:"Jesús predijo que Pedro le negaría tres veces antes de que el gallo cantara, y así sucedió (Mateo 26:75).",ref:"Mateo 26:75"},
+  {q:"¿Quién escribió el libro de los Salmos principalmente?",ops:["David","Salomón","Moisés","Asaf"],a:0,exp:"El rey David escribió la mayoría de los 150 salmos, aunque otros autores como Asaf y Moisés también contribuyeron.",ref:""},
+  {q:"¿Cuál fue el milagro de las bodas de Caná?",ops:["Convertir agua en vino","Sanar a un ciego","Multiplicar panes","Resucitar a un muerto"],a:0,exp:"En Caná de Galilea, Jesús convirtió el agua en vino. Fue la primera señal que hizo Jesús (Juan 2:1-11).",ref:"Juan 2:11"},
+  {q:"¿Cuántos mandamientos dio Dios a Moisés en el Sinaí?",ops:["10","7","12","5"],a:0,exp:"Dios grabó los Diez Mandamientos en dos tablas de piedra y se los entregó a Moisés en el monte Sinaí (Éxodo 20).",ref:"Éxodo 20"},
+  {q:"¿Quién era el rey de Judá cuando nació Jesús?",ops:["Herodes el Grande","Poncio Pilato","César Augusto","Herodes Antipas"],a:0,exp:"Herodes el Grande era rey de Judea cuando los magos buscaron al niño Jesús (Mateo 2:1).",ref:"Mateo 2:1"},
+  {q:"¿Qué apóstol caminó sobre el agua junto a Jesús?",ops:["Pedro","Juan","Andrés","Jacobo"],a:0,exp:"Pedro salió de la barca y caminó sobre el agua hacia Jesús, pero al ver el viento se asustó y comenzó a hundirse (Mateo 14:29-30).",ref:"Mateo 14:29"},
+  {q:"¿En qué lago pescaban varios de los discípulos de Jesús?",ops:["Mar de Galilea","Mar Muerto","Río Jordán","Mar Mediterráneo"],a:0,exp:"El Mar de Galilea (también llamado lago de Tiberíades) era donde pescaban Pedro, Andrés, Jacobo y Juan.",ref:"Lucas 5:1"},
+  {q:"¿Cuántos peces había junto a los cinco panes cuando Jesús alimentó a la multitud?",ops:["2","5","3","7"],a:0,exp:"Además de los cinco panes, había dos peces. Jesús los bendijo, los partió y alcanzaron para cinco mil hombres (Mateo 14:17).",ref:"Mateo 14:17"},
+  {q:"¿Qué significa el término Amén al final de una oración?",ops:["Así sea / verdaderamente","Fin","Gracias","Con fe"],a:0,exp:"Amén es una palabra hebrea que significa así sea o verdaderamente, expresando acuerdo y afirmación con lo dicho.",ref:""},
+  {q:"¿Cuántos libros históricos hay en el Antiguo Testamento?",ops:["12","7","15","10"],a:0,exp:"Los libros históricos del Antiguo Testamento son 12: Josué, Jueces, Rut, 1 y 2 Samuel, 1 y 2 Reyes, 1 y 2 Crónicas, Esdras, Nehemías y Ester.",ref:""},
+  {q:"¿Qué comió Adán y Eva que estaba prohibido?",ops:["El fruto del árbol del conocimiento","Una manzana dorada","Un fruto del árbol de la vida","Trigo del campo"],a:0,exp:"Dios prohibió comer del árbol del conocimiento del bien y del mal (Génesis 2:17). El tipo de fruta no se especifica en el texto.",ref:"Génesis 2:17"},
+  {q:"¿Qué dijo Jesús que era el mayor mandamiento?",ops:["Amar a Dios con todo el corazón","No matar","Guardar el sábado","Honrar al padre y a la madre"],a:0,exp:"Jesús respondió que el mayor mandamiento es amar a Dios con todo el corazón, con toda el alma y con toda la mente (Mateo 22:37-38).",ref:"Mateo 22:37-38"},
+  {q:"¿Quién fue arrojado al foso de los leones por orar a Dios?",ops:["Daniel","Sadrac","Pablo","Esteban"],a:0,exp:"Daniel fue arrojado al foso de los leones por continuar orando a Dios tres veces al día a pesar de la prohibición del rey Darío (Daniel 6:16).",ref:"Daniel 6:16"},
 ],
 medio:[
   {q:"¿Cuántos años vivió Matusalén según la Biblia?",ops:["969","700","850","999"],a:0,exp:"Matusalén vivió 969 años, siendo el hombre más longevo mencionado en la Biblia (Génesis 5:27).",ref:"Génesis 5:27"},
-  {q:"¿Quién interpretó los sueños del Faraón?",ops:["José","Daniel","Salomón","Moisés"],a:0,exp:"José interpretó los sueños del Faraón sobre las siete vacas gordas y flacas, prediciendo los años de abundancia y hambruna (Génesis 41).",ref:"Génesis 41:25"},
+  {q:"¿Quién interpretó los sueños del Faraón?",ops:["José","Daniel","Salomón","Moisés"],a:0,exp:"José interpretó los sueños del Faraón sobre las siete vacas gordas y flacas, prediciendo los años de abundancia y hambruna.",ref:"Génesis 41:25"},
   {q:"¿En qué monte recibió Moisés los Diez Mandamientos?",ops:["Sinaí","Carmelo","Sion","Horeb"],a:0,exp:"Dios le entregó a Moisés las tablas de la ley en el monte Sinaí (Éxodo 19:20). Horeb es otro nombre del mismo monte.",ref:"Éxodo 19:20"},
   {q:"¿Quién vendió su primogenitura por un plato de lentejas?",ops:["Esaú","Jacob","Rubén","Ismael"],a:0,exp:"Esaú, hambriento, vendió su derecho de primogenitura a su hermano Jacob a cambio de guiso de lentejas (Génesis 25:33).",ref:"Génesis 25:33"},
   {q:"¿Cuánto tiempo pasó Jesús en el desierto antes de ser tentado?",ops:["40 días","3 días","7 días","1 año"],a:0,exp:"Jesús fue llevado por el Espíritu Santo al desierto donde ayunó 40 días y 40 noches antes de ser tentado (Mateo 4:2).",ref:"Mateo 4:2"},
@@ -406,29 +514,202 @@ medio:[
   {q:"¿Qué profeta fue llevado al cielo en un carro de fuego?",ops:["Elías","Eliseo","Isaías","Ezequiel"],a:0,exp:"Elías fue llevado al cielo en un torbellino, subiendo en un carro de fuego con caballos de fuego (2 Reyes 2:11).",ref:"2 Reyes 2:11"},
   {q:"¿Cuál es el libro más corto del Antiguo Testamento?",ops:["Abdías","Rut","Jonás","Filemón"],a:0,exp:"Abdías es el libro más corto del Antiguo Testamento con solo 21 versículos.",ref:"Abdías"},
   {q:"¿Cómo se llamaba el río donde Jesús fue bautizado?",ops:["Jordán","Nilo","Éufrates","Tigris"],a:0,exp:"Juan el Bautista bautizaba en el río Jordán, y allí bautizó a Jesús (Mateo 3:13).",ref:"Mateo 3:13"},
-  {q:"¿Quién escribió la mayoría de las epístolas del Nuevo Testamento?",ops:["Pablo","Pedro","Juan","Santiago"],a:0,exp:"El apóstol Pablo escribió 13 epístolas del Nuevo Testamento, más del doble que cualquier otro autor.",ref:"Romanos, Corintios..."},
+  {q:"¿Quién escribió la mayoría de las epístolas del Nuevo Testamento?",ops:["Pablo","Pedro","Juan","Santiago"],a:0,exp:"El apóstol Pablo escribió 13 epístolas del Nuevo Testamento, más del doble que cualquier otro autor.",ref:""},
   {q:"¿Cuántas cartas escribió Pablo a los Corintios?",ops:["2","1","3","4"],a:0,exp:"Pablo escribió dos cartas canónicas a la iglesia de Corinto: 1 y 2 Corintios.",ref:"1 y 2 Corintios"},
-  {q:"¿Qué significa el nombre 'Israel'?",ops:["El que lucha con Dios","Pueblo de Dios","Tierra prometida","Hijo de la promesa"],a:0,exp:"Israel significa 'el que lucha con Dios'. Este nombre fue dado a Jacob después de luchar con el ángel (Génesis 32:28).",ref:"Génesis 32:28"},
+  {q:"¿Qué significa el nombre Israel?",ops:["El que lucha con Dios","Pueblo de Dios","Tierra prometida","Hijo de la promesa"],a:0,exp:"Israel significa el que lucha con Dios. Este nombre fue dado a Jacob después de luchar con el ángel (Génesis 32:28).",ref:"Génesis 32:28"},
   {q:"¿Quién fue el suegro de Moisés?",ops:["Jetro","Aarón","Josué","Caleb"],a:0,exp:"Jetro (también llamado Reuel) era sacerdote de Madián y suegro de Moisés (Éxodo 3:1).",ref:"Éxodo 3:1"},
-  {q:"¿Cuántas versiones del Padrenuestro hay en los Evangelios?",ops:["2","1","3","4"],a:0,exp:"El Padrenuestro aparece en dos versiones: la más larga en Mateo 6:9-13 y una más corta en Lucas 11:2-4.",ref:"Mateo 6:9 / Lucas 11:2"},
+  {q:"¿Cuántas versiones del Padrenuestro hay en los Evangelios?",ops:["2","1","3","4"],a:0,exp:"El Padrenuestro aparece en dos versiones: la más larga en Mateo 6:9-13 y una más corta en Lucas 11:2-4.",ref:"Mateo 6:9"},
   {q:"¿En qué día de la creación hizo Dios los luminares?",ops:["4°","1°","3°","6°"],a:0,exp:"En el cuarto día Dios creó el sol, la luna y las estrellas como señales para las estaciones y los días (Génesis 1:14-19).",ref:"Génesis 1:14-19"},
+  {q:"¿Cuántos años reinó Salomón en Israel?",ops:["40 años","20 años","30 años","50 años"],a:0,exp:"Salomón reinó en Jerusalén sobre todo Israel durante cuarenta años (1 Reyes 11:42).",ref:"1 Reyes 11:42"},
+  {q:"¿Quién era el sumo sacerdote cuando Jesús fue juzgado?",ops:["Caifás","Anás","Zacarías","Elí"],a:0,exp:"Caifás era el sumo sacerdote ese año y fue quien aconsejó que convenía que un hombre muriera por el pueblo (Juan 11:49).",ref:"Juan 11:49"},
+  {q:"¿Qué profeta anunció el nacimiento del Mesías en Belén?",ops:["Miqueas","Isaías","Jeremías","Amós"],a:0,exp:"Miqueas profetizó: Pero tú, Belén Efrata... de ti me saldrá el que será Señor en Israel (Miqueas 5:2).",ref:"Miqueas 5:2"},
+  {q:"¿Cuántos años duró el cautiverio de Israel en Babilonia?",ops:["70 años","40 años","50 años","100 años"],a:0,exp:"Jeremías profetizó que el cautiverio duraría 70 años, tiempo que Israel sirvió al rey de Babilonia (Jeremías 25:11).",ref:"Jeremías 25:11"},
+  {q:"¿Quién construyó el primer templo de Jerusalén?",ops:["Salomón","David","Ezequías","Zorobabel"],a:0,exp:"Salomón construyó el templo de Jerusalén según los planes que su padre David había preparado (1 Reyes 6:1).",ref:"1 Reyes 6:1"},
+  {q:"¿Cuántas tribus de Israel hubo?",ops:["12","10","7","14"],a:0,exp:"Israel se dividió en doce tribus, según los doce hijos de Jacob. Después el reino se dividió en 10 del norte y 2 del sur.",ref:"Génesis 49"},
+  {q:"¿Quién era el padre de Salomón?",ops:["David","Saúl","Josafat","Asa"],a:0,exp:"Salomón era hijo del rey David y de Betsabé. Dios le apareció en sueños y le concedió sabiduría (1 Reyes 3:5-12).",ref:"1 Reyes 3:5"},
+  {q:"¿Cuántas veces al día oraba Daniel según la Biblia?",ops:["3 veces","1 vez","5 veces","7 veces"],a:0,exp:"Daniel se arrodillaba tres veces al día para orar y dar gracias a Dios, incluso bajo la prohibición del rey (Daniel 6:10).",ref:"Daniel 6:10"},
+  {q:"¿Qué significa el nombre Bethel?",ops:["Casa de Dios","Lugar de descanso","Torre de Dios","Monte de Dios"],a:0,exp:"Bethel significa Casa de Dios en hebreo. Jacob llamó así al lugar donde soñó con la escalera al cielo (Génesis 28:19).",ref:"Génesis 28:19"},
+  {q:"¿Quién fue el primer juez de Israel mencionado en el libro de los Jueces?",ops:["Otoniel","Gedeón","Sansón","Débora"],a:0,exp:"Otoniel, sobrino de Caleb, fue el primer juez de Israel que liberó al pueblo de la opresión de Cusán-Risataim (Jueces 3:9).",ref:"Jueces 3:9"},
+  {q:"¿Cuántos libros escribió el apóstol Juan?",ops:["5","3","2","4"],a:0,exp:"Juan escribió cinco libros: el Evangelio de Juan, las cartas 1 Juan, 2 Juan, 3 Juan y el libro de Apocalipsis.",ref:""},
+  {q:"¿Quién era Melquisedec?",ops:["Rey de Salem y sacerdote del Dios Altísimo","El ángel de Dios","Un profeta de Israel","El sumo sacerdote del templo"],a:0,exp:"Melquisedec era rey de Salem y sacerdote del Dios Altísimo que bendijo a Abraham y recibió sus diezmos (Génesis 14:18).",ref:"Génesis 14:18"},
+  {q:"¿Cuántos años vivió Noé después del diluvio?",ops:["350 años","200 años","500 años","100 años"],a:0,exp:"Noé vivió después del diluvio 350 años, alcanzando un total de 950 años de vida (Génesis 9:28-29).",ref:"Génesis 9:28"},
+  {q:"¿Qué profeta desafió a los profetas de Baal en el monte Carmelo?",ops:["Elías","Eliseo","Isaías","Amós"],a:0,exp:"Elías desafió a 450 profetas de Baal en el monte Carmelo y el fuego de Dios descendió consumiendo el sacrificio (1 Reyes 18:38).",ref:"1 Reyes 18:38"},
+  {q:"¿Cuántos sellos tiene el libro en la visión de Apocalipsis?",ops:["7","3","12","10"],a:0,exp:"El Cordero abrió los siete sellos del libro en la visión de Apocalipsis (Apocalipsis 5:1, 6:1).",ref:"Apocalipsis 5:1"},
+  {q:"¿Quién fue el padre de Abraham?",ops:["Taré","Nacor","Sem","Heber"],a:0,exp:"Taré fue el padre de Abraham (antes llamado Abram), Nacor y Harán. Salió con Abraham de Ur de los caldeos (Génesis 11:26-31).",ref:"Génesis 11:26"},
+  {q:"¿Qué significa la palabra Pentateuco?",ops:["Cinco libros","Primeros libros","Libros de Moisés","Escrituras sagradas"],a:0,exp:"Pentateuco viene del griego y significa cinco libros, refiriéndose a los primeros cinco libros de la Biblia escritos por Moisés.",ref:""},
+  {q:"¿Cuánto tiempo duró la construcción del templo de Salomón?",ops:["7 años","3 años","10 años","20 años"],a:0,exp:"Salomón tardó siete años en construir el templo de Jerusalén (1 Reyes 6:38).",ref:"1 Reyes 6:38"},
+  {q:"¿Cuántos hijos tuvo Abraham con Agar?",ops:["1","2","3","ninguno"],a:0,exp:"Abraham tuvo un hijo con Agar, la sierva egipcia de Sara. Su nombre era Ismael (Génesis 16:15).",ref:"Génesis 16:15"},
+  {q:"¿Qué ciudad fue destruida junto a Sodoma?",ops:["Gomorra","Jericó","Nínive","Babilonia"],a:0,exp:"Dios destruyó Sodoma y Gomorra con lluvia de azufre y fuego por la gran maldad de sus habitantes (Génesis 19:24).",ref:"Génesis 19:24"},
+  {q:"¿Quién sucedió a Moisés como líder del pueblo de Israel?",ops:["Josué","Caleb","Samuel","Gedeón"],a:0,exp:"Después de la muerte de Moisés, Josué fue designado por Dios para conducir al pueblo a la tierra prometida (Josué 1:1-2).",ref:"Josué 1:1-2"},
+  {q:"¿Qué apóstol caminó sobre el agua junto a Jesús?",ops:["Pedro","Juan","Andrés","Jacobo"],a:0,exp:"Pedro salió de la barca y caminó sobre el agua hacia Jesús, pero al ver el viento se asustó y comenzó a hundirse (Mateo 14:29-30).",ref:"Mateo 14:29"},
+  {q:"¿En qué isla fue desterrado el apóstol Juan?",ops:["Patmos","Chipre","Malta","Creta"],a:0,exp:"Juan fue desterrado a la isla de Patmos, donde recibió la revelación que se convirtió en el libro de Apocalipsis (Apocalipsis 1:9).",ref:"Apocalipsis 1:9"},
+  {q:"¿Cuántas bienaventuranzas pronunció Jesús en el Sermón del Monte?",ops:["8","7","10","12"],a:0,exp:"Jesús pronunció ocho bienaventuranzas en el Sermón del Monte, comenzando cada una con Bienaventurados (Mateo 5:3-10).",ref:"Mateo 5:3-10"},
+  {q:"¿Qué rey de Israel dividió el reino construyendo becerros de oro?",ops:["Jeroboam","Roboam","Acab","Omri"],a:0,exp:"Jeroboam hizo dos becerros de oro y los colocó en Bet-el y Dan, diciendo al pueblo: estos son tus dioses Israel (1 Reyes 12:28).",ref:"1 Reyes 12:28"},
+  {q:"¿Cuántos años reinó David en Israel?",ops:["40 años","30 años","20 años","50 años"],a:0,exp:"David reinó cuarenta años sobre Israel: siete años en Hebrón y treinta y tres en Jerusalén (1 Reyes 2:11).",ref:"1 Reyes 2:11"},
+  {q:"¿Quién era el rey de Israel cuando el profeta Elías realizó su ministerio?",ops:["Acab","Jeroboam","Omri","Jehú"],a:0,exp:"Elías profetizó principalmente durante el reinado de Acab, el rey más malo que Israel había tenido hasta entonces (1 Reyes 16:30).",ref:"1 Reyes 16:30"},
+  {q:"¿Qué episodio causó que Moisés no pudiera entrar en la tierra prometida?",ops:["Golpeó la roca en lugar de hablarle","Adoró un ídolo","Quemó un sacrificio","Huyó al desierto"],a:0,exp:"Dios le dijo a Moisés que hablara a la roca, pero él la golpeó dos veces en lugar de obedecerle, por lo que no pudo entrar a Canaán (Números 20:11-12).",ref:"Números 20:11-12"},
+  {q:"¿Qué rey persa permitió a los judíos regresar a Jerusalén?",ops:["Ciro el Grande","Darío","Artajerjes","Cambises"],a:0,exp:"En el primer año de Ciro rey de Persia, Dios movió su corazón para promulgar un edicto que permitiera a los judíos regresar (Esdras 1:1).",ref:"Esdras 1:1"},
+  {q:"¿Cuántos años tardó Nehemías en reconstruir los muros de Jerusalén?",ops:["52 días","1 año","7 meses","2 años"],a:0,exp:"Los muros de Jerusalén fueron reconstruidos en cincuenta y dos días bajo el liderazgo de Nehemías (Nehemías 6:15).",ref:"Nehemías 6:15"},
+  {q:"¿Quién fue el primer hombre que mató a otro en la Biblia?",ops:["Caín","Lamec","Esaú","Saúl"],a:0,exp:"Caín mató a su hermano Abel por envidia, al ver que Dios aceptó la ofrenda de Abel y no la suya (Génesis 4:8).",ref:"Génesis 4:8"},
+  {q:"¿Cuántos años duró la construcción del templo de Herodes según Juan 2?",ops:["46 años","20 años","100 años","30 años"],a:0,exp:"Los judíos le dijeron a Jesús que en 46 años fue edificado este templo, refiriéndose al templo renovado por Herodes el Grande (Juan 2:20).",ref:"Juan 2:20"},
+  {q:"¿Qué significa el término griego Evangelion?",ops:["Buena noticia","Palabra de Dios","Libro sagrado","Mensaje de paz"],a:0,exp:"Evangelion en griego significa buena noticia o buenas nuevas. De esta palabra deriva nuestro término evangelio.",ref:"Marcos 1:1"},
+  {q:"¿Quién fue el profeta que ungió a David como rey?",ops:["Samuel","Elías","Natán","Sadoc"],a:0,exp:"Samuel fue enviado por Dios a la casa de Isaí en Belén para ungir al siguiente rey de Israel, y ungió al joven David (1 Samuel 16:13).",ref:"1 Samuel 16:13"},
+  {q:"¿Qué río regaba el jardín del Edén y se dividía en cuatro brazos?",ops:["Un río sin nombre que formaba el Pisón, Gihón, Hidekel y Éufrates","El Jordán","El Nilo","Solo el Éufrates"],a:0,exp:"De Edén salía un río que se dividía en cuatro brazos: Pisón, Gihón, Hidekel (Tigris) y Éufrates (Génesis 2:10-14).",ref:"Génesis 2:10-14"},
 ],
 dificil:[
   {q:"¿Cuántos años estuvo el pueblo de Israel en el desierto?",ops:["40 años","20 años","100 años","12 años"],a:0,exp:"Israel vagó 40 años en el desierto debido a su incredulidad, hasta que murió la generación que salió de Egipto (Números 14:33-34).",ref:"Números 14:33-34"},
   {q:"¿Cuál fue el nombre hebreo del apóstol Pablo?",ops:["Saulo","Simón","Santiago","Nicodemo"],a:0,exp:"Pablo era su nombre romano; su nombre hebreo era Saulo, de la tribu de Benjamín (Hechos 13:9).",ref:"Hechos 13:9"},
   {q:"¿En qué ciudad vivía Lot cuando fue destruida?",ops:["Sodoma","Gomorra","Zoar","Hebrón"],a:0,exp:"Lot habitaba en Sodoma cuando Dios destruyó la ciudad por su gran maldad. Su familia escapó hacia Zoar (Génesis 19:1).",ref:"Génesis 19:1"},
   {q:"¿Qué ángel anunció a María el nacimiento de Jesús?",ops:["Gabriel","Miguel","Rafael","Uriel"],a:0,exp:"El ángel Gabriel fue enviado por Dios a Nazaret para anunciar a María que concebiría al Hijo del Altísimo (Lucas 1:26-27).",ref:"Lucas 1:26"},
-  {q:"¿Cuál es el versículo más corto de la Biblia?",ops:["Juan 11:35","Éxodo 20:13","Job 3:2","1 Tesalonicenses 5:16"],a:0,exp:"'Jesús lloró' (Juan 11:35) es el versículo más corto de la Biblia en español e inglés ('Jesus wept').",ref:"Juan 11:35"},
+  {q:"¿Cuál es el versículo más corto de la Biblia?",ops:["Juan 11:35","Éxodo 20:13","Job 3:2","1 Tesalonicenses 5:16"],a:0,exp:"Jesús lloró (Juan 11:35) es el versículo más corto de la Biblia en español e inglés.",ref:"Juan 11:35"},
   {q:"¿Cuántos libros tiene la Biblia en total?",ops:["66","72","60","73"],a:0,exp:"La Biblia protestante tiene 66 libros: 39 en el Antiguo Testamento y 27 en el Nuevo Testamento.",ref:""},
   {q:"¿Cómo se llamaba el siervo del sumo sacerdote al que Pedro le cortó la oreja?",ops:["Malco","Barrabás","Anás","Caifás"],a:0,exp:"El siervo se llamaba Malco. Jesús tocó su oreja y lo sanó inmediatamente (Juan 18:10, Lucas 22:51).",ref:"Juan 18:10"},
   {q:"¿Quién escribió el libro de Apocalipsis?",ops:["Juan el Apóstol","Pablo","Pedro","Santiago"],a:0,exp:"El Apocalipsis fue escrito por el apóstol Juan mientras estaba exiliado en la isla de Patmos (Apocalipsis 1:9).",ref:"Apocalipsis 1:1,9"},
   {q:"¿Cuántos salmos tiene el libro de los Salmos?",ops:["150","100","120","160"],a:0,exp:"El libro de los Salmos contiene 150 salmos. El salmo 119 es el más largo de la Biblia.",ref:""},
   {q:"¿Cuál es el nombre del mar que cruzó Moisés con los israelitas?",ops:["Mar Rojo","Mar Mediterráneo","Mar Muerto","Mar de Galilea"],a:0,exp:"Dios abrió el Mar Rojo para que los israelitas cruzaran en seco mientras huían del ejército del Faraón (Éxodo 14:21).",ref:"Éxodo 14:21"},
-  {q:"¿Qué profeta fue tragado por un pez grande?",ops:["Jonás","Ezequiel","Oseas","Amós"],a:0,exp:"Jonás huyó de la presencia del Señor y fue arrojado al mar, donde un gran pez lo tragó por tres días (Jonás 1:17).",ref:"Jonás 1:17"},
   {q:"¿En qué lenguaje fue escrito originalmente el Antiguo Testamento?",ops:["Hebreo y arameo","Griego","Latín","Arameo solamente"],a:0,exp:"El Antiguo Testamento fue escrito principalmente en hebreo, con algunas secciones en arameo (Daniel 2:4-7:28, Esdras 4:8-6:18).",ref:""},
   {q:"¿Cuántos años tenía Josué cuando murió?",ops:["110","90","120","100"],a:0,exp:"Josué murió a los 110 años de edad, después de haber guiado a Israel para conquistar la tierra prometida (Josué 24:29).",ref:"Josué 24:29"},
-  {q:"¿Qué significa el nombre 'Jesús' en hebreo?",ops:["Yahveh salva","El ungido","Hijo de Dios","El profeta"],a:0,exp:"Jesús viene del hebreo 'Yeshua' que significa 'Yahveh salva'. Por eso el ángel dijo: 'le pondrás por nombre Jesús, porque él salvará a su pueblo de sus pecados' (Mateo 1:21).",ref:"Mateo 1:21"},
+  {q:"¿Qué significa el nombre Jesús en hebreo?",ops:["Yahveh salva","El ungido","Hijo de Dios","El profeta"],a:0,exp:"Jesús viene del hebreo Yeshua que significa Yahveh salva. El ángel dijo: le pondrás por nombre Jesús porque salvará a su pueblo (Mateo 1:21).",ref:"Mateo 1:21"},
   {q:"¿Cuántas personas se salvaron en el arca de Noé?",ops:["8","4","10","6"],a:0,exp:"Solo ocho personas se salvaron en el arca: Noé, su esposa, sus tres hijos (Sem, Cam y Jafet) y sus esposas (1 Pedro 3:20).",ref:"1 Pedro 3:20"},
+  {q:"¿Cuántos años tenía Abraham cuando nació Isaac?",ops:["100 años","90 años","75 años","120 años"],a:0,exp:"Abraham tenía cien años cuando nació Isaac, su hijo de la promesa con Sara (Génesis 21:5).",ref:"Génesis 21:5"},
+  {q:"¿Cuál es el libro más largo de la Biblia?",ops:["Salmos","Jeremías","Ezequiel","Isaías"],a:0,exp:"El libro de los Salmos es el más largo de la Biblia con 150 capítulos y 2,461 versículos.",ref:""},
+  {q:"¿Qué tribu de Israel recibió ciudades pero no territorio propio en Canaán?",ops:["Leví","Dan","Neftalí","Gad"],a:0,exp:"La tribu de Leví no recibió heredad territorial. En cambio recibieron 48 ciudades levíticas repartidas entre las demás tribus (Números 35:7).",ref:"Números 35:7"},
+  {q:"¿Cuántos años vivió Adán según Génesis?",ops:["930","900","969","800"],a:0,exp:"Adán vivió en total novecientos treinta años, y luego murió (Génesis 5:5).",ref:"Génesis 5:5"},
+  {q:"¿Qué rey de Judá encontró el libro de la ley y reformó todo el reino?",ops:["Josías","Ezequías","Asa","Jehosafat"],a:0,exp:"El sumo sacerdote Hilcías encontró el libro de la ley durante las reparaciones del templo en tiempos del rey Josías (2 Reyes 22:8).",ref:"2 Reyes 22:8"},
+  {q:"¿Cuántas iglesias menciona el libro de Apocalipsis en los capítulos 2 y 3?",ops:["7","3","10","12"],a:0,exp:"Jesús dictó cartas a siete iglesias de Asia Menor: Éfeso, Esmirna, Pérgamo, Tiatira, Sardis, Filadelfia y Laodicea (Apocalipsis 2-3).",ref:"Apocalipsis 1:11"},
+  {q:"¿Cuántos hijos tuvo Noé?",ops:["3","2","4","5"],a:0,exp:"Noé tuvo tres hijos: Sem, Cam y Jafet, quienes entraron al arca con sus esposas (Génesis 7:13).",ref:"Génesis 7:13"},
+  {q:"¿Quién reemplazó a Judas como apóstol después de la ascensión de Jesús?",ops:["Matías","Bernabé","Esteban","Silas"],a:0,exp:"Los apóstoles echaron suertes entre José Barsabás y Matías, y la suerte cayó sobre Matías (Hechos 1:26).",ref:"Hechos 1:26"},
+  {q:"¿Cuál es el salmo que Jesús citó desde la cruz?",ops:["Salmo 22","Salmo 23","Salmo 91","Salmo 51"],a:0,exp:"Jesús citó el inicio del Salmo 22: Dios mío, Dios mío, ¿por qué me has abandonado? (Mateo 27:46).",ref:"Salmo 22:1, Mateo 27:46"},
+  {q:"¿En qué capítulo de la Biblia se describe la armadura de Dios?",ops:["Efesios 6","Romanos 13","Romanos 8","Romanos 12"],a:0,exp:"La armadura de Dios está descrita en Efesios 6:10-18. Esta es una pregunta que prueba el conocimiento exacto de la ubicación.",ref:"Efesios 6:10-18"},
+  {q:"¿Cuántos años tenía Jesús cuando comenzó su ministerio público?",ops:["30 años","25 años","33 años","28 años"],a:0,exp:"Jesús tenía como treinta años cuando comenzó su ministerio y fue bautizado por Juan (Lucas 3:23).",ref:"Lucas 3:23"},
+  {q:"¿Cuál fue el nombre del lugar donde Jesús fue crucificado en hebreo?",ops:["Gólgota","Calvario","Getsemaní","Betfagé"],a:0,exp:"El lugar se llamaba Gólgota, que significa lugar de la calavera en hebreo. En latín se traduce como Calvario (Juan 19:17).",ref:"Juan 19:17"},
+  {q:"¿Qué profeta del Antiguo Testamento habla más sobre el Mesías sufriente?",ops:["Isaías","Miqueas","Zacarías","Daniel"],a:0,exp:"Isaías 53 es el pasaje mesiánico más detallado del Antiguo Testamento, describiendo al Siervo sufriente que cargará nuestros pecados.",ref:"Isaías 53"},
+  {q:"¿Qué animal usó Dios para hablar con Balaam?",ops:["Una burra","Un caballo","Un buey","Un águila"],a:0,exp:"El Señor abrió la boca de la burra de Balaam y ella habló con él cuando el ángel del Señor bloqueaba el camino (Números 22:28).",ref:"Números 22:28"},
+  {q:"¿Cuántas puertas tiene la nueva Jerusalén según Apocalipsis?",ops:["12","7","4","24"],a:0,exp:"La nueva Jerusalén tiene doce puertas, tres en cada lado, y en cada puerta el nombre de una de las doce tribus de Israel (Apocalipsis 21:12).",ref:"Apocalipsis 21:12"},
+  {q:"¿Qué idioma fue usado principalmente para escribir el Nuevo Testamento?",ops:["Griego koiné","Latín","Hebreo","Arameo"],a:0,exp:"El Nuevo Testamento fue escrito en griego koiné, el idioma común del Imperio Romano en el siglo primero.",ref:""},
+  {q:"¿Cuántos capítulos tiene el libro de los Salmos?",ops:["150","100","120","160"],a:0,exp:"El libro de los Salmos tiene 150 capítulos. Es el libro más largo de toda la Biblia por número de capítulos.",ref:""},
+  {q:"¿Qué significa el término hebreo Shalom?",ops:["Paz completa y prosperidad","Saludo","Adiós","Bendición de Dios"],a:0,exp:"Shalom en hebreo significa paz en su sentido más amplio: bienestar, prosperidad, integridad y armonía con Dios y los demás.",ref:""},
+  {q:"¿Cuántos hijos tuvo el juez Gedeón?",ops:["70 hijos legítimos más Abimelec","12","40","100"],a:0,exp:"Gedeón tuvo setenta hijos que habían salido de sus loinas, pues tenía muchas mujeres. También tuvo a Abimelec con una concubina (Jueces 8:30).",ref:"Jueces 8:30"},
+  {q:"¿Cuántos capítulos tiene el libro de Daniel?",ops:["12","10","14","8"],a:0,exp:"El libro de Daniel tiene 12 capítulos, escritos en hebreo y arameo, conteniendo tanto historia como apocalipsis profético.",ref:"Daniel"},
+  {q:"¿Qué significa el término bíblico Sheol?",ops:["El lugar de los muertos en el pensamiento hebreo","El infierno de castigo eterno","El paraíso celestial","El lugar del juicio final"],a:0,exp:"Sheol en el Antiguo Testamento es el lugar de los muertos, una especie de inframundo neutral donde van todas las almas. No equivale exactamente al infierno cristiano.",ref:"Génesis 37:35"},
+  {q:"¿Cuántos años tenía Josías cuando comenzó a reinar en Judá?",ops:["8 años","12 años","16 años","20 años"],a:0,exp:"Josías tenía ocho años cuando comenzó a reinar y reinó 31 años en Jerusalén. Fue el rey reformador que halló el libro de la ley (2 Reyes 22:1).",ref:"2 Reyes 22:1"},
+  {q:"¿Qué dos hombres del Antiguo Testamento nunca murieron sino que fueron llevados por Dios?",ops:["Enoc y Elías","Moisés y Elías","Enoc y Moisés","Elías y Eliseo"],a:0,exp:"Enoc caminó con Dios y desapareció porque Dios se lo llevó (Génesis 5:24), y Elías subió al cielo en un torbellino (2 Reyes 2:11).",ref:"Génesis 5:24, 2 Reyes 2:11"},
+  {q:"¿Cuántos capítulos tiene el Evangelio de Juan?",ops:["21","20","18","24"],a:0,exp:"El Evangelio de Juan tiene 21 capítulos. El capítulo 21 fue añadido como epílogo después del que parecía ser el cierre en el capítulo 20.",ref:"Juan 21"},
+  {q:"¿Cuántos años tenía Manasés rey de Judá cuando comenzó a reinar?",ops:["12 años","8 años","16 años","20 años"],a:0,exp:"Manasés tenía doce años cuando comenzó a reinar y reinó en Jerusalén cincuenta y cinco años (2 Reyes 21:1).",ref:"2 Reyes 21:1"},
+  {q:"¿Qué significa el término hebreo Torah?",ops:["Instrucción o enseñanza, no solo ley","Profecía","Historia sagrada","Pacto de Dios"],a:0,exp:"Torah en hebreo no significa solo ley sino más ampliamente instrucción o enseñanza. Se refiere a los primeros cinco libros de Moisés.",ref:""},
+  {q:"¿Cuántos años estuvo José en la cárcel del Faraón antes de ser liberado?",ops:["Al menos 2 años","7 años","40 días","10 años"],a:0,exp:"José estuvo en la cárcel y el copero olvidó mencionarlo durante dos años completos hasta que el Faraón tuvo sus sueños (Génesis 41:1).",ref:"Génesis 41:1"},
+  {q:"¿Cuántos años vivió Sara esposa de Abraham?",ops:["127 años","100 años","90 años","150 años"],a:0,exp:"Sara vivió 127 años. Génesis 23:1 es el único lugar en la Biblia donde se da específicamente la edad de una mujer al morir.",ref:"Génesis 23:1"},
+  {q:"¿Qué significa el término griego Parousia?",ops:["La venida o presencia del Señor","La resurrección de los muertos","El juicio final","El reino de Dios"],a:0,exp:"Parousia en griego significa llegada, venida o presencia. En el Nuevo Testamento se usa técnicamente para referirse a la segunda venida de Cristo (Mateo 24:3).",ref:"Mateo 24:3"},
+  {q:"¿Cuántos cuernos tenía la bestia del mar en Apocalipsis 13?",ops:["10 cuernos y 7 cabezas","7 cuernos y 10 cabezas","4 cuernos y 4 cabezas","12 cuernos y 3 cabezas"],a:0,exp:"La bestia del mar en Apocalipsis 13:1 tenía diez cuernos y siete cabezas, con diez diademas en sus cuernos y nombres de blasfemia en sus cabezas.",ref:"Apocalipsis 13:1"},
+  {q:"¿Cuántos capítulos tiene el libro de Génesis?",ops:["50","40","45","60"],a:0,exp:"El libro de Génesis tiene 50 capítulos, desde la creación del mundo hasta la muerte de José en Egipto.",ref:"Génesis"},
+  {q:"¿Cuántos años vivió Enoc antes de ser llevado por Dios?",ops:["365 años","969 años","500 años","777 años"],a:0,exp:"Enoc vivió 365 años, el número de días del año solar, antes de que Dios se lo llevara (Génesis 5:23).",ref:"Génesis 5:23"},
+  {q:"¿Cuántos capítulos tiene el libro de Jeremías?",ops:["52","40","60","45"],a:0,exp:"El libro de Jeremías tiene 52 capítulos, siendo uno de los libros más extensos del Antiguo Testamento.",ref:"Jeremías"},
+  {q:"¿Qué rey de Persia es mencionado por nombre en el libro de Isaías más de 100 años antes de su reinado?",ops:["Ciro","Darío","Artajerjes","Cambises"],a:0,exp:"Isaías 44:28 menciona a Ciro por nombre profetizando que daría orden de reconstruir Jerusalén, aproximadamente 150 años antes de que reinara.",ref:"Isaías 44:28"},
+  {q:"¿Cuántos hijos tuvo Acab rey de Israel?",ops:["70 hijos","12 hijos","7 hijos","40 hijos"],a:0,exp:"Acab tenía setenta hijos en Samaria según 2 Reyes 10:1. Jehú los mandó decapitar para consolidar su reinado.",ref:"2 Reyes 10:1"},
+  {q:"¿Qué profeta del Nuevo Testamento predijo el arresto de Pablo en Cesarea?",ops:["Agabo","Juan","Lucas","Bernabé"],a:0,exp:"El profeta Agabo tomó el cinto de Pablo, se ató los pies y las manos y predijo que así ataría Roma al dueño del cinto (Hechos 21:11).",ref:"Hechos 21:11"},
+],
+leyenda:[
+  {q:"¿Cuáles eran los nombres de las dos parteras hebreas que desobedecieron al Faraón?",ops:["Sifra y Fúa","Miriam y Ana","Noemí y Rut","Tamar y Raquel"],a:0,exp:"Sifra y Fúa eran las parteras que temían a Dios y no mataron a los niños hebreos varones como ordenó el Faraón (Éxodo 1:15).",ref:"Éxodo 1:15"},
+  {q:"¿Cuántos hijos tuvo Jacob con su concubina Bilha?",ops:["2","3","1","4"],a:0,exp:"Bilha, la sierva de Raquel, le dio a Jacob dos hijos: Dan y Neftalí (Génesis 30:5-8).",ref:"Génesis 30:5-8"},
+  {q:"¿Qué metal representaba el reino de Babilonia en la estatua del sueño de Nabucodonosor?",ops:["Oro","Plata","Bronce","Hierro"],a:0,exp:"La cabeza de oro de la estatua representaba al rey Nabucodonosor y al reino de Babilonia, el primero y más glorioso (Daniel 2:38).",ref:"Daniel 2:38"},
+  {q:"¿Cuántos años reinó Manasés rey de Judá?",ops:["55 años","40 años","25 años","70 años"],a:0,exp:"Manasés reinó en Jerusalén cincuenta y cinco años. Fue el rey más malvado de Judá pero se arrepintió al final (2 Crónicas 33:1).",ref:"2 Crónicas 33:1"},
+  {q:"¿Qué significa el término hebreo Hesed?",ops:["Amor leal e inagotable de Dios","Santidad","Sabiduría divina","Gloria de Dios"],a:0,exp:"Hesed es un término hebreo que combina amor, lealtad, misericordia y fidelidad. Se usa para describir el amor del pacto de Dios que no falla nunca.",ref:"Salmo 136"},
+  {q:"¿Cuántos codos de largo medía el arca del pacto según Éxodo?",ops:["2.5 codos","3 codos","2 codos","4 codos"],a:0,exp:"El arca del pacto medía dos codos y medio de largo, codo y medio de ancho y codo y medio de alto (Éxodo 25:10).",ref:"Éxodo 25:10"},
+  {q:"¿Cuántas bestias vio Daniel en su visión del capítulo 7?",ops:["4","7","3","5"],a:0,exp:"Daniel vio cuatro bestias que subían del mar: un león, un oso, un leopardo y una bestia espantosa con diez cuernos (Daniel 7:3-7).",ref:"Daniel 7:3-7"},
+  {q:"¿Qué significa el término griego Logos?",ops:["Palabra o Verbo divino","Ley","Gracia","Espíritu"],a:0,exp:"Logos en griego significa palabra, razón o discurso. En Juan 1:1 se usa para describir a Cristo como la Palabra eterna de Dios hecha carne.",ref:"Juan 1:1"},
+  {q:"¿Cuántas mujeres aparecen en la genealogía de Jesús en Mateo capítulo 1?",ops:["5","3","7","4"],a:0,exp:"Cinco mujeres aparecen en la genealogía de Jesús en Mateo 1: Tamar, Rahab, Rut, la esposa de Urías (Betsabé) y María.",ref:"Mateo 1:3-16"},
+  {q:"¿Cuántos años duró el reinado de Saúl como primer rey de Israel?",ops:["40 años","20 años","30 años","2 años"],a:0,exp:"Saúl reinó sobre Israel cuarenta años según Hechos 13:21. El texto hebreo de 1 Samuel 13:1 tiene una laguna textual en este número.",ref:"Hechos 13:21"},
+  {q:"¿Qué tribu israelita recibió a Jerusalén como parte de su herencia territorial?",ops:["Benjamín","Judá","Leví","Efraín"],a:0,exp:"Jerusalén estaba en el territorio de Benjamín, aunque David la conquistó y la convirtió en la ciudad de David (Josué 18:28).",ref:"Josué 18:28"},
+  {q:"¿Cuántas veces se repite la frase su misericordia es para siempre en el Salmo 136?",ops:["26 veces","10 veces","7 veces","50 veces"],a:0,exp:"El Salmo 136 tiene 26 versículos y en cada uno se repite: porque para siempre es su misericordia, siendo un estribillo litúrgico.",ref:"Salmo 136"},
+  {q:"¿En qué libro bíblico se describe la visión del carro de Dios llamado Merkabá?",ops:["Ezequiel","Daniel","Isaías","Apocalipsis"],a:0,exp:"Ezequiel describe la visión del Merkabá (el carro divino con los cuatro seres vivientes y las ruedas dentro de ruedas) en Ezequiel capítulo 1.",ref:"Ezequiel 1"},
+  {q:"¿Cuántos años contaba Josías cuando comenzó a reinar en Judá?",ops:["8 años","12 años","16 años","20 años"],a:0,exp:"Josías tenía ocho años cuando comenzó a reinar y reinó 31 años en Jerusalén. Fue el rey reformador que halló el libro de la ley (2 Reyes 22:1).",ref:"2 Reyes 22:1"},
+  {q:"¿Qué dos hombres del AT nunca murieron sino que fueron llevados por Dios?",ops:["Enoc y Elías","Moisés y Elías","Enoc y Moisés","Elías y Eliseo"],a:0,exp:"Enoc caminó con Dios y desapareció porque Dios se lo llevó (Génesis 5:24), y Elías subió al cielo en un torbellino (2 Reyes 2:11).",ref:"Génesis 5:24, 2 Reyes 2:11"},
+  {q:"¿Cuántos días de fiesta estableció Dios en el calendario levítico de Israel?",ops:["7 fiestas principales","12 fiestas","5 fiestas","10 fiestas"],a:0,exp:"Levítico 23 establece siete fiestas sagradas anuales: Pascua, Panes sin levadura, Primicias, Pentecostés, Trompetas, Expiación y Tabernáculos.",ref:"Levítico 23"},
+  {q:"¿Cuál era la función del sumo sacerdote en el Día de la Expiación Yom Kipur?",ops:["Entrar al Lugar Santísimo con sangre del sacrificio","Ofrecer cien corderos en el altar","Leer el libro de la ley al pueblo","Ungir al nuevo rey de Israel"],a:0,exp:"En Yom Kipur el sumo sacerdote entraba una vez al año al Lugar Santísimo con la sangre del toro y el macho cabrío para expiar los pecados del pueblo (Levítico 16:15).",ref:"Levítico 16:15"},
+  {q:"¿Cuántos cuernos tenía la bestia del mar en Apocalipsis 13 y cuántas cabezas?",ops:["10 cuernos y 7 cabezas","7 cuernos y 10 cabezas","4 cuernos y 4 cabezas","12 cuernos y 3 cabezas"],a:0,exp:"La bestia del mar en Apocalipsis 13:1 tenía diez cuernos y siete cabezas, con diez diademas en sus cuernos y nombres de blasfemia en sus cabezas.",ref:"Apocalipsis 13:1"},
+  {q:"¿Qué significa el número 666 en Apocalipsis según el contexto original del siglo I?",ops:["El número de un hombre, probablemente Nerón César en gematría hebrea","El número del anticristo del fin de los tiempos","Tres veces el número de la imperfección humana","El número de los reinos de la bestia"],a:0,exp:"Apocalipsis 13:18 dice que es el número de un hombre. Muchos eruditos identifican el 666 con el emperador Nerón mediante la gematría hebrea de Neron Kaisar.",ref:"Apocalipsis 13:18"},
+  {q:"¿Cuántos años vivió Enoc antes de ser llevado por Dios?",ops:["365 años","969 años","500 años","777 años"],a:0,exp:"Enoc vivió 365 años, el número de días del año solar, antes de que Dios se lo llevara. Es el más corto de los patriarcas antediluvianos (Génesis 5:23).",ref:"Génesis 5:23"},
+  {q:"¿En qué libros bíblicos se menciona a Melquisedec como sacerdote eterno?",ops:["Salmos y Hebreos","Solo Hebreos","Solo Génesis","Génesis y Levítico"],a:0,exp:"El Salmo 110:4 dice: Tú eres sacerdote para siempre según el orden de Melquisedec. Hebreos cita este salmo ampliamente para describir el sacerdocio de Cristo.",ref:"Salmo 110:4, Hebreos 7"},
+  {q:"¿Cuántos capítulos tiene el libro de Jeremías?",ops:["52","40","60","45"],a:0,exp:"El libro de Jeremías tiene 52 capítulos, siendo uno de los libros más extensos del Antiguo Testamento junto con Ezequiel y los Salmos.",ref:"Jeremías"},
+  {q:"¿Qué profeta recibió la orden de casarse con una prostituta como señal profética?",ops:["Oseas","Ezequiel","Jeremías","Amós"],a:0,exp:"Dios ordenó a Oseas que tomara por esposa a Gómer, una mujer de prostitución, como metáfora del amor de Dios por Israel idólatra (Oseas 1:2).",ref:"Oseas 1:2"},
+  {q:"¿Cuántos días dura la fiesta de los Tabernáculos según la ley levítica?",ops:["7 días","3 días","10 días","40 días"],a:0,exp:"La fiesta de los Tabernáculos o Sucot duraba siete días, del 15 al 21 del séptimo mes, más una octava asamblea solemne (Levítico 23:34-36).",ref:"Levítico 23:34-36"},
+  {q:"¿Cuál es el nombre hebreo de Dios revelado a Moisés que significa Yo soy el que soy?",ops:["YHWH o Yahveh","Elohim","Adonai","El Shaddai"],a:0,exp:"Cuando Moisés preguntó el nombre de Dios, Él respondió: Yo soy el que soy, en hebreo Ehyeh Asher Ehyeh. De ahí deriva el nombre YHWH o Yahveh (Éxodo 3:14).",ref:"Éxodo 3:14"},
+  {q:"¿Qué animal era el símbolo profético de la tribu de Judá según Génesis 49?",ops:["Un león","Un águila","Un buey","Una serpiente"],a:0,exp:"Judá es un cachorro de león. La profecía de Jacob en Génesis 49:9 asocia a Judá con el león, símbolo que se mantiene hasta Apocalipsis 5:5.",ref:"Génesis 49:9"},
+  {q:"¿Cuántos libros deuterocanónicos reconoce la Iglesia Católica que no están en la Biblia protestante?",ops:["7","5","10","3"],a:0,exp:"La Iglesia Católica reconoce 7 libros deuterocanónicos: Tobías, Judit, 1 y 2 Macabeos, Sabiduría, Sirácide y Baruc, más adiciones a Ester y Daniel.",ref:""},
+  {q:"¿Qué significa el término bíblico Sheol en el pensamiento hebreo del AT?",ops:["El lugar de los muertos, inframundo neutral","El infierno de castigo eterno","El paraíso celestial","El lugar del juicio final"],a:0,exp:"Sheol en el Antiguo Testamento es el lugar de los muertos, una especie de inframundo neutral donde van todas las almas. No equivale exactamente al infierno cristiano.",ref:"Génesis 37:35"},
+  {q:"¿Cuál era el oficio de Lucas antes de convertirse en seguidor de Pablo?",ops:["Médico","Pescador","Recaudador de impuestos","Tejedor de tiendas"],a:0,exp:"Pablo se refiere a Lucas como el médico amado en Colosenses 4:14. Es el único escritor del Nuevo Testamento que claramente era gentil.",ref:"Colosenses 4:14"},
+  {q:"¿Cuántos capítulos tiene el libro de Isaías y cómo lo dividen los eruditos?",ops:["66 capítulos divididos en capítulos 1-39 y 40-66","39 capítulos divididos por dos autores distintos","60 capítulos divididos en tres partes iguales","52 capítulos divididos en pre y post cautiverio"],a:0,exp:"Isaías tiene 66 capítulos. Los capítulos 1-39 tratan del juicio y los 40-66 del consuelo futuro, lo que ha llevado a algunos eruditos a proponer dos o más autores.",ref:"Isaías"},
+  {q:"¿Qué personaje del NT fue descrito como judío alejandrino elocuente y versado en las Escrituras?",ops:["Apolos","Bernabé","Silas","Aquila"],a:0,exp:"Apolos era un judío natural de Alejandría, elocuente y poderoso en las Escrituras. Priscila y Aquila le instruyeron más exactamente en el camino de Dios (Hechos 18:24-26).",ref:"Hechos 18:24"},
+  {q:"¿Cuántos años duró la construcción del templo de Herodes según el Evangelio de Juan?",ops:["46 años","20 años","100 años","30 años"],a:0,exp:"Los judíos le dijeron a Jesús que en 46 años fue edificado este templo, refiriéndose al templo renovado por Herodes el Grande (Juan 2:20).",ref:"Juan 2:20"},
+  {q:"¿Qué significa el término arameo Maranatha usado por Pablo?",ops:["Ven Señor o el Señor viene","Amén y amén","Hosana en las alturas","Gloria a Dios"],a:0,exp:"Maranatha es arameo y significa Señor nuestro, ven o el Señor viene. Pablo lo usa en 1 Corintios 16:22 como expresión de esperanza escatológica.",ref:"1 Corintios 16:22"},
+  {q:"¿Cuál era la pena establecida en la ley mosaica por blasfemar el nombre de Dios?",ops:["Muerte por lapidación","Destierro de la comunidad","50 azotes","Multa y prisión"],a:0,exp:"Levítico 24:16 establece que quien blasfeme el nombre del Señor será muerto; toda la congregación lo lapidará.",ref:"Levítico 24:16"},
+  {q:"¿En qué sección del templo solo podía entrar el sumo sacerdote?",ops:["El Lugar Santísimo o Santo de los Santos","El Atrio de los Sacerdotes","El Lugar Santo","El Atrio de Israel"],a:0,exp:"El Lugar Santísimo era el lugar más sagrado donde solo el sumo sacerdote podía entrar, y solo una vez al año en el Día de Expiación (Levítico 16:2).",ref:"Levítico 16:2"},
+  {q:"¿Cuántos cuernos tenía la pequeña cuerna en la visión de Daniel 7?",ops:["1 cuerno que subió entre los diez","3 cuernos","7 cuernos","4 cuernos"],a:0,exp:"Entre los diez cuernos subió otro cuerno pequeño, delante del cual tres de los primeros cuernos fueron arrancados de raíz (Daniel 7:8).",ref:"Daniel 7:8"},
+  {q:"¿Qué significa el nombre hebreo Yeshua o Josué en su raíz etimológica?",ops:["El Señor es salvación","El Señor es rey","El Señor es fuerza","El Señor es paz"],a:0,exp:"Yeshua deriva de la raíz hebrea yasha que significa salvar, liberar o rescatar. Por eso el ángel dijo que el nombre sería Jesús porque salvaría a su pueblo (Mateo 1:21).",ref:"Mateo 1:21"},
+  {q:"¿Cuántos años vivió Sara esposa de Abraham?",ops:["127 años","100 años","90 años","150 años"],a:0,exp:"Sara vivió 127 años. Génesis 23:1 es el único lugar en la Biblia donde se da específicamente la edad de una mujer al morir.",ref:"Génesis 23:1"},
+  {q:"¿Qué profeta fue llamado a profetizar sobre los huesos secos que volvieron a vivir?",ops:["Ezequiel","Daniel","Jeremías","Isaías"],a:0,exp:"Dios llevó a Ezequiel en visión a un valle lleno de huesos secos y le ordenó que profetizara sobre ellos. Representaba la restauración de Israel (Ezequiel 37:1-14).",ref:"Ezequiel 37:1-14"},
+  {q:"¿Cuántos hijos tuvo Gedeón en total incluyendo a Abimelec?",ops:["71 hijos","12","40","100"],a:0,exp:"Gedeón tuvo setenta hijos de sus mujeres y uno más, Abimelec, de su concubina en Siquem, para un total de 71 hijos (Jueces 8:30-31).",ref:"Jueces 8:30-31"},
+  {q:"¿Qué significa el término bíblico hebreo Ruach HaKodesh?",ops:["Espíritu Santo o Espíritu de la Santidad","Señor de los ejércitos","Dios Todopoderoso","Espíritu del Mesías"],a:0,exp:"Ruach HaKodesh significa literalmente Espíritu Santo o Espíritu de la Santidad en hebreo, y es el término usado en el AT para el Espíritu de Dios.",ref:"Isaías 63:10-11"},
+  {q:"¿Cuántos capítulos tiene el libro de Ezequiel?",ops:["48","40","52","60"],a:0,exp:"El libro de Ezequiel tiene 48 capítulos, siendo uno de los libros proféticos más extensos del Antiguo Testamento.",ref:"Ezequiel"},
+  {q:"¿Cuál era la ciudad de origen del apóstol Pablo?",ops:["Tarso","Jerusalén","Antioquía","Corinto"],a:0,exp:"Pablo era ciudadano romano de Tarso de Cilicia. Fue criado en Jerusalén a los pies de Gamaliel (Hechos 21:39, 22:3).",ref:"Hechos 21:39"},
+  {q:"¿Cuántas plagas de Egipto también afectaron a los israelitas en Gosén?",ops:["Las primeras 3 plagas","Ninguna","Las primeras 6","Todas las 10"],a:0,exp:"A partir de la cuarta plaga (tábanos) Dios estableció diferencia entre su pueblo y los egipcios. Las primeras tres plagas afectaron a todos por igual (Éxodo 8:22-23).",ref:"Éxodo 8:22-23"},
+  {q:"¿Qué significa el término hebreo Elohim gramaticalmente?",ops:["Plural de majestad que se usa con verbo singular para el Dios de Israel","Muchos dioses","El Dios del pacto","El Creador solamente"],a:0,exp:"Elohim es gramaticalmente un plural en hebreo pero se usa con verbos en singular cuando se refiere al Dios de Israel. Es un plural de majestad que expresa la plenitud de su ser.",ref:"Génesis 1:1"},
+  {q:"¿Cuántos días tardó Nehemías en reconstruir los muros de Jerusalén?",ops:["52 días","1 año","7 meses","2 años"],a:0,exp:"Los muros de Jerusalén fueron reconstruidos en cincuenta y dos días bajo el liderazgo de Nehemías, terminando el 25 del mes de Elul (Nehemías 6:15).",ref:"Nehemías 6:15"},
+  {q:"¿Qué personaje del AT prefigura a Cristo como sacerdote eterno según Hebreos 7?",ops:["Melquisedec","Moisés","David","Aarón"],a:0,exp:"Hebreos 7 desarrolla extensamente cómo Melquisedec prefigura a Cristo: sacerdote eterno, sin genealogía registrada, rey de justicia y de paz.",ref:"Hebreos 7:1-3"},
+  {q:"¿Cuántos capítulos tiene el libro de los Proverbios?",ops:["31","30","25","40"],a:0,exp:"El libro de los Proverbios tiene 31 capítulos, con el capítulo 31 dedicado a la mujer virtuosa.",ref:"Proverbios"},
+  {q:"¿Qué ley del AT describía la cancelación de todas las deudas cada siete años?",ops:["El año de la remisión o Shemitá","El año del Jubileo","La ley del rescate","La ley del diezmo"],a:0,exp:"La Shemitá o año sabático cada siete años ordenaba cancelar todas las deudas y dejar reposar la tierra (Deuteronomio 15:1-2).",ref:"Deuteronomio 15:1-2"},
+  {q:"¿Cuántos salmos están atribuidos a Moisés en el libro de los Salmos?",ops:["1 salmo: el Salmo 90","2 salmos","7 salmos","Ninguno"],a:0,exp:"El Salmo 90 es el único salmo atribuido a Moisés, varón de Dios, y es el más antiguo de los salmos.",ref:"Salmo 90"},
+  {q:"¿Cuál fue la respuesta de Dios cuando Moisés le preguntó su nombre en el monte Sinaí?",ops:["YO SOY EL QUE SOY","El Señor tu Dios","El Dios de tus padres","El Todopoderoso"],a:0,exp:"Dios dijo a Moisés: YO SOY EL QUE SOY. En hebreo Ehyeh Asher Ehyeh, de donde deriva el nombre divino YHWH o Yahveh (Éxodo 3:14).",ref:"Éxodo 3:14"},
+  {q:"¿Qué significa el término apocalipsis en su sentido etimológico griego?",ops:["Revelación o descubrimiento de lo que estaba oculto","Fin del mundo","Destrucción total","Juicio final"],a:0,exp:"Apocalipsis viene del griego apokalypsis que significa revelación o destapar lo que estaba oculto. Por eso el libro comienza diciendo La revelación de Jesucristo.",ref:"Apocalipsis 1:1"},
+  {q:"¿Cuántos años vivió Noé en total?",ops:["950 años","900 años","969 años","800 años"],a:0,exp:"Noé vivió novecientos cincuenta años y luego murió. El diluvio ocurrió cuando tenía 600 años y vivió 350 años más después (Génesis 9:28-29).",ref:"Génesis 9:29"},
+  {q:"¿En qué versículo de la Biblia se encuentra la primera mención de la palabra sacerdote?",ops:["Génesis 14:18 con Melquisedec","Éxodo 28 con Aarón","Levítico 1 al inicio","Génesis 47 con el sacerdote de On"],a:0,exp:"La primera mención de la palabra sacerdote en la Biblia es en Génesis 14:18, refiriéndose a Melquisedec, rey de Salem y sacerdote del Dios Altísimo.",ref:"Génesis 14:18"},
+  {q:"¿Cuántas declaraciones Yo Soy con predicado hace Jesús en el Evangelio de Juan?",ops:["7 declaraciones","5 declaraciones","3 declaraciones","12 declaraciones"],a:0,exp:"Jesús hace siete declaraciones Yo soy con predicado en Juan: pan de vida, luz del mundo, puerta, buen pastor, resurrección y vida, camino verdad y vida, y la vid.",ref:"Juan 6:35, 8:12, 10:7, 10:11, 11:25, 14:6, 15:1"},
+  {q:"¿Cuántos años después de la creación ocurrió el diluvio según la cronología del Génesis?",ops:["1656 años","1000 años","2000 años","500 años"],a:0,exp:"Sumando las edades de los patriarcas en Génesis 5, el diluvio ocurrió aproximadamente 1656 años después de la creación de Adán según la cronología masorética.",ref:"Génesis 5, 7:11"},
+  {q:"¿Qué animal limpio podían ofrecer los pobres en lugar de un cordero según Levítico?",ops:["Dos tórtolas o dos pichones de paloma","Un cabrito","Una paloma sola","Harina y aceite"],a:0,exp:"Para los pobres que no pudieran costear un cordero, la ley permitía ofrecer dos tórtolas o dos pichones de paloma como ofrenda por el pecado (Levítico 5:7).",ref:"Levítico 5:7"},
+  {q:"¿Cuál es el nombre del río que regaba el jardín del Edén y se dividía en cuatro brazos?",ops:["Un río sin nombre que formaba Pisón, Gihón, Hidekel y Éufrates","El Jordán","El Nilo","El Éufrates principal"],a:0,exp:"Un río salía del Edén para regar el huerto y se dividía en cuatro brazos: Pisón, Gihón, Hidekel (Tigris) y Éufrates (Génesis 2:10-14).",ref:"Génesis 2:10-14"},
+  {q:"¿Qué significa el término hebreo Kabod que se traduce como gloria?",ops:["Peso, sustancia o importancia de Dios","Luz brillante","Presencia divina","Fuego celestial"],a:0,exp:"Kabod en hebreo literalmente significa peso o sustancia. Cuando se aplica a Dios expresa su importancia, honor y la sustancialidad de su presencia divina.",ref:"Éxodo 33:18-19"},
+  {q:"¿Cuántos años vivió Matusalén, el patriarca más longevo de la Biblia?",ops:["969 años","930 años","777 años","950 años"],a:0,exp:"Matusalén vivió 969 años, siendo el hombre más longevo de toda la Biblia (Génesis 5:27). Murió el año del diluvio según la cronología del Génesis.",ref:"Génesis 5:27"},
+  {q:"¿Cuántas ciudades de refugio estableció Dios en Israel?",ops:["6 ciudades","3 ciudades","12 ciudades","10 ciudades"],a:0,exp:"Dios ordenó establecer seis ciudades de refugio, tres al este del Jordán y tres al oeste, para quien matara a alguien sin intención (Números 35:13-14).",ref:"Números 35:13-14"},
+  {q:"¿Qué profeta del AT predijo la nueva alianza que Dios haría con Israel?",ops:["Jeremías","Isaías","Ezequiel","Zacarías"],a:0,exp:"Jeremías 31:31-34 contiene la profecía de la nueva alianza en la que Dios pondría su ley en el corazón del pueblo. Es la profecía más citada en Hebreos.",ref:"Jeremías 31:31-34"},
+  {q:"¿Cuántos hijos tenía Isaí padre de David?",ops:["8 hijos","7 hijos","12 hijos","10 hijos"],a:0,exp:"Isaí tenía ocho hijos, siendo David el menor de todos. Samuel vino a ungir al rey entre los hijos de Isaí (1 Samuel 16:10-11).",ref:"1 Samuel 16:10-11"},
+  {q:"¿Cuántas tribus israelitas recibieron territorio al oriente del Jordán?",ops:["2.5 tribus: Rubén, Gad y la mitad de Manasés","2 tribus: Rubén y Gad","3 tribus: Rubén, Gad y Manasés","Solo Rubén y Gad"],a:0,exp:"Rubén, Gad y la media tribu de Manasés eligieron quedarse al este del Jordán. Las otras nueve tribus y media recibieron heredad en Canaán (Números 32).",ref:"Números 32"},
+  {q:"¿Cuántos años vivió Adán según la cronología de Génesis 5?",ops:["930 años","900 años","969 años","800 años"],a:0,exp:"Adán vivió en total novecientos treinta años, y luego murió (Génesis 5:5). Fue el primer hombre creado por Dios del polvo de la tierra.",ref:"Génesis 5:5"},
+  {q:"¿Qué ritual marcaba el inicio del ministerio sacerdotal en Israel según Levítico 8?",ops:["Una unción con aceite especial y siete días de consagración","Un baño ritual en el mar","Un ayuno de cuarenta días","El sacrificio de un buey"],a:0,exp:"Los sacerdotes eran ungidos con el aceite sagrado de la unción y pasaban siete días de consagración en el tabernáculo antes de comenzar su ministerio (Levítico 8:33).",ref:"Levítico 8:33"},
+  {q:"¿Cuántos libros de la Biblia protestante llevan nombre de mujeres?",ops:["2 libros: Rut y Ester","1 libro: Ester","3 libros: Rut, Ester y Judit","Solo Rut"],a:0,exp:"En la Biblia protestante, dos libros llevan nombre de mujer: Rut y Ester. En la Biblia católica se añade también el libro de Judit.",ref:""},
+  {q:"¿Cuál era la pena por trabajar en sábado según la ley mosaica?",ops:["Muerte","Destierro","40 azotes","Multa al templo"],a:0,exp:"Cualquiera que profanara el sábado moriría indefectiblemente (Éxodo 31:14-15). Un hombre fue apedreado por recoger leña en sábado (Números 15:35).",ref:"Éxodo 31:14-15"},
+  {q:"¿Cuántos hijos tuvo Jacob con su concubina Zilpa?",ops:["2 hijos: Gad y Aser","3 hijos","1 hijo","4 hijos"],a:0,exp:"Zilpa, la sierva de Lea, le dio a Jacob dos hijos: Gad y Aser (Génesis 30:10-13).",ref:"Génesis 30:10-13"},
+  {q:"¿Qué profeta anunció que de Belén saldría el gobernador de Israel?",ops:["Miqueas 5:2","Isaías 7:14","Zacarías 9:9","Malaquías 3:1"],a:0,exp:"Miqueas 5:2 dice: Pero tú Belén Efrata... de ti me saldrá el que será Señor en Israel. Esta profecía fue citada por los líderes judíos al Faraón cuando buscaban al Mesías (Mateo 2:5-6).",ref:"Miqueas 5:2"},
+  {q:"¿Qué significa el término griego Ekklesia que se traduce como iglesia?",ops:["Asamblea de los llamados fuera","Templo de Dios","Congregación de creyentes","Casa de oración"],a:0,exp:"Ekklesia en griego significa asamblea o congregación de los llamados fuera. No se refería a un edificio sino a la comunidad de creyentes llamados por Dios.",ref:"Mateo 16:18"},
+  {q:"¿Cuántos capítulos tiene el libro del Deuteronomio?",ops:["34","40","30","45"],a:0,exp:"El libro del Deuteronomio tiene 34 capítulos y contiene el discurso de despedida de Moisés al pueblo antes de entrar a la tierra prometida.",ref:"Deuteronomio"},
+  {q:"¿Qué significa el término hebreo Nephilim mencionado en Génesis 6?",ops:["Gigantes o caídos, seres de gran tamaño","Ángeles caídos","Héroes de la antigüedad","Demonios del abismo"],a:0,exp:"Nephilim en Génesis 6:4 es un término hebreo que puede significar caídos o gigantes. Eran los hombres valientes que hubo en la antigüedad, hombres de renombre.",ref:"Génesis 6:4"},
+  {q:"¿Cuántos personajes de Job son nombrados como sus amigos?",ops:["3 amigos más Eliú, 4 en total","2 amigos","5 amigos","Solo 1 amigo"],a:0,exp:"Job tenía tres amigos: Elifaz el temanita, Bildad el suhita y Zofar el naamatita. Luego apareció también Eliú el buzita (Job 2:11, 32:2).",ref:"Job 2:11, 32:2"},
+  {q:"¿Cuál era la función del aceite de la unción sagrada en el tabernáculo?",ops:["Consagrar el tabernáculo, sus utensilios y los sacerdotes","Solo ungir a los reyes","Usarse en las lámparas del candelabro","Ofrecerse en el altar del incienso"],a:0,exp:"El aceite de la unción sagrada servía para consagrar el tabernáculo, todos sus utensilios, el altar y a los sacerdotes, separándolos para el servicio de Dios (Éxodo 30:26-30).",ref:"Éxodo 30:26-30"},
+  {q:"¿Cuántos años antes de Cristo profetizó Isaías el nacimiento virginal del Mesías?",ops:["Aproximadamente 700 años","500 años","300 años","1000 años"],a:0,exp:"Isaías vivió en el siglo VIII a.C., aproximadamente 700 años antes de Cristo. Su profecía en Isaías 7:14 sobre la virgen que concebiría fue citada en Mateo 1:23.",ref:"Isaías 7:14"},
+  {q:"¿Qué significa el término hebreo Berith o Berit?",ops:["Pacto o alianza","Bendición","Promesa","Ley divina"],a:0,exp:"Berith o Berit en hebreo significa pacto o alianza. Es el término central del Antiguo Testamento para describir la relación formal entre Dios e Israel.",ref:"Génesis 15:18"},
+  {q:"¿Cuántos capítulos tiene el libro de los Hechos de los Apóstoles?",ops:["28","24","30","20"],a:0,exp:"El libro de los Hechos de los Apóstoles tiene 28 capítulos. Es el segundo volumen del autor Lucas que narra el nacimiento y expansión de la iglesia primitiva.",ref:"Hechos"},
+  {q:"¿Qué ciudad del AT cambió de nombre de Luz a Bethel?",ops:["La misma ciudad: Luz fue renombrada Bethel por Jacob","Dos ciudades distintas","Bethel nunca tuvo otro nombre","Siquem fue renombrada Bethel"],a:0,exp:"Jacob llamó Bethel (Casa de Dios) al lugar donde había soñado con la escalera al cielo, cuyo nombre anterior era Luz (Génesis 28:19).",ref:"Génesis 28:19"},
+  {q:"¿Cuántos capítulos tiene el libro de Números?",ops:["36","40","30","45"],a:0,exp:"El libro de Números tiene 36 capítulos y narra los cuarenta años del pueblo de Israel en el desierto.",ref:"Números"},
+  {q:"¿Qué significa el término hebreo Mizpah que Jacob y Labán usaron como señal del pacto?",ops:["El Señor vele entre tú y yo","Casa de Dios","Lugar de encuentro","Monte de Dios"],a:0,exp:"Mizpah significa el Señor vele entre tú y yo, cuando estemos el uno lejos del otro (Génesis 31:49). Era una invocación a Dios como testigo del pacto.",ref:"Génesis 31:49"},
+  {q:"¿Cuántos años fue Abraham sin tener al hijo prometido desde que Dios le prometió descendencia?",ops:["25 años","10 años","15 años","40 años"],a:0,exp:"Abraham tenía 75 años cuando Dios le prometió descendencia por primera vez (Génesis 12:4) y 100 cuando nació Isaac (Génesis 21:5), esperando 25 años.",ref:"Génesis 12:4, 21:5"},
+  {q:"¿Qué evento marca el inicio del período conocido como el Año del Jubileo en Israel?",ops:["El sonido del shofar el Día de Expiación del año 50","El primer día del año nuevo","La fiesta de Pentecostés","La construcción del templo"],a:0,exp:"El Jubileo se proclamaba con el sonido del shofar el Día de Expiación (Yom Kipur) del año cincuenta, cuando se liberaban esclavos y se devolvían las propiedades (Levítico 25:9-10).",ref:"Levítico 25:9-10"},
+,
+  {q:"¿Cuál era el nombre del sumo sacerdote cuyos hijos Nadab y Abiú murieron por ofrecer fuego extraño?",ops:["Aarón","Elí","Finees","Sadoc"],a:0,exp:"Nadab y Abiú, hijos de Aarón, ofrecieron fuego extraño ante el Señor y murieron consumidos. Aarón era su padre y sumo sacerdote (Levítico 10:1-2).",ref:"Levítico 10:1-2"},
+  {q:"¿Qué rey de Israel reinó solo 7 días antes de ser depuesto?",ops:["Zimri","Salum","Ela","Tibni"],a:0,exp:"Zimri reinó solo siete días en Israel. Al enterarse Omri, el ejército lo proclamó rey, y Zimri se suicidó quemando el palacio sobre sí mismo (1 Reyes 16:15-18).",ref:"1 Reyes 16:15-18"},
+  {q:"¿Cuántos días caminó Elías por el desierto hasta llegar al monte Horeb?",ops:["40 días y 40 noches","3 días","7 días","10 días"],a:0,exp:"Fortalecido por la comida que el ángel le preparó, Elías caminó cuarenta días y cuarenta noches hasta llegar al monte Horeb, el monte de Dios (1 Reyes 19:8).",ref:"1 Reyes 19:8"},
+  {q:"¿Qué significa el término hebreo Nabi en el Antiguo Testamento?",ops:["Profeta, el que habla en nombre de Dios","Sacerdote","Rey ungido","Escriba sagrado"],a:0,exp:"Nabi es el término hebreo principal para profeta, derivado posiblemente de una raíz que significa anunciar o proclamar. Describía al portavoz de Dios ante el pueblo.",ref:"Deuteronomio 18:15"},
+  {q:"¿Cuántos codos de altura medían los querubines de oro en el templo de Salomón?",ops:["10 codos cada uno","5 codos","20 codos","3 codos"],a:0,exp:"Cada querubín tenía diez codos de altura y sus alas extendidas abarcaban también diez codos. Estaban en el Lugar Santísimo del templo (1 Reyes 6:26).",ref:"1 Reyes 6:26"},
+  {q:"¿Qué relación tenía Booz con el difunto esposo de Rut según la ley del goel?",ops:["Era pariente cercano redentor goel","Era hermano del difunto","Era primo hermano","Era vecino sin parentesco"],a:0,exp:"Booz era pariente cercano de Elimelec, el difunto esposo de Noemí. La ley del goel o redentor cercano obligaba al pariente a redimir la propiedad y la viuda (Rut 3:12).",ref:"Rut 3:12"},
+  {q:"¿Cuántas cartas pastorales escribió Pablo dirigidas a individuos y no a iglesias?",ops:["4 cartas: 1 y 2 Timoteo, Tito y Filemón","3 cartas","2 cartas","5 cartas"],a:0,exp:"Pablo escribió cuatro cartas a individuos: 1 Timoteo, 2 Timoteo, Tito (las tres pastorales) y Filemón (carta personal sobre el esclavo Onésimo).",ref:"1 Timoteo, 2 Timoteo, Tito, Filemón"},
+  {q:"¿Qué término hebreo describe el concepto de santidad aplicado a Dios en Levítico?",ops:["Kadosh, que significa separado o apartado para Dios","Hesed","Emet","Shalom"],a:0,exp:"Kadosh en hebreo significa santo, sagrado o separado. Cuando se aplica a Dios expresa su absoluta distinción moral. Dios ordenó a Israel ser kadosh como Él es kadosh (Levítico 19:2).",ref:"Levítico 19:2"},
+  {q:"¿Cuántos jueces gobernaron Israel según el libro de Jueces?",ops:["12 jueces en total","7 jueces","6 jueces","15 jueces"],a:0,exp:"El libro de Jueces menciona doce jueces: Otoniel, Aod, Samgar, Débora, Gedeón, Tola, Jair, Jefté, Ibzán, Elón, Abdón y Sansón.",ref:"Jueces 3-16"},
+  {q:"¿Qué profeta del AT anunció que el Mesías entraría a Jerusalén montado en un asno?",ops:["Zacarías 9:9","Isaías 62:11","Miqueas 5:2","Malaquías 3:1"],a:0,exp:"Zacarías 9:9 profetizó: He aquí tu rey vendrá a ti, justo y salvador, humilde, y cabalgando sobre un asno. Jesús lo cumplió en Mateo 21:5.",ref:"Zacarías 9:9"},
+  {q:"¿Cuántos capítulos tiene el libro de Levítico?",ops:["27","30","20","40"],a:0,exp:"El libro de Levítico tiene 27 capítulos y detalla las leyes ceremoniales, los sacrificios, la pureza y el calendario sagrado de Israel.",ref:"Levítico"},
+  {q:"¿Qué material se usaba para las tablas de la ley entregadas a Moisés en el Sinaí?",ops:["Piedra","Barro cocido","Madera de acacia","Arcilla"],a:0,exp:"Dios escribió los Diez Mandamientos en dos tablas de piedra con su propio dedo (Éxodo 31:18). Moisés las rompió al ver el becerro de oro y Dios le ordenó tallar otras dos.",ref:"Éxodo 31:18"},
+  {q:"¿Cuál era el nombre del arroyo donde Elías fue alimentado milagrosamente por cuervos?",ops:["Arroyo de Querit","Arroyo de Beerseba","Arroyo del Carmelo","Arroyo del Jordán"],a:0,exp:"Dios ordenó a Elías ocultarse junto al arroyo de Querit al oriente del Jordán, donde los cuervos le traerían pan y carne por la mañana y por la tarde (1 Reyes 17:3-6).",ref:"1 Reyes 17:3-6"},
+  {q:"¿Cuántos capítulos tiene el libro de Números?",ops:["36","40","30","45"],a:0,exp:"El libro de Números tiene 36 capítulos y narra los cuarenta años del pueblo de Israel en el desierto.",ref:"Números"},
+  {q:"¿Qué significa el término hebreo Berith o Berit?",ops:["Pacto o alianza","Bendición","Promesa","Ley divina"],a:0,exp:"Berith o Berit en hebreo significa pacto o alianza. Es el término central del AT para describir la relación formal entre Dios e Israel.",ref:"Génesis 15:18"},
+  {q:"¿Qué ciudad del AT cambió de nombre de Luz a Bethel?",ops:["La misma ciudad: Luz fue renombrada Bethel por Jacob","Dos ciudades distintas","Bethel nunca tuvo otro nombre","Siquem fue renombrada Bethel"],a:0,exp:"Jacob llamó Bethel (Casa de Dios) al lugar donde soñó con la escalera al cielo, cuyo nombre anterior era Luz (Génesis 28:19).",ref:"Génesis 28:19"},
+  {q:"¿Cuántos capítulos tiene el libro de los Hechos de los Apóstoles?",ops:["28","24","30","20"],a:0,exp:"El libro de los Hechos tiene 28 capítulos. Es el segundo volumen del autor Lucas que narra el nacimiento y expansión de la iglesia primitiva.",ref:"Hechos"}
 ]
 };
 
@@ -447,10 +728,12 @@ window.nivelActual='facil';
 let pregs=[],qIdx=0,score=0,streak=0,maxStreak=0,correct=0,wrong=0;
 let timerInterval=null,timeLeft=30,timePct=100,locked=false;
 
-const LV_TIME={facil:30,medio:20,dificil:15};
-const LV_PTS ={facil:100,medio:150,dificil:200};
-const LV_ICONS={facil:'🕊️',medio:'📖',dificil:'⚔️'};
-const LV_COL  ={facil:'#5dbb6e',medio:getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),dificil:'#e74c3c'};
+const LV_TIME={facil:30,medio:20,dificil:15,leyenda:15};
+const LV_PTS ={facil:100,medio:150,dificil:200,leyenda:400};
+const LV_ICONS={facil:'🕊️',medio:'📖',dificil:'⚔️',leyenda:'👑'};
+const LV_COL  ={facil:'#5dbb6e',medio:getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),dificil:'#e74c3c',leyenda:'#c084fc'};
+// Anti-repetición: historial de preguntas usadas por nivel
+const usedQIdx={facil:[],medio:[],dificil:[],leyenda:[]};
 
 // ══════════════════════════════════════
 //  PANTALLAS
@@ -467,19 +750,27 @@ window.showS=function(id){
 // ══════════════════════════════════════
 window.iniciarJuego=function(nivel){
   nivelActual=nivel;
-  // Mezclar y tomar 10 preguntas
-  const pool=[...PREGUNTAS[nivel]];
-  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
-  pregs=pool.slice(0,10);
+  // Anti-repetición: filtrar ya usadas
+  const totalPool=PREGUNTAS[nivel];
+  let available=totalPool.map((_,i)=>i).filter(i=>!usedQIdx[nivel].includes(i));
+  if(available.length<10){usedQIdx[nivel]=[];available=totalPool.map((_,i)=>i);}
+  // Barajar disponibles y tomar 10
+  for(let i=available.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[available[i],available[j]]=[available[j],available[i]];}
+  const chosen=available.slice(0,10);
+  chosen.forEach(i=>usedQIdx[nivel].push(i));
+  pregs=chosen.map(i=>totalPool[i]);
   qIdx=0;score=0;streak=0;maxStreak=0;correct=0;wrong=0;
   // UI nivel
-  const icons={facil:'🕊️ Fácil',medio:'📖 Medio',dificil:'⚔️ Difícil'};
-  const cls={facil:'nivel-facil',medio:'nivel-medio',dificil:'nivel-dificil'};
+  const icons={facil:'🕊️ Fácil',medio:'📖 Medio',dificil:'⚔️ Difícil',leyenda:'👑 Leyenda'};
+  const cls={facil:'nivel-facil',medio:'nivel-medio',dificil:'nivel-dificil',leyenda:'nivel-leyenda'};
   const gn=document.getElementById('g-nivel');
-  gn.textContent=icons[nivel];
-  gn.className='game-nivel '+cls[nivel];
+  gn.textContent=icons[nivel]||nivel;
+  gn.className='game-nivel '+(cls[nivel]||'');
+  // Activar escenario épico para leyenda
+  document.body.classList.toggle('mode-leyenda', nivel==='leyenda');
   showS('s-game');
   stopMenuMusic();
+  if(nivel==='leyenda')startLeyendaFX();
   renderQ();
 };
 
@@ -489,6 +780,8 @@ function renderQ(){
   const q=pregs[qIdx];
   document.getElementById('g-qnum').textContent=`${qIdx+1}/10`;
   document.getElementById('g-qnum2').textContent=`Pregunta ${qIdx+1} de 10`;
+  // Efecto relámpago en leyenda
+  if(nivelActual==='leyenda'&&qIdx>0){flashLeyenda();}
   document.getElementById('g-qtext').textContent=q.q;
   document.getElementById('g-score').textContent=score+' pts';
   document.getElementById('g-explain').className='explain-box';
@@ -620,17 +913,23 @@ async function finJuego(){
   const pctAudio=correct/10;
   if(pctAudio>=0.5){setTimeout(sfxVictoria,200);}else{setTimeout(sfxDerrota,200);}
   // Guardar ranking
-  if(cu){
+  const guardarRanking=async()=>{
+    if(!cu){await new Promise(r=>setTimeout(r,2000));}
+    if(!cu){showToast('⚠️ Sin sesión — no se guardó');return;}
     try{
+      showToast('💾 Guardando puntaje...');
       const rk=ref(db,`trivia_ranking/${nivelActual}/${cu.uid}`);
       const snap=await get(rk);
       const prev=snap.val()?.score||0;
-      if(score>prev){
-        await set(rk,{score,correct,maxStreak,nick:userNick,nivel:nivelActual,ts:Date.now()});
-        showToast('🏆 ¡Nuevo récord personal guardado!');
-      }
-    }catch(e){}
-  }
+      const nick=cu.isAnonymous?('Jugador_'+cu.uid.slice(0,5)):userNick;
+      await set(rk,{score,correct,maxStreak,nick,nivel:nivelActual,ts:Date.now()});
+      showToast(score>prev?'🏆 ¡Nuevo récord guardado!':'✅ Puntaje guardado');
+    }catch(e){
+      console.error('Error guardando ranking:',e);
+      showToast('❌ Error: '+e.code+'  '+e.message);
+    }
+  };
+  guardarRanking();
 }
 
 // ══════════════════════════════════════
@@ -669,12 +968,13 @@ async function loadRanking(lv){
       div.style.animationDelay=i*0.05+'s';
       const pos=i<3?`<div class="rank-pos p${i+1}">${medals[i]}</div>`:`<div class="rank-pos">${i+1}</div>`;
       const isMe=cu&&d.uid===cu.uid;
-      div.innerHTML=`${pos}<div class="rank-name">${isMe?'<span style="color:var(--gold)">★ </span>':''}${d.nick||'Anónimo'}</div><div style="text-align:right"><div class="rank-score">${d.score} pts</div><div class="rank-sub">${d.correct||0}/10 · racha ${d.maxStreak||0}</div></div>`;
+      const displayNick=d.nick&&!d.nick.startsWith('Jugador_')?d.nick:(isMe?'Tú':'Anónimo');
+      div.innerHTML=`${pos}<div class="rank-name">${isMe?'<span style="color:var(--gold)">★ </span>':''}${displayNick}</div><div style="text-align:right"><div class="rank-score">${d.score} pts</div><div class="rank-sub">${d.correct||0}/10 · racha ${d.maxStreak||0}</div></div>`;
       list.appendChild(div);
     });
   }catch(e){
     console.error('Ranking error:',e);
-    list.innerHTML=`<div class="rank-empty">Error: ${e.message||'sin conexión'}</div>`;
+    list.innerHTML=`<div class="rank-empty" style="font-size:0.72rem">❌ ${e.code||'Error'}<br>${e.message||'sin conexión'}</div>`;
   }
 }
 
@@ -971,6 +1271,36 @@ document.addEventListener('DOMContentLoaded', () => {
 window.irMenuJuegos=function(){
   document.getElementById('mini-juegos').style.display='flex';
 };
+// ══════════════════════════════════════
+//  EFECTOS NIVEL LEYENDA
+// ══════════════════════════════════════
+let leyendaParticleInterval=null;
+function startLeyendaFX(){
+  // Crear contenedor de partículas si no existe
+  let pc=document.getElementById('leyenda-particles');
+  if(!pc){pc=document.createElement('div');pc.id='leyenda-particles';pc.className='leyenda-particles';document.body.appendChild(pc);}
+  pc.innerHTML='';
+  // Generar 40 partículas flotantes
+  for(let i=0;i<40;i++){
+    const p=document.createElement('div');
+    p.className='ley-particle';
+    p.style.left=Math.random()*100+'vw';
+    p.style.animationDuration=(3+Math.random()*6)+'s';
+    p.style.animationDelay=(Math.random()*5)+'s';
+    p.style.width=p.style.height=(1+Math.random()*3)+'px';
+    const colors=['#c084fc','#7c3aed','#a855f7','#e879f9','#fbbf24'];
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    pc.appendChild(p);
+  }
+}
+function flashLeyenda(){
+  const bolt=document.createElement('div');
+  bolt.className='leyenda-bolt';
+  document.body.appendChild(bolt);
+  setTimeout(()=>bolt.remove(),200);
+}
+
+
 </script>
 </body>
 </html>
