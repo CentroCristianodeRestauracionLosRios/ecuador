@@ -591,6 +591,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <button class="hbtn"            onclick="openSettings()" title="Ajustes">⚙️</button>
       <button class="hbtn"            onclick="openRanking()" title="Ranking" id="btnRanking">🏆</button>
       <button class="hbtn"            onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
+      <button class="hbtn"            onclick="showTutorial()" title="Tutorial">📖</button>
+      <button class="hbtn"            onclick="toggleStatsPanel()" title="Estadísticas">📊</button>
     </div>
     <div id="hud-row2" style="display:none"></div>
   </div>
@@ -2025,6 +2027,32 @@ function drawStrAt(s,sx,sy){
       ctx.fillStyle='#7a4a10';ctx.fillRect(-13,-5,26,17);
       ctx.fillStyle='#5a3008';ctx.fillRect(-13,-5,26,7);
       ctx.fillStyle='#c9a84c';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();break;
+    case'pozo':{
+      // Borde exterior
+      ctx.fillStyle='#4a3010';ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();
+      // Pared interior
+      ctx.fillStyle='#6a4820';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();
+      // Agua dentro
+      ctx.fillStyle='#1a6ab0';ctx.beginPath();ctx.arc(0,3,8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(100,180,255,0.4)';ctx.beginPath();ctx.arc(-2,2,5,0,Math.PI*2);ctx.fill();
+      // Viga horizontal
+      ctx.fillStyle='#5a3010';ctx.fillRect(-14,-14,4,12);ctx.fillRect(10,-14,4,12);
+      ctx.fillStyle='#7a4820';ctx.fillRect(-10,-16,20,4);
+      // Usos restantes
+      const uz=s.usos!==undefined?s.usos:3;
+      ctx.fillStyle=uz>1?'#80c860':'#e04040';ctx.font='bold 8px sans-serif';ctx.textAlign='center';
+      ctx.fillText('💧×'+uz,0,26);
+      break;}
+    case'altar':{
+      // Base piedra
+      ctx.fillStyle='#3a3a3a';ctx.fillRect(-14,0,28,14);
+      ctx.fillStyle='#555';ctx.fillRect(-12,1,24,6);
+      // Cruz
+      ctx.fillStyle='#c9a84c';ctx.fillRect(-2,-16,4,20);ctx.fillRect(-8,-10,16,4);
+      // Brillo
+      ctx.fillStyle='rgba(201,168,76,0.3)';
+      ctx.beginPath();ctx.arc(0,-8,10,0,Math.PI*2);ctx.fill();
+      break;}
     case'arca1':
       ctx.fillStyle='#5a3010';ctx.fillRect(-26,-7,52,22);
       ctx.fillStyle='#7a4a20';ctx.fillRect(-24,-5,48,7);
@@ -2402,7 +2430,7 @@ function update(){
   tickDivine();
   // Autoguardado cada 5 minutos
   if(tick>0 && tick%18000===0) saveGame();
-  wTime+=1/(60*60*3);
+  wTime+=1/(60*170); // día~80s + noche~90s = ciclo de ~170s
   if(wTime>=1){wTime=0;wDay++;sndNewDay();notif(`☀️ Día ${wDay}`,'gld');}
   climaT++;
   if(climaT>=climaN){
@@ -2643,8 +2671,14 @@ window.doInteract=function(){
     }
   }else if(o.tipo==='pozo'){
     triggerNoahAction('collect');
-    gPause=false; // asegurar que no se queda pausado
-    addItem('agua',2);sndDrink();notif('🪣 Sacaste agua del pozo','grn');addXP(2);
+    gPause=false;
+    if(!o.usos) o.usos = 3;
+    o.usos--;
+    addItem('agua',2);sndDrink();notif(`🪣 Sacaste agua del pozo (${o.usos} usos restantes)`,'grn');addXP(2);
+    if(o.usos <= 0){
+      structs = structs.filter(s => s !== o);
+      notif('🪣 El pozo se secó — construye otro','red');
+    }
   }else if(o.tipo==='huerto'){
     // El huerto produce comida si han pasado suficientes horas
     if(!o.planted){
@@ -2660,7 +2694,12 @@ window.doInteract=function(){
     toggleP('craft');notif('🔨 Taller abierto — aquí puedes crear armas','');
   }else if(o.tipo==='fogon'){
     toggleP('craft');notif('🔥 Acércate al fogón para cocinar','');
-  }else if(o.tipo==='cama'){doSleep();}
+  }else if(o.tipo==='cama'){
+    doSleep();
+    // Cama de un solo uso — desaparece tras dormir
+    structs = structs.filter(s => s !== o);
+    notif('🛏️ La cama se desgastó — crea otra si necesitas descansar','');
+  }
   else if(o.tipo==='cofre'){toggleP('inv');}
 };
 
@@ -4131,7 +4170,8 @@ function getNoahSheet(){
     stateKey = 'stop'; // quieto — usa Stop_*.png
   }
 
-  const sheet = NS[stateKey]?.[dirKey] || NS.walk?.[dirKey] || null;
+  // Si el sheet de acción no cargó, usar slice como fallback visual
+  const sheet = NS[stateKey]?.[dirKey] || (noahActionTimer>0 ? NS.slice?.[dirKey] : null) || NS.walk?.[dirKey] || null;
   // Muerte usa todos los frames (0-7), acciones usan frames de acción (5-7)
   const anim = stateKey==='death'   ? [0,1,2,3,4,5,6,7]
              : noahActionTimer > 0  ? NOAH_ANIM.action
@@ -4895,14 +4935,26 @@ function drawAnimales(cx,cy){
 // ════════════════════════════════════════════
 //  FASE 2 — NEFILIM
 // ════════════════════════════════════════════
+// Tipos de líderes Nefilim
+const NEFILIM_LIDERES = [
+  {id:'goliat', n:'Goliat', color:'#cc2020', scale:1.8, hpMult:5, dmgMult:2.5, spdMult:0.7},
+  {id:'og',     n:'Og de Basán', color:'#8020cc', scale:2.2, hpMult:8, dmgMult:3, spdMult:0.6},
+  {id:'anak',   n:'Hijo de Anac', color:'#cc7020', scale:2.0, hpMult:6, dmgMult:2.8, spdMult:0.8},
+];
+
 function spawnNefilim(){
   const isNight=wTime>0.78||wTime<0.25;
   if(!isNight) return;
-  if(wDay<4) return;
-  const maxN=Math.min(2+Math.floor(wDay/4),6);
+  // Desde la primera noche (wDay>=1)
+  const noche = ((wDay-1)%100)+1; // ciclo de 100 noches
+  const maxN = Math.min(50, 2 + Math.floor(noche/2));
   if(nefilim.length>=maxN) return;
-  if(Math.random()>0.003) return; // spawn gradual
-  // Spawn en borde del mapa lejos del jugador
+  if(Math.random()>0.004) return;
+
+  // Cada 7 noches spawn un líder (si no hay ya uno)
+  const esNocheLider = noche%7===0;
+  const yaHayLider = nefilim.some(n=>n.lider);
+
   let nx,ny,tries=0;
   do{
     const side=Math.floor(Math.random()*4);
@@ -4912,17 +4964,33 @@ function spawnNefilim(){
     else{nx=MW-5;ny=5+Math.floor(Math.random()*(MH-10));}
     tries++;
   }while(Math.hypot(nx-P.x/TILE,ny-P.y/TILE)<25&&tries<20);
-  const power=Math.floor(wDay/4);
-  nefilim.push({
-    x:nx*TILE,y:ny*TILE,
-    hp:30+power*20, mhp:30+power*20,
-    dmg:8+power*4,
-    spd:0.8+power*0.15,
-    target:'jugador', // 'jugador' o 'arca'
-    attackT:0,
-    animF:0,animT:0,
-    stunT:0,
-  });
+
+  const power=Math.floor(noche/4);
+  const spdScale = 1 + (noche/100)*0.8; // velocidad escala con las noches
+
+  if(esNocheLider && !yaHayLider){
+    const lider = NEFILIM_LIDERES[Math.floor(Math.random()*NEFILIM_LIDERES.length)];
+    const baseHp = 80+power*25;
+    nefilim.push({
+      x:nx*TILE, y:ny*TILE,
+      hp:baseHp*lider.hpMult, mhp:baseHp*lider.hpMult,
+      dmg:(10+power*5)*lider.dmgMult,
+      spd:(0.8+power*0.1)*lider.spdMult*spdScale,
+      attackT:0, animF:0, animT:0, stunT:0,
+      target:'jugador',
+      lider:true, liderTipo:lider, scale:lider.scale,
+    });
+    notif(`👹 ¡${lider.n} lidera el ataque!`,'red');
+  } else {
+    nefilim.push({
+      x:nx*TILE, y:ny*TILE,
+      hp:30+power*20, mhp:30+power*20,
+      dmg:8+power*4,
+      spd:(0.8+power*0.1)*spdScale,
+      target:'jugador',
+      attackT:0, animF:0, animT:0, stunT:0,
+    });
+  }
   sndNotifBad();
 }
 
@@ -4987,33 +5055,154 @@ function updateNefilim(){
 }
 
 function attackNefilim(){
-  // Jugador ataca al nefilim más cercano
   const dmgArma=getArmaBonus('dmg');
   const bonus=(hasSkill('guer')?2:1)*(dmgArma>0?1+(dmgArma/100):hasItem('espada')?1.8:hasItem('lanza')?1.4:1);
   let attacked=false;
+  // Determinar vector de frente de Noé
+  const facingVec = {
+    'up':    {fx:0,  fy:-1},
+    'down':  {fx:0,  fy:1},
+    'left':  {fx:-1, fy:0},
+    'right': {fx:1,  fy:0},
+  }[P.facing] || {fx:0,fy:1};
+
   nefilim.forEach((n,i)=>{
-    const d=Math.hypot(n.x-P.x,n.y-P.y);
-    if(d<80){
+    const dx=n.x-P.x, dy=n.y-P.y;
+    const d=Math.hypot(dx,dy);
+    if(d<90){
+      // Verificar si el nefilim está al frente (ángulo ≤70° del vector de frente)
+      const dot = (dx/d)*facingVec.fx + (dy/d)*facingVec.fy;
+      if(dot < 0.34){ // cos(70°)≈0.34 — solo frontal
+        notif('⚔️ ¡Gira hacia el gigante para golpearlo!','');
+        return;
+      }
       triggerNoahAction('pierce');
-      const dmg=(10+P.lv*3)*bonus;
+      const dmg=Math.floor((10+P.lv*3)*bonus);
       n.hp-=dmg;
       addPart(n.x,n.y,`-${dmg}`);
       n.stunT=20;
-      if(n.hp<=0){nefilim.splice(i,1);addXP(30);
-        const sc=3+Math.floor(wDay/3);addSiclos(sc);
-        notif(`⚔️ ¡Gigante derrotado! +${sc}🪙`,'gld');sndLevelUp();}
+      if(n.hp<=0){
+        const sc=n.lider?(10+Math.floor(wDay/2)):(3+Math.floor(wDay/3));
+        nefilim.splice(i,1);addXP(n.lider?80:30);addSiclos(sc);
+        notif(n.lider?`⚔️ ¡${n.liderTipo.n} derrotado! +${sc}🪙`:`⚔️ ¡Gigante derrotado! +${sc}🪙`,'gld');
+        sndLevelUp();
+      }
       attacked=true;
     }
   });
-  if(!attacked) notif('No hay gigantes cerca','');
+  if(!attacked) notif('No hay gigantes al frente','');
 }
 window.attackNefilim=attackNefilim;
+
+// ════════════════════════════════════════════════════════════
+//  PANEL DE ESTADÍSTICAS
+// ════════════════════════════════════════════════════════════
+window.toggleStatsPanel = function(){
+  const m = document.getElementById('stats-modal');
+  if(!m) return;
+  if(m.style.display === 'flex'){
+    m.style.display = 'none';
+    gPause = false;
+  } else {
+    renderStats();
+    m.style.display = 'flex';
+    gPause = true;
+  }
+};
+
+function renderStats(){
+  const el = document.getElementById('stats-content');
+  if(!el) return;
+
+  // Calcular stats base y con equipo
+  const baseAtk  = 10 + P.lv * 3;
+  const atkBonus = getArmaBonus('dmg');
+  const atkSkill = (hasSkill('guer') ? 2 : 1);
+  const atkFinal = Math.floor(baseAtk * atkSkill * (atkBonus > 0 ? 1 + atkBonus/100 : hasItem('espada') ? 1.8 : hasItem('lanza') ? 1.4 : 1));
+
+  const baseDef  = hasItem('armadura') ? 50 : 0;
+  const defBonus = getArmaBonus('def');
+  const defFinal = getBuff('escudo_div') ? 100 : Math.min(95, baseDef + Math.floor(defBonus/3));
+
+  const baseSpd  = 2.4;
+  const spdBonus = getArmaBonus('botas') || 0;
+  const spdFinal = (P.speed || 2.4).toFixed(1);
+
+  const baseRecolect = (hasSkill('fuerza') ? 2 : 1);
+  const craftBonus   = getArmaBonus('craft');
+  const recolFinal   = (baseRecolect * (craftBonus > 0 ? 1 + craftBonus/200 : 1) * getBonusEdificio('forja') * getBonusEdificio('granero')).toFixed(2);
+
+  const baseHeal = 0;
+  const healBonus = getArmaBonus('heal') || 0;
+
+  const baseXP  = 1;
+  const xpBonus = getArmaBonus('xp') || 0;
+
+  const dmgRed = getBuff('escudo_div') ? 100 : (defBonus > 0 ? Math.min(90, Math.floor(defBonus / 3)) : hasItem('armadura') ? 50 : 0);
+
+  const noche = Math.floor((wDay - 1) % 100) + 1;
+  const maxNef = Math.min(50, 2 + Math.floor(noche / 2));
+
+  function row(label, base, conEquipo, unit=''){
+    const diff = conEquipo !== null && conEquipo !== base;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:6px;margin-bottom:4px;background:rgba(255,255,255,0.04)">
+      <span style="color:var(--muted)">${label}</span>
+      <div style="display:flex;gap:12px;align-items:center">
+        <span style="color:var(--text)">${base}${unit}</span>
+        <span style="color:${diff ? '#80e860' : 'var(--muted)'}">→ ${conEquipo !== null ? conEquipo + unit : '—'}</span>
+      </div>
+    </div>`;
+  }
+  function header(t){ return `<div style="font-family:Cinzel,serif;font-size:0.7rem;color:var(--gold);margin:10px 0 6px;border-bottom:1px solid rgba(201,168,76,0.2);padding-bottom:4px">${t}</div>`; }
+
+  el.innerHTML = `
+    <div style="font-size:0.65rem;color:var(--muted);text-align:right;margin-bottom:8px">Base &nbsp;→&nbsp; <span style="color:#80e860">Con equipo</span></div>
+    ${header('⚔️ Combate')}
+    ${row('Ataque (daño/golpe)', baseAtk, atkFinal)}
+    ${row('Reducción de daño', baseDef + '%', defFinal + '%')}
+    ${header('🏃 Movimiento')}
+    ${row('Velocidad', baseSpd, spdFinal)}
+    ${header('⛏️ Recolección')}
+    ${row('Multiplicador recolección', '×1.00', '×' + recolFinal)}
+    ${header('❤️ Supervivencia')}
+    ${row('Vida máxima (HP)', 100 + ' + Nv.×10', P.mhp)}
+    ${row('Curación bonus', '0%', healBonus > 0 ? '+' + healBonus + '%' : '0%')}
+    ${header('⬆️ Progreso')}
+    ${row('Nivel', P.lv, null)}
+    ${row('XP acumulada', Math.floor(P.xp), null)}
+    ${row('Bonus XP', '×1.0', xpBonus > 0 ? '×' + (1 + xpBonus/100).toFixed(2) : '×1.0')}
+    ${row('Siclos', siclos, null, '🪙')}
+    ${header('🌙 Nefilim (noche actual)')}
+    ${row('Noche', noche, null)}
+    ${row('Máx. Nefilim por noche', maxNef, null)}
+    ${row('Daño Nefilim base', 8 + Math.floor(wDay/4)*4, null)}
+    ${header('🏗️ Construcción')}
+    ${row('Bonus Forja', tieneEdificio('forja') ? '+50%' : '—', null)}
+    ${row('Bonus Granero', tieneEdificio('granero') ? '+30%' : '—', null)}
+    ${row('Protección Muralla', tieneEdificio('muralla') ? '-50% daño Arca' : '—', null)}
+  `;
+}
+
 
 function drawNefilim(cx,cy){
   nefilim.forEach(n=>{
     const sx=n.x-cx,sy=n.y-cy;
     if(sx<-80||sx>canvas.width+80||sy<-80||sy>canvas.height+80) return;
     ctx.save();ctx.translate(sx,sy);
+    // Líderes — escala mayor y color especial
+    if(n.lider && n.liderTipo){
+      const sc=n.liderTipo.scale||1.5;
+      ctx.scale(sc,sc);
+      // Aura de líder
+      ctx.fillStyle=n.liderTipo.color+'44';
+      ctx.beginPath();ctx.arc(0,-20,22,0,Math.PI*2);ctx.fill();
+      // Nombre encima
+      ctx.scale(1/sc,1/sc);
+      ctx.fillStyle=n.liderTipo.color;
+      ctx.font='bold 8px Cinzel,serif';ctx.textAlign='center';
+      ctx.fillText(n.liderTipo.n,0,-46);
+      ctx.scale(sc,sc);
+    }
     const bob=n.animF===1?2:0;
     // Sombra grande
     ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(0,18,20,7,0,0,Math.PI*2);ctx.fill();
@@ -5971,5 +6160,17 @@ window.addEventListener('DOMContentLoaded',initBgMenu);
     </div>
   </div>
 </div>
+
+<!-- PANEL ESTADÍSTICAS -->
+<div id="stats-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(160deg,#06080f,#0d0a1e);border:2px solid rgba(201,168,76,0.4);border-radius:16px;padding:0;max-width:440px;width:92vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(201,168,76,0.2)">
+      <span style="font-family:Cinzel,serif;color:var(--gold);font-size:0.9rem">📊 Estadísticas de Noé</span>
+      <button class="pclose" onclick="toggleStatsPanel()">✕</button>
+    </div>
+    <div id="stats-content" style="overflow-y:auto;padding:16px;flex:1;font-size:0.75rem"></div>
+  </div>
+</div>
+
 </body>
 </html>
