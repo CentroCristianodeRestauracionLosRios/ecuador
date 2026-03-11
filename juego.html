@@ -2577,8 +2577,8 @@ function drawNearIndicator(cx,cy){
     const sx=nearObj.tx*TILE-cx+TILE/2,sy=nearObj.ty*TILE-cy-10;
     ctx.fillStyle='rgba(255,215,0,0.8)';ctx.font='16px serif';ctx.textAlign='center';
     ctx.fillText('⬆',sx,sy);ctx.textAlign='left';
-    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar '+DIOS_ICON,taller:'[E] Abrir taller 🔨'};
-    hint.textContent=labs[nearObj.tipo]||'[E] Interactuar';
+    const labs={arbol:'[E] Cortar árbol 🪵',roca:'[E] Golpear piedra 🪨',arbusto:'[E] Recoger hierba 🌿',bayas:'[E] Recoger bayas 🫐',frutal:'[E] Recoger fruta 🍎',cana:'[E] Recoger caña 🌿',fogon:'[E] Cocinar en el fogón 🔥',cama:'[E] Dormir en la cama 🛏️',cofre:'[E] Abrir el cofre 📦',arca1:'[E] Ver Arca ⚓',arca2:'[E] Ver Arca 🏗️',arca3:'[E] Ver Arca 🛖',pozo:'[E] Sacar agua del pozo 🪣',huerto:'[E] Ver el huerto 🌿',altar:'[E] Orar ✝',taller:'[E] Abrir taller 🔨'};
+    hint.innerHTML=labs[nearObj.tipo]||'[E] Interactuar';
     hint.style.display='block';
     hint.style.color='var(--gold)';
   } else if(waterNear){
@@ -2661,7 +2661,7 @@ window.doInteract=function(){
           addLootAnim(animalCerca.x,animalCerca.y-30,loot);
           animales=animales.filter(a=>a!==animalCerca);
         } else {
-          addLootAnim(animalCerca.x, animalCerca.y-20, [{e:'⚔️',qty:1}]);
+          addFlash(animalCerca.x, animalCerca.y-20);
         }
       } else notif('🐑 Necesitas una lanza o espada para cazar animales','');
       return;
@@ -2674,7 +2674,6 @@ window.doInteract=function(){
     triggerNoahAction('slice');
     const c=(hasItem('hacha')?3:1)*bon;o.hp-=c;
     if(hasItem('hacha')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('hacha',1);notif('🪓 La hacha se rompió — crea otra','red');}
-    addPart(o.tx*TILE+20,o.ty*TILE+20,'🪵');
     sndAxe();addFlash(P.x,P.y-20);
     if(o.hp<=0){
       const madQty=5+Math.floor(Math.random()*4);
@@ -2685,13 +2684,11 @@ window.doInteract=function(){
       addLootAnim(o.tx*TILE,o.ty*TILE-20,loot);
     } else {
       addItem('madera',1);
-      addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪵',qty:1}]);
     }
   }else if(o.tipo==='roca'){
     triggerNoahAction('crush');
     const c=(hasItem('pico')?3:1)*bon;o.hp-=c;
     if(hasItem('pico')&&!hasSkill('herr')&&Math.random()<0.04){removeItem('pico',1);notif('⛏️ El pico se rompió — crea otro','red');}
-    addPart(o.tx*TILE+20,o.ty*TILE+20,'🪨');
     sndRock();addFlash(P.x,P.y-20);
     if(o.hp<=0){
       const pieQty=4+Math.floor(Math.random()*3);
@@ -2701,7 +2698,6 @@ window.doInteract=function(){
       addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪨',qty:pieQty},{e:'🟫',qty:barQty}]);
     } else {
       addItem('piedra',1);
-      addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪨',qty:1}]);
     }
   }else if(o.tipo==='arbusto'||o.tipo==='cana'){
     triggerNoahAction('collect');
@@ -2846,7 +2842,7 @@ let cCat='herramientas';
 
 // Diccionarios de consejos para el taller
 const RESOURCE_TIPS = {'madera': 'Corta árboles con [E]', 'piedra': 'Golpea rocas grises con [E]', 'fibra': 'Recoge arbustos verdes con [E]', 'barro': 'Recoge los charcos de barro', 'resina': 'Cae al cortar árboles (20% prob.)', 'cuerda': 'Fabricada con 4 fibras en el Taller', 'tabla': 'Fabricada con 3 maderas en el Taller', 'agua': 'Llena tu jarra en el agua o usa el pozo', 'carne': 'Caza animales con [E]', 'fruta': 'Recoge árboles frutales con [E]', 'bayas': 'Recoge arbustos de bayas con [E]', 'pez': 'Pesca en aguas profundas con jarra', 'semilla': 'Cae al recoger arbustos (aleatoria)', 'metal': 'Fabricado con 6 piedras en el Taller', 'ladrillo': 'Fabricado con 4 barros en el Taller', 'brea': 'Fabricada con 3 resinas en el Taller', 'alquitran': 'Fabricada con resina y brea en Taller', 'madera_g': 'Fabricada con 5 maderas + 2 resinas', 'trigo': 'Cosecha el huerto cuando esté listo', 'miel': 'Recolecta arbustos de bayas (raro)', 'cuero': 'Cae al cazar animales grandes'};
-const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas '+DIOS_ICON, 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
+const ITEM_USES = {'jarra': 'Llénala en agua o pozo para beber 💧', 'hacha': 'Corta árboles más rápido (+madera)', 'pico': 'Rompe rocas más rápido (+piedra)', 'antorcha': 'Aleja a los nefilim de noche 🔦', 'cuerda': 'Necesaria para construir el Arca ⛵', 'tabla': 'Material para cofres y estructuras', 'ladrillo': 'Material para muros y construcciones', 'brea': 'Ingrediente para el alquitrán del Arca', 'carne_a': 'Recupera hambre al comerla 🍖', 'pan': 'Recupera hambre y un poco de energía', 'estofado': 'Recupera hombre, vida y energía', 'fogon': 'Necesario para cocinar comida 🔥', 'cama': 'Duerme para recuperar energía ⚡', 'cofre': 'Guarda objetos extra en el suelo 📦', 'pozo': 'Fuente de agua infinita sin jarra 🪣', 'huerto': 'Produce trigo y fruta automáticamente', 'taller': 'Permite fabricar armas avanzadas ⚒️', 'altar': 'Ora para recibir bendiciones divinas ✝', 'espada': 'x2 daño contra nefilim ⚔️', 'lanza': 'Ataque cuerpo a cuerpo reforzado', 'armadura': 'Reduce el daño que recibes -50%', 'medicina': 'Recupera vida al usarla ❤️', 'arca1': 'Fase 1 del Arca — colócala en el suelo', 'arca2': 'Fase 2 del Arca — requiere la Fase 1', 'arca3': 'Fase 3 del Arca — ¡completa la misión!', 'madera_g': 'Madera especial requerida para el Arca', 'alquitran': 'Impermeabiliza el Arca contra el diluvio', 'metal': 'Grapas metálicas para el Arca ⚓', 'pez_a': 'Pez asado — recupera hambre y vida', 'campamento': 'Permite reclutar a la familia de Noé', 'forja': 'Mejora el daño de herramientas +50%', 'capilla': 'Reduce cooldown de oraciones al altar', 'granero': '+30% materiales al recolectar', 'muralla': 'Reduce daño de nefilim -50% 🏰'};
 
 function showTip(msg, dur=2000){
   let el=document.getElementById('craft-tip');
@@ -2856,7 +2852,7 @@ function showTip(msg, dur=2000){
     el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid rgba(201,168,76,0.5);border-radius:10px;padding:9px 16px;font-size:0.8rem;color:#f0e8d0;z-index:1000;text-align:center;max-width:280px;pointer-events:none;transition:opacity 0.3s';
     document.body.appendChild(el);
   }
-  el.textContent=msg;
+  el.innerHTML=msg;
   el.style.opacity='1';
   clearTimeout(el._t);
   el._t=setTimeout(()=>{el.style.opacity='0';},dur);
@@ -2884,7 +2880,9 @@ function renderCraft(){
     }).join('');
     const sw=r.str&&!strOk?`<span class="creq no">Necesitas: ${ITEMS[r.str]?.n||r.str}</span>`:'';
     const itemTip=ITEM_USES[r.r]||r.n;
-    div.innerHTML=`<div class="cemi" onclick="showTip('${itemTip.replace(/'/g,"\'")}',2500)" style="cursor:pointer" title="${itemTip}">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Hacer</button>`;
+    // Limpiar HTML del tip para uso en atributos (evita que DIOS_ICON rompa onclick/title)
+    const itemTipSafe=itemTip.replace(/<[^>]*>/g,'✝').replace(/'/g,"\'");
+    div.innerHTML=`<div class="cemi" onclick="showTip('${itemTipSafe}',2500)" style="cursor:pointer" title="${itemTip.replace(/<[^>]*>/g,'✝')}">${it?.e||'?'}</div><div class="cinfo"><div class="cname">${r.n}${r.q>1?` ×${r.q}`:''}</div><div class="creqs">${rh}${sw}</div></div><button class="cbtn" ${!can||!strOk?'disabled':''} onclick="doCraft('${r.id}')">Hacer</button>`;
     cl.appendChild(div);
   });
 }
@@ -3290,7 +3288,7 @@ function _showNotif(msg,tipo){
   const s=document.getElementById('nstack');
   if(!s) return;
   const el=document.createElement('div');
-  el.className='notif'+(tipo?' '+tipo:'');el.textContent=msg;s.appendChild(el);
+  el.className='notif'+(tipo?' '+tipo:'');el.innerHTML=msg;s.appendChild(el);
   setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.4s';setTimeout(()=>el.remove(),400);},2600);
   if(s.children.length>5)s.children[0].remove();
 }
@@ -3415,10 +3413,11 @@ window.doContinuar=function(){
 
 window.toggleFamiliaPanel=function(){
   let el=document.getElementById('familia-modal');
-  if(el){ el.remove(); gPause=false; return; }
+  if(el){ el.remove(); gPause=false; const gc2=document.getElementById('gameCanvas');if(gc2)gc2.style.zIndex='';const mp2=document.getElementById('mpad');if(mp2)mp2.style.zIndex=''; return; }
   el=document.createElement('div');
   el.id='familia-modal';
   el.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center';
+  gPause=true;
   el.innerHTML=`<div style="background:linear-gradient(160deg,#06080f,#0d0a1e);border:2px solid rgba(201,168,76,0.4);border-radius:16px;padding:24px;max-width:420px;width:90vw;max-height:80vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <span style="font-family:Cinzel,serif;color:var(--gold)">👨‍👩‍👦 Familia de Noé</span>
@@ -6601,9 +6600,12 @@ async function openRanking(){
   if(!panel) return;
   // Alternar: si ya está abierto, cerrar
   if(panel.classList.contains('open')){ closeRanking(); return; }
-  // Cerrar otros paneles pero no pausar el juego
+  // Cerrar otros paneles y pausar
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
   panel.classList.add('open');
+  gPause = true;
+  const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='-1';
+  const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='-1';
 
   const body = document.getElementById('rankBody');
   body.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted)"><div class="load-spin" style="margin:0 auto 10px"></div><div style="font-size:0.8rem">Cargando ranking...</div></div>`;
@@ -6683,6 +6685,9 @@ async function openRanking(){
 function closeRanking(){
   const panel = document.getElementById('p-rank');
   if(panel) panel.classList.remove('open');
+  gPause = false;
+  const gc=document.getElementById('gameCanvas'); if(gc) gc.style.zIndex='';
+  const mp=document.getElementById('mpad'); if(mp) mp.style.zIndex='';
 }
 
 function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
