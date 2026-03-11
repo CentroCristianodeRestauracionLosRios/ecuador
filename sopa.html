@@ -627,10 +627,19 @@ function renderGrid(){
     d.className='cell';
     d.textContent=grid[r][c];
     d.dataset.r=r;d.dataset.c=c;
-    d.addEventListener('pointerdown',e=>{e.preventDefault();startSelect(r,c);});
-    d.addEventListener('pointerenter',e=>{if(selecting)moveSelect(r,c);});
+    d.addEventListener('pointerdown',e=>{e.preventDefault();e.target.setPointerCapture(e.pointerId);startSelect(r,c);});
     g.appendChild(d);
   }
+  // pointermove en el grid — funciona con touch y mouse
+  g.addEventListener('pointermove',e=>{
+    if(!selecting)return;
+    e.preventDefault();
+    // Obtener el elemento bajo el dedo/cursor
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    if(el&&el.dataset.r!==undefined&&el.dataset.c!==undefined){
+      moveSelect(parseInt(el.dataset.r),parseInt(el.dataset.c));
+    }
+  },{passive:false});
   document.addEventListener('pointerup',endSelect,{once:false});
   // Resize SVG
   setTimeout(()=>{
