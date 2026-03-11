@@ -492,7 +492,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 .scat{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:3px 10px;font-size:0.72rem;cursor:pointer;color:var(--muted);transition:all 0.15s;}
 .scat.on,.scat:hover{border-color:#6aaa2a;color:#8acc4a;}
 /* Siclos en HUD */
-.hud-siclos{display:flex;align-items:center;gap:3px;font-family:'Cinzel',serif;font-size:0.72rem;color:#c8d8a8;background:rgba(0,0,0,0.45);border:1px solid rgba(100,160,40,0.4);border-radius:10px;padding:2px 8px;margin-right:4px;}
+.hud-siclos{display:flex;align-items:center;gap:3px;font-family:'Cinzel',serif;font-size:0.72rem;color:#d0d8e8;background:rgba(0,0,0,0.45);border:1px solid rgba(160,180,200,0.4);border-radius:10px;padding:2px 8px;margin-right:4px;}
 /* Arma con nivel */
 .weapon-lv{display:inline-block;background:rgba(201,168,76,0.2);border:1px solid rgba(201,168,76,0.4);border-radius:4px;font-size:0.58rem;color:var(--gold);padding:1px 4px;font-family:'Cinzel',serif;margin-left:3px;}
 /* Notificación tienda */
@@ -533,6 +533,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.28);border-radius:2px;}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
@@ -593,6 +594,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
       <button class="hbtn"            onclick="togglePause()" id="pauseBtn" title="Pausa">⏸</button>
       <button class="hbtn"            onclick="showTutorial()" title="Tutorial" style="border-color:rgba(201,168,76,0.4)">📖</button>
       <button class="hbtn"            onclick="toggleStatsPanel()" title="Estadísticas" style="border-color:rgba(80,180,80,0.4)">📊</button>
+      <button class="hbtn"            onclick="openArcaView()" title="Ver Arca" style="border-color:rgba(100,160,255,0.4)">⛵</button>
 
     </div>
     <div id="hud-row2" style="display:none"></div>
@@ -2485,7 +2487,7 @@ function update(){
     P.thirst=Math.max(0,P.thirst-0.5);
     if(P.hunger>50&&P.thirst>50)P.energy=Math.min(100,P.energy+0.4);
     if(P.hunger===0||P.thirst===0){P.hp=Math.max(0,P.hp-2);}
-    if(P.hunger>30&&P.thirst>30&&P.hp<P.mhp)P.hp=Math.min(P.mhp,P.hp+0.6);
+    // HP solo se regenera con medicina o bendiciones divinas — no hay auto-regen
     if(P.hp<=0)gameOver();
   }
   if(tick%200===0){
@@ -3168,7 +3170,7 @@ function doOrar(){
     else if(roll<0.8){P.sp++;notif('🕊️ Dios te da sabiduría — +1 talento','gld');sndLevelUp();}
     else{P.hunger=100;P.thirst=100;P.energy=100;notif('🕊️ Dios restaura tus fuerzas','gld');sndLevelUp();}
   } else {
-    if(roll<0.4){P.hp=Math.min(P.mhp,P.hp+30);notif('🕊️ Sentiste la paz de Dios — +30 HP','gld');}
+    if(roll<0.4){notif('🕊️ Sentiste la paz de Dios — tu espíritu se fortalece','gld');P.energy=Math.min(100,P.energy+20);}
     else if(roll<0.7){addItem('fruta',2);addItem('agua',1);notif('🕊️ Dios provee alimento','gld');}
     else{P.energy=100;notif('🕊️ Dios renueva tus fuerzas','gld');}
   }
@@ -3181,7 +3183,7 @@ function doSleep(){sndSleep();
   const ov=document.getElementById('sl-ov');
   ov.classList.add('on');
   setTimeout(()=>{
-    wTime=0.27;wDay++;P.energy=100;P.hp=Math.min(P.mhp,P.hp+30);
+    wTime=0.27;wDay++;P.energy=100; // HP no se recupera al dormir — usar medicina
     notif(`☀️ Día ${wDay} — Descansado`,'gld');ov.classList.remove('on');
   },2000);
 }
@@ -3270,7 +3272,7 @@ function updateHUD(){
   document.getElementById('bEn').style.width=P.energy+'%';
   document.getElementById('bXp').style.width=Math.min(100,(P.xp/xpNeed(P.lv))*100).toFixed(1)+'%';
   document.getElementById('hudLv').textContent=`Nv.${P.lv}`;
-  document.getElementById('hudSiclos').textContent=`🪙 ${siclos}`;
+  document.getElementById('hudSiclos').textContent=`🥈 ${siclos}`;
   const hfBtn=document.getElementById('hudFamilia'); if(hfBtn) hfBtn.textContent=`👨‍👦 ${familia.length||0}`;
   // Mostrar buffs activos en HUD como pequeñas pastillas
   const buffBar=document.getElementById('buff-bar');
@@ -3435,7 +3437,7 @@ window.doManualSave=async function(){
   if(btn){btn.style.opacity='0.5';setTimeout(()=>btn.style.opacity='',1200);}
   await saveGame();
 };
-window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none';showS('s-menu');};
+window.doSaveQuit=async function(){await saveGame();gRun=false;document.getElementById('hud').style.display='none';document.getElementById('mpad').style.display='none';const fb=document.getElementById('hud-float-btns');if(fb)fb.style.display='none';const ms=document.getElementById('mundo-switcher');if(ms)ms.style.display='none';showS('s-menu');};
 window.doLogout=async function(){await signOut(auth);};
 
 
@@ -3610,7 +3612,7 @@ const TUTORIAL_STEPS = [
         <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 14px">
           <div style="font-family:Cinzel,serif;font-size:0.72rem;color:#aa60ee;margin-bottom:5px">🏪 Tienda del Mercader</div>
           <div style="font-size:0.74rem;color:var(--text);line-height:1.7">
-            Vende tus recursos por <b style="color:#f0d080">Siclos de Plata 🪙</b> y compra 
+            Vende tus recursos por <b style="color:#b8cce0">Siclos de Plata 🥈</b> y compra 
             <b>bendiciones divinas, armas sagradas y secretos del Arca</b>. 
             Las armas tienen 6 rarezas: Básico → Bendecido.
           </div>
@@ -3892,7 +3894,7 @@ function showShopArrow(divN){
     <div style="text-align:center;pointer-events:none">
       <div style="font-size:1rem;color:#fff;background:rgba(0,0,0,0.8);border:1px solid rgba(201,168,76,0.6);border-radius:12px;padding:14px 20px;max-width:260px;margin:0 auto 20px">
         🔒 <b style="color:#f0d080">${d.name}</b><br>
-        <span style="font-size:0.78rem;color:#d4c090">Cuesta <b style="color:#f0d080">${d.price} 🪙</b> — Cómprala en la Tienda</span>
+        <span style="font-size:0.78rem;color:#d4c090">Cuesta <b style="color:#b8cce0">${d.price} 🥈</b> — Cómprala en la Tienda</span>
       </div>
       <div style="font-size:3rem;animation:arrowBounce 0.6s ease-in-out infinite alternate">👆</div>
       <div style="font-size:0.75rem;color:#c9a84c;margin-top:6px;font-family:Cinzel,serif">TIENDA 🏪</div>
@@ -4334,6 +4336,8 @@ function beginLoop(){
   if(hud) hud.style.display='flex';
   if(mpad) mpad.style.display='flex';
   const fb=document.getElementById('hud-float-btns'); if(fb) fb.style.display='flex';
+  // Mostrar botón flotante de mundo/arca
+  const ms=document.getElementById('mundo-switcher'); if(ms) ms.style.display='block';
   try{ applyAllSettings(); }catch(e){}
   gRun=true;gPause=false;godVoiceActive=false;
   // Cargar sprites solo si no se han cargado antes
@@ -4879,7 +4883,7 @@ function checkMisiones(){
     misionCompletada.push(m.id);
     m.recompensa();
     const scM=15+misionActual*10;addSiclos(scM);
-    notif(`${DIOS_ICON} Misión cumplida: ${m.titulo} +${scM}🪙`,'gld');
+    notif(`${DIOS_ICON} Misión cumplida: ${m.titulo} +${scM}🥈`,'gld');
     misionActual=Math.min(misionActual+1,MISIONES.length-1);
     if(misionActual<MISIONES.length){
       setTimeout(()=>showGodVoice(MISIONES[misionActual]),3000);
@@ -5186,7 +5190,7 @@ function attackNefilim(){
       if(n.hp<=0){
         const sc=n.lider?(10+Math.floor(wDay/2)):(3+Math.floor(wDay/3));
         nefilim.splice(i,1);addXP(n.lider?80:30);addSiclos(sc);
-        notif(n.lider?`⚔️ ¡${n.liderTipo.n} derrotado! +${sc}🪙`:`⚔️ ¡Gigante derrotado! +${sc}🪙`,'gld');
+        notif(n.lider?`⚔️ ¡${n.liderTipo.n} derrotado! +${sc}🥈`:`⚔️ ¡Gigante derrotado! +${sc}🥈`,'gld');
         sndLevelUp();
       }
       attacked=true;
@@ -5195,6 +5199,282 @@ function attackNefilim(){
   if(!attacked) notif('No hay gigantes al frente','');
 }
 window.attackNefilim=attackNefilim;
+// ════════════════════════════════════════════════════════════════
+//  ARCA 3D — Visualizador Three.js con partes progresivas
+// ════════════════════════════════════════════════════════════════
+
+const ARCA_PARTES = [
+  { id:'quilla',   n:'Quilla',          emoji:'⚓', req: ()=>true,              desc:'Base del casco' },
+  { id:'casco',    n:'Casco',           emoji:'🪵', req: ()=>arcaProgress>=1,   desc:'Estructura exterior' },
+  { id:'cubierta', n:'Cubierta',        emoji:'🏗️', req: ()=>arcaProgress>=2,   desc:'Cubierta principal' },
+  { id:'techo',    n:'Techo',           emoji:'🏠', req: ()=>arcaProgress>=3,   desc:'Techo y ventanas' },
+  { id:'brea',     n:'Brea protectora', emoji:'⬛', req: ()=>cntItem('brea')>=5, desc:'Sellado con brea' },
+  { id:'animales', n:'Animales a bordo',emoji:'🐾', req: ()=>animalesEnArca>=2,  desc:'Animales embarcados' },
+];
+
+let _arca3d = null; // instancia del renderer
+
+function initArca3D(){
+  if(!window.THREE){ console.warn('Three.js no cargado'); return; }
+  const cv = document.getElementById('arca3d-canvas');
+  if(!cv) return;
+  if(_arca3d) { _arca3d.dispose(); _arca3d = null; }
+
+  const W = cv.parentElement.clientWidth;
+  const H = cv.parentElement.clientHeight;
+  cv.width  = W;
+  cv.height = H;
+
+  const scene    = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0612);
+  scene.fog = new THREE.Fog(0x0a0612, 40, 80);
+
+  const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 200);
+  camera.position.set(14, 8, 18);
+  camera.lookAt(0, 1, 0);
+
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // ── Luces ─────────────────────────────────────
+  const ambL = new THREE.AmbientLight(0x8899bb, 0.5);
+  scene.add(ambL);
+  const sunL = new THREE.DirectionalLight(0xffd080, 1.2);
+  sunL.position.set(20, 30, 15);
+  sunL.castShadow = true;
+  sunL.shadow.mapSize.width = 1024;
+  sunL.shadow.mapSize.height = 1024;
+  scene.add(sunL);
+  const rimL = new THREE.DirectionalLight(0x4466ff, 0.3);
+  rimL.position.set(-15, 5, -10);
+  scene.add(rimL);
+
+  // ── Materiales ────────────────────────────────
+  const matMadera  = new THREE.MeshLambertMaterial({ color: 0x7a4a18 });
+  const matMadera2 = new THREE.MeshLambertMaterial({ color: 0x5a3010 });
+  const matBrea    = new THREE.MeshLambertMaterial({ color: 0x1a1208 });
+  const matMetal   = new THREE.MeshLambertMaterial({ color: 0x8a7050 });
+  const matAgua    = new THREE.MeshLambertMaterial({ color: 0x1a4a8a, transparent:true, opacity:0.7 });
+
+  const partsActive = {};
+  const arcaGroup   = new THREE.Group();
+  scene.add(arcaGroup);
+
+  function addParte(id){
+    if(partsActive[id]) return;
+    let mesh;
+
+    if(id === 'quilla'){
+      // Base larga curva — casco inferior
+      const geo = new THREE.BoxGeometry(12, 0.7, 3.5);
+      mesh = new THREE.Mesh(geo, matMadera2);
+      mesh.position.set(0, -1.2, 0);
+      mesh.castShadow = true;
+      // Curvas del casco — 3 secciones
+      const geo2 = new THREE.CylinderGeometry(1.8, 1.8, 12, 6, 1, false, 0, Math.PI);
+      const m2 = new THREE.Mesh(geo2, matMadera2);
+      m2.rotation.z = Math.PI/2;
+      m2.position.set(0, -1.6, 0);
+      arcaGroup.add(m2);
+    } else if(id === 'casco'){
+      // Paredes laterales + proa/popa
+      const sides = [
+        { geo: new THREE.BoxGeometry(0.5, 3, 3.5), pos: [-6,  0.3, 0] },
+        { geo: new THREE.BoxGeometry(0.5, 3, 3.5), pos: [ 6,  0.3, 0] },
+        { geo: new THREE.BoxGeometry(12, 0.5, 0.5), pos:[0,  0.3,-1.75] },
+        { geo: new THREE.BoxGeometry(12, 0.5, 0.5), pos:[0,  0.3, 1.75] },
+      ];
+      const g = new THREE.Group();
+      sides.forEach(s=>{ const m=new THREE.Mesh(s.geo,matMadera);m.position.set(...s.pos);m.castShadow=true;g.add(m); });
+      // Tablones horizontales decorativos
+      for(let i=-5;i<=5;i+=2){
+        const tb=new THREE.Mesh(new THREE.BoxGeometry(0.15,3.2,3.7),matMadera2);
+        tb.position.set(i,0.3,0);g.add(tb);
+      }
+      mesh = g;
+    } else if(id === 'cubierta'){
+      const g = new THREE.Group();
+      const piso = new THREE.Mesh(new THREE.BoxGeometry(12.4, 0.3, 3.8), matMadera);
+      piso.position.set(0, 1.8, 0);g.add(piso);
+      // Barandilla
+      [-6,6].forEach(x=>{
+        const r=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.8,4),matMadera2);
+        r.position.set(x,2.4,0);g.add(r);
+      });
+      [-1.9,1.9].forEach(z=>{
+        const r=new THREE.Mesh(new THREE.BoxGeometry(12,0.2,0.2),matMadera2);
+        r.position.set(0,2.7,z);g.add(r);
+      });
+      mesh = g;
+    } else if(id === 'techo'){
+      const g = new THREE.Group();
+      // Techo a dos aguas
+      const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.1,2,12,4,1), matMadera);
+      roof.rotation.z = Math.PI/2;
+      roof.rotation.y = Math.PI/4;
+      roof.position.set(0, 4.2, 0);
+      g.add(roof);
+      // Ventana central
+      const vent = new THREE.Mesh(new THREE.BoxGeometry(1.5,0.8,0.2), matMetal);
+      vent.position.set(0,3.2,1.9);g.add(vent);
+      // Puerta lateral
+      const door = new THREE.Mesh(new THREE.BoxGeometry(1.2,2,0.15),new THREE.MeshLambertMaterial({color:0x3a1a08}));
+      door.position.set(2,1.0,1.96);g.add(door);
+      mesh = g;
+    } else if(id === 'brea'){
+      // Capa de brea encima de todo el casco
+      const g = new THREE.Group();
+      [-6.3,6.3].forEach(x=>{
+        const b=new THREE.Mesh(new THREE.BoxGeometry(0.12,3.5,3.8),matBrea);
+        b.position.set(x,0.3,0);g.add(b);
+      });
+      const btop=new THREE.Mesh(new THREE.BoxGeometry(12.6,0.12,3.8),matBrea);
+      btop.position.set(0,1.98,0);g.add(btop);
+      mesh = g;
+    } else if(id === 'animales'){
+      // Figuras de animales en cubierta
+      const g = new THREE.Group();
+      const colors = [0xe8e8e8, 0xa05020, 0xf8d8a8, 0x886644];
+      [[-3,2.15,-0.6],[3,2.15,0.4],[-1,2.15,0.7],[1.5,2.15,-0.8]].forEach(([x,y,z],i)=>{
+        const body=new THREE.Mesh(new THREE.SphereGeometry(0.35,6,4),new THREE.MeshLambertMaterial({color:colors[i%4]}));
+        body.position.set(x,y,z);
+        const head=new THREE.Mesh(new THREE.SphereGeometry(0.22,5,4),new THREE.MeshLambertMaterial({color:colors[i%4]}));
+        head.position.set(x+0.3,y+0.2,z);
+        g.add(body);g.add(head);
+      });
+      mesh = g;
+    }
+
+    if(mesh){
+      mesh.userData.startY = mesh.position ? mesh.position.y + 4 : 4;
+      mesh.userData.targetY = mesh.position ? mesh.position.y : 0;
+      mesh.userData.animIn = 1.0; // 1→0 descender animación
+      if(mesh.position){ mesh.position.y += 4; }
+      arcaGroup.add(mesh);
+      partsActive[id] = mesh;
+    }
+  }
+
+  // Agua / suelo
+  const aguaGeo = new THREE.PlaneGeometry(80, 80);
+  const aguaMesh = new THREE.Mesh(aguaGeo, matAgua);
+  aguaMesh.rotation.x = -Math.PI/2;
+  aguaMesh.position.y = -2.5;
+  scene.add(aguaMesh);
+
+  // Estrellas de fondo
+  const starGeo = new THREE.BufferGeometry();
+  const starPos = [];
+  for(let i=0;i<600;i++){
+    starPos.push((Math.random()-0.5)*120,(Math.random()-0.5)*60,(Math.random()-0.5)*120);
+  }
+  starGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPos,3));
+  scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xffffff,size:0.15})));
+
+  // ── Control táctil / ratón ────────────────────
+  let isDragging=false, lastX=0, lastY=0, rotY=0.3, rotX=0.15;
+  let pinchDist=0, camRadius=22;
+
+  function getEventPos(e){ return e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY}; }
+  function getPinchDist(e){ if(e.touches&&e.touches.length>=2){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); } return 0; }
+
+  cv.addEventListener('mousedown', e=>{ isDragging=true; const p=getEventPos(e); lastX=p.x; lastY=p.y; });
+  cv.addEventListener('touchstart', e=>{ e.preventDefault(); isDragging=true; const p=getEventPos(e); lastX=p.x; lastY=p.y; if(e.touches.length>=2)pinchDist=getPinchDist(e); },{passive:false});
+  cv.addEventListener('mousemove', e=>{ if(!isDragging)return; const p=getEventPos(e); rotY+=(p.x-lastX)*0.008; rotX+=(p.y-lastY)*0.004; rotX=Math.max(-0.5,Math.min(0.7,rotX)); lastX=p.x; lastY=p.y; });
+  cv.addEventListener('touchmove', e=>{ e.preventDefault(); if(!isDragging)return; if(e.touches.length>=2){ const nd=getPinchDist(e); camRadius=Math.max(10,Math.min(40,camRadius*(pinchDist/nd))); pinchDist=nd; return; } const p=getEventPos(e); rotY+=(p.x-lastX)*0.008; rotX+=(p.y-lastY)*0.004; rotX=Math.max(-0.5,Math.min(0.7,rotX)); lastX=p.x; lastY=p.y; },{passive:false});
+  ['mouseup','mouseleave','touchend'].forEach(ev=>cv.addEventListener(ev,()=>isDragging=false));
+  cv.addEventListener('wheel',e=>{ camRadius=Math.max(10,Math.min(40,camRadius+e.deltaY*0.02)); });
+
+  // ── Loop de animación ─────────────────────────
+  let afr3d = null;
+  let t = 0;
+
+  function animate3D(){
+    afr3d = requestAnimationFrame(animate3D);
+    t += 0.01;
+
+    // Actualizar partes según progreso
+    ARCA_PARTES.forEach(p=>{ if(p.req && p.req()) addParte(p.id); });
+
+    // Animación de entrada de partes
+    arcaGroup.children.forEach(mesh=>{
+      if(mesh.userData.animIn > 0){
+        mesh.userData.animIn -= 0.025;
+        if(mesh.position){ mesh.position.y = (mesh.userData.targetY||0) + mesh.userData.animIn * 4; }
+      }
+    });
+
+    // Balanceo del arca sobre el agua
+    arcaGroup.rotation.z = Math.sin(t*0.5)*0.02;
+    arcaGroup.rotation.x = Math.sin(t*0.7)*0.015;
+
+    // Agua animada
+    aguaMesh.position.y = -2.5 + Math.sin(t*0.8)*0.12;
+
+    // Cámara orbital
+    camera.position.x = Math.sin(rotY) * camRadius * Math.cos(rotX);
+    camera.position.y = Math.sin(rotX) * camRadius + 3;
+    camera.position.z = Math.cos(rotY) * camRadius * Math.cos(rotX);
+    camera.lookAt(0, 1.5, 0);
+
+    renderer.render(scene, camera);
+  }
+
+  _arca3d = { renderer, animate3D, afr3d: null, stop(){if(this.afr3d)cancelAnimationFrame(this.afr3d);renderer.dispose();} };
+  animate3D();
+  // Guardar ref del afr en el objeto
+  const origAnimate = animate3D;
+
+  function renderArcaParts(){
+    const el = document.getElementById('arca3d-parts');
+    if(!el) return;
+    let count=0, total=ARCA_PARTES.length;
+    el.innerHTML = ARCA_PARTES.map(p=>{
+      const done = p.req && p.req();
+      if(done) count++;
+      return `<div style="display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:7px;background:${done?'rgba(80,180,80,0.12)':'rgba(255,255,255,0.04)'};border:1px solid ${done?'rgba(80,180,80,0.3)':'rgba(255,255,255,0.1)'}">
+        <span style="font-size:0.9rem">${p.emoji}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.62rem;color:${done?'#80e860':'#aaa'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.n}</div>
+          <div style="font-size:0.55rem;color:${done?'#80e860':'#777'}">${done?'✅ Construido':'🔒 Pendiente'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const pct = Math.round(count/total*100);
+    const ptxt = document.getElementById('arca3d-pct'); if(ptxt) ptxt.textContent=pct+'%';
+    const ptxt2 = document.getElementById('arca3d-progreso-txt');
+    if(ptxt2) ptxt2.textContent=pct<100?`${count} de ${total} partes construidas`:'¡El Arca está completa! ⛵';
+  }
+
+  renderArcaParts();
+  // Actualizar partes cada segundo
+  const partsInterval = setInterval(renderArcaParts, 1000);
+  _arca3d.partsInterval = partsInterval;
+}
+
+window.openArcaView = function(){
+  const el = document.getElementById('arca-view');
+  if(!el) return;
+  el.style.display='flex';
+  gPause = true;
+  // Pequeño delay para que el canvas tenga dimensiones
+  setTimeout(initArca3D, 80);
+};
+
+window.closeArcaView = function(){
+  const el = document.getElementById('arca-view');
+  if(el) el.style.display='none';
+  if(_arca3d){
+    if(_arca3d.afr3d) cancelAnimationFrame(_arca3d.afr3d);
+    clearInterval(_arca3d.partsInterval);
+    _arca3d.renderer.dispose();
+    _arca3d = null;
+  }
+  gPause = false;
+};
+
 // ════════════════════════════════════════════════
 //  PANEL INFO DE ÍTEM — al tocar arma, habilidad o talento
 // ════════════════════════════════════════════════
@@ -5436,7 +5716,7 @@ function renderStats(){
     ${row('Nivel', P.lv, null)}
     ${row('XP acumulada', Math.floor(P.xp), null)}
     ${row('Bonus XP', '×1.0', xpBonus > 0 ? '×' + (1 + xpBonus/100).toFixed(2) : '×1.0')}
-    ${row('Siclos', siclos, null, '🪙')}
+    ${row('Siclos', siclos, null, '🥈')}
     ${header('🌙 Nefilim (noche actual)')}
     ${row('Noche', noche, null)}
     ${row('Máx. Nefilim por noche', maxNef, null)}
@@ -5637,8 +5917,8 @@ function checkVictory(){
 
 function addSiclos(n){
   siclos+=n;
-  document.getElementById('hudSiclos').textContent=`🪙 ${siclos}`;
-  const sel=document.getElementById('shopSiclos');if(sel)sel.textContent=`🪙 ${siclos}`;
+  document.getElementById('hudSiclos').textContent=`🥈 ${siclos}`;
+  const sel=document.getElementById('shopSiclos');if(sel)sel.textContent=`🥈 ${siclos}`;
 }
 
 function ganarSiclosPorAccion(){
@@ -6002,7 +6282,7 @@ function refreshFamiliaPanel(){
 
 function renderShop(){
   const siclosEls=document.querySelectorAll('#hudSiclos,#shopSiclos');
-  siclosEls.forEach(el=>{if(el)el.textContent=`🪙 ${siclos}`;});
+  siclosEls.forEach(el=>{if(el)el.textContent=`🥈 ${siclos}`;});
   const sg=document.getElementById('sell-grid');
   const catsEl=document.getElementById('shopCats');
   const grid=document.getElementById('shop-grid');
@@ -6081,7 +6361,7 @@ function renderShop(){
           </div>
         </div>
         <div class="sitem-price">
-          <span class="sprice">🪙 ${item.precio}</span>
+          <span class="sprice">🥈 ${item.precio}</span>
           <button class="sbtn" ${!puedo?'disabled':''} onclick="comprarBendicion('${item.id}')">Comprar</button>
         </div>`;
       grid.appendChild(div);
@@ -6123,7 +6403,7 @@ function renderShop(){
             </div>
           </div>
           <div class="sitem-price">
-            <span class="sprice">🪙 ${precioNv1}</span>
+            <span class="sprice">🥈 ${precioNv1}</span>
             <button class="sbtn" ${!puedoNv1?'disabled':''} onclick="comprarArma('${item.id}','${shopCatActual}',1)">Obtener</button>
           </div>`;
       } else {
@@ -6142,7 +6422,7 @@ function renderShop(){
               <div style="font-size:0.6rem;margin-top:2px;color:${rar.borde}">
                 ${getRarezaEmoji(rarIdx)} ${rar.nombre} — Nv.${nivel} — Efecto: +${getStatBonus(nivel)}
               </div>
-              ${!maxNivel?`<div style="font-size:0.58rem;color:var(--muted)">→ Subir a Nv.${nivelUpg}: 🪙${precioUpg} <span style="color:${rarUpg.borde}">(${rarUpg.nombre})</span></div>`:''}
+              ${!maxNivel?`<div style="font-size:0.58rem;color:var(--muted)">→ Subir a Nv.${nivelUpg}: 🥈${precioUpg} <span style="color:${rarUpg.borde}">(${rarUpg.nombre})</span></div>`:''}
             </div>
           </div>
           <div class="sitem-price">
@@ -6228,7 +6508,7 @@ function renderShop(){
           </div>
         </div>
         <div class="sitem-price">
-          <span class="sprice">🪙 ${item.precio}</span>
+          <span class="sprice">🥈 ${item.precio}</span>
           <button class="sbtn" ${!puedo?'disabled':''} onclick="comprarRecurso('${item.id}')">Comprar</button>
         </div>`;
       grid.appendChild(div);
@@ -6455,6 +6735,42 @@ window.addEventListener('DOMContentLoaded',initBgMenu);
     <!-- Stats -->
     <div id="item-info-content" style="overflow-y:auto;padding:16px 20px 24px;flex:1;font-size:0.78rem"></div>
   </div>
+</div>
+
+
+<!-- PANEL ARCA 3D — Vista interior del Arca -->
+<div id="arca-view" style="display:none;position:fixed;inset:0;z-index:9990;background:#0a0810;flex-direction:column;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(201,168,76,0.2);flex-shrink:0">
+    <button onclick="closeArcaView()" style="background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);border-radius:8px;color:#c9a84c;font-size:0.75rem;padding:6px 12px;cursor:pointer;font-family:Cinzel,serif">← Mundo</button>
+    <div style="flex:1;text-align:center">
+      <div style="font-family:Cinzel,serif;color:#c9a84c;font-size:0.85rem">⛵ El Arca de Noé</div>
+      <div id="arca3d-progreso-txt" style="font-size:0.62rem;color:#aaa;margin-top:1px">Construcción en progreso…</div>
+    </div>
+    <div id="arca3d-pct" style="font-family:Cinzel,serif;color:#80e860;font-size:0.85rem">0%</div>
+  </div>
+  <!-- Canvas 3D -->
+  <div style="flex:1;position:relative;overflow:hidden">
+    <canvas id="arca3d-canvas" style="width:100%;height:100%;display:block;touch-action:none"></canvas>
+    <!-- Instrucción táctil -->
+    <div id="arca3d-hint" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 14px;font-size:0.65rem;color:#aaa;pointer-events:none;white-space:nowrap">
+      👆 Arrastra para girar · 🤏 Pellizca para zoom
+    </div>
+  </div>
+  <!-- Partes del arca -->
+  <div style="background:rgba(0,0,0,0.7);border-top:1px solid rgba(201,168,76,0.2);padding:10px 14px;flex-shrink:0">
+    <div style="font-family:Cinzel,serif;color:#c9a84c;font-size:0.65rem;margin-bottom:7px">PROGRESO DE CONSTRUCCIÓN</div>
+    <div id="arca3d-parts" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>
+  </div>
+</div>
+
+<!-- BOTÓN FLOTANTE para cambiar de mundo (siempre visible durante juego) -->
+<div id="mundo-switcher" style="display:none;position:fixed;bottom:90px;left:10px;z-index:500;display:none">
+  <button onclick="openArcaView()" id="btn-switch-mundo"
+    style="background:linear-gradient(135deg,#0d1a2e,#1a0d2e);border:1.5px solid rgba(201,168,76,0.5);border-radius:12px;color:#c9a84c;font-size:0.65rem;padding:7px 10px;cursor:pointer;font-family:Cinzel,serif;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 2px 12px rgba(0,0,0,0.5)">
+    <span style="font-size:1.1rem">⛵</span>
+    <span>Ver Arca</span>
+  </button>
 </div>
 
 </body>
