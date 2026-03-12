@@ -1124,13 +1124,25 @@ let nivelMuro = 0;
 let hpMuro = 0;
 // Datos de cada nivel del muro
 const MURO_NIVELES = [
-  null, // 0 = sin muro
-  {nombre:'Muro Madera I',   mat:'madera', HP:400,  color1:'#4a2808',color2:'#6a3a10',req:{madera:20,cuerda:6}},
-  {nombre:'Muro Madera II',  mat:'madera', HP:700,  color1:'#3d2008',color2:'#5a3010',req:{madera:30,tabla:8,cuerda:4}},
-  {nombre:'Muro Madera III', mat:'madera', HP:1100, color1:'#2a1404',color2:'#4a2808',req:{madera:40,tabla:14,resina:6}},
-  {nombre:'Muro Piedra I',   mat:'piedra', HP:1800, color1:'#2a2a2a',color2:'#3d3d3d',req:{piedra:30,ladrillo:10,madera:10}},
-  {nombre:'Muro Piedra II',  mat:'piedra', HP:2600, color1:'#1e1e1e',color2:'#2a2a2a',req:{piedra:50,ladrillo:20,metal:8}},
-  {nombre:'Muro Piedra III', mat:'piedra', HP:3500, color1:'#141414',color2:'#1e1e1e',req:{piedra:70,ladrillo:30,metal:16}},
+  null,
+  // Nv.1 ya construido al inicio — sin costo
+  {nombre:'Muro Madera I',     mat:'madera', HP:500,  color1:'#6a3a10',color2:'#8a5020',
+    rep:{madera:8,cuerda:2}, req:{}},
+  // Nv.2
+  {nombre:'Muro Madera II',    mat:'madera', HP:950,  color1:'#5a3010',color2:'#7a4018',
+    rep:{madera:18,tabla:4}, req:{madera:40,tabla:12,cuerda:8,resina:6}},
+  // Nv.3 — requiere Resina Sagrada (rara)
+  {nombre:'Muro Madera III',   mat:'madera', HP:1600, color1:'#4a2808',color2:'#6a3010',
+    rep:{madera:28,tabla:8,resina:4}, req:{madera:60,tabla:20,resina:12,brea:8,resina_s:3}},
+  // Nv.4 — requiere Obsidiana (ultrarara)
+  {nombre:'Muro Piedra I',     mat:'piedra', HP:2800, color1:'#484848',color2:'#606060',
+    rep:{piedra:18,ladrillo:7}, req:{piedra:50,ladrillo:18,metal:12,tabla:15,obsidiana:4}},
+  // Nv.5 — requiere Hueso de Gigante + Cristal del Diluvio
+  {nombre:'Muro Piedra II',    mat:'piedra', HP:4500, color1:'#363636',color2:'#4a4a4a',
+    rep:{piedra:30,ladrillo:14,metal:5}, req:{piedra:80,ladrillo:35,metal:22,obsidiana:10,hueso_g:6,cristal_d:4}},
+  // Nv.6 — Fortaleza Sagrada (requiere Hierro Divino)
+  {nombre:'Fortaleza Sagrada', mat:'piedra', HP:7000, color1:'#282828',color2:'#3c3c3c',
+    rep:{piedra:45,ladrillo:20,metal:10,hierro_div:1}, req:{piedra:120,ladrillo:60,metal:40,hueso_g:14,cristal_d:10,hierro_div:6,resina_s:12}},
 ];
 // Posiciones fijas de artillería en el muro (relativas al centro de la zona)
 const ARTY_SLOTS = [
@@ -1198,7 +1210,12 @@ const ITEMS={
   // Nuevos items — profundidad
   madera_g:{n:'Madera de Gofer',e:'🌲',t:'b',d:'Madera sagrada para el Arca'},
   alquitran:{n:'Alquitrán',e:'🖤',t:'b',d:'Sella el Arca'},
-  metal:{n:'Grapas de metal',e:'⚙️',t:'b',d:'Refuerza el Arca'},
+  metal:     {n:'Grapas de metal',   e:'⚙️', t:'b',d:'Refuerza el Arca'},
+  obsidiana: {n:'Obsidiana',          e:'🟫', t:'b',d:'Piedra volcánica — rarísima. Cae al romper rocas de noche (3%)'},
+  hueso_g:   {n:'Hueso de Gigante',   e:'🦴', t:'b',d:'Cae de Nefilim líderes (25%)'},
+  cristal_d: {n:'Cristal del Diluvio',e:'💎', t:'b',d:'Aparece en lluvia (4%). Muy raro'},
+  resina_s:  {n:'Resina Sagrada',     e:'🟡', t:'b',d:'Se fabrica con 5 resinas en el altar'},
+  hierro_div:{n:'Hierro Divino',      e:'🔩', t:'b',d:'Solo cae de Goliat (30%). Extremadamente raro'},
   cuero:{n:'Cuero curtido',e:'🟤',t:'r',d:'Protección'},
   semilla:{n:'Semillas',e:'🌱',t:'r',d:'Planta cultivos'},
   trigo:{n:'Trigo',e:'🌾',t:'c',d:'+15 hambre',fx:{hunger:15}},
@@ -1948,6 +1965,8 @@ function drawObjs(cx,cy){
     drawObjAt(o,sx,sy);
   });
   structs.forEach(s=>{
+    // Ignorar structs de arca antigua — ahora se dibuja siempre en el centro
+    if(s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3') return;
     let ox=s.tx*TILE, oy=s.ty*TILE;
     while(ox-cx > MW*TILE/2) ox -= MW*TILE;
     while(cx-ox > MW*TILE/2) ox += MW*TILE;
@@ -1956,7 +1975,9 @@ function drawObjs(cx,cy){
     const sx=ox-cx, sy=oy-cy;
     drawStrAt(s,sx,sy);
   });
-  // Dibujar el muro perimetral si está construido
+  // Arca épica permanente en el centro del muro
+  drawArcaEpicaCentro(cx,cy);
+  // Muro perimetral
   if(nivelMuro>0){ drawSueloDentroMuro(cx,cy); drawMuroPerimetral(cx,cy); }
 }
 
@@ -1966,6 +1987,188 @@ function drawObjs(cx,cy){
 // Borde del muro: radio 10 tiles alrededor del centro
 // ════════════════════════════════════════════════════════════
 const MURO_CX=40, MURO_CY=40, MURO_R=14; // tiles — centro del mapa 80×80, radio épico
+
+// ════════════════════════════════════════════════════════════
+// ARCA ÉPICA PERMANENTE — centro del muro, escala con arcaProgress
+// ════════════════════════════════════════════════════════════
+function drawArcaEpicaCentro(cx,cy){
+  const ax=MURO_CX*TILE-cx, ay=MURO_CY*TILE-cy;
+  const T2=Date.now();
+  const prog=arcaProgress||0; // 0=solo cimientos, 1=casco, 2=cubierta, 3=completa
+
+  ctx.save();ctx.translate(ax, ay+TILE*0.5);
+
+  if(prog===0){
+    // ── CIMIENTOS — plataforma de troncos ──
+    const topD=8;
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(-44,18,88,10);
+    // Cara lateral derecha
+    ctx.fillStyle='#2a1204';
+    ctx.beginPath();ctx.moveTo(44,-8);ctx.lineTo(44+topD,-8-topD);
+    ctx.lineTo(44+topD,20-topD);ctx.lineTo(44,20);ctx.closePath();ctx.fill();
+    // Base principal
+    ctx.fillStyle='#3d2008';ctx.fillRect(-44,-8,88,28);
+    ctx.fillStyle='#5a3010';ctx.fillRect(-42,-6,84,24);
+    // Tablones con clavos
+    for(let i=-40;i<40;i+=10){
+      const col=i%20===0?'#4a2808':'#6a3a14';
+      ctx.fillStyle=col;ctx.fillRect(i,-5,8,20);
+      ctx.fillStyle='#8a5020';ctx.fillRect(i+3,-5,3,3);
+    }
+    // Techo 2.5D
+    ctx.fillStyle='#2a1204';
+    ctx.beginPath();ctx.moveTo(-44,-8);ctx.lineTo(-44+topD,-8-topD);
+    ctx.lineTo(44+topD,-8-topD);ctx.lineTo(44,-8);ctx.closePath();ctx.fill();
+    // Cruz
+    ctx.fillStyle='#c9a84c';ctx.fillRect(-3,-18,6,14);ctx.fillRect(-9,-13,18,5);
+    ctx.font='bold 7px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.9)';ctx.textAlign='center';
+    ctx.fillText('⚓ CIMIENTOS',0,32);
+  }
+  else if(prog===1){
+    // ── CASCO — barca con quilla ──
+    const topD=10;
+    ctx.fillStyle='rgba(0,0,0,0.45)';ctx.ellipse(topD/2,22,56,7,0,0,Math.PI*2);ctx.fill();
+    // Quilla (forma de bote)
+    ctx.fillStyle='#3d2008';
+    ctx.beginPath();ctx.moveTo(-50,20);ctx.lineTo(-44,-4);ctx.lineTo(44,-4);ctx.lineTo(50,20);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5a3010';
+    ctx.beginPath();ctx.moveTo(-48,18);ctx.lineTo(-42,-2);ctx.lineTo(42,-2);ctx.lineTo(48,18);ctx.closePath();ctx.fill();
+    // Tablones de quilla
+    for(let i=-40;i<40;i+=7){
+      const col=i%14===0?'#3a1808':'#5a3010';
+      ctx.fillStyle=col;ctx.fillRect(i,-1,6,18);
+    }
+    // Brea en juntas
+    ctx.fillStyle='#1a0800';ctx.fillRect(-48,-1,96,2);
+    // Paredes del casco
+    ctx.fillStyle='#4a2808';ctx.fillRect(-44,-22,14,20);ctx.fillRect(30,-22,14,20);
+    ctx.fillStyle='#5a3010';ctx.fillRect(-43,-21,11,18);ctx.fillRect(31,-21,11,18);
+    // Cubierta central
+    ctx.fillStyle='#5a3210';ctx.fillRect(-30,-20,60,32);
+    for(let i=-28;i<28;i+=7){ctx.fillStyle='#6a3814';ctx.fillRect(i,-19,5,30);}
+    // Cubierta techo 2.5D
+    ctx.fillStyle='#3a2008';
+    ctx.beginPath();ctx.moveTo(-30,-20);ctx.lineTo(-30+topD,-20-topD);
+    ctx.lineTo(30+topD,-20-topD);ctx.lineTo(30,-20);ctx.closePath();ctx.fill();
+    ctx.font='bold 7px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.9)';ctx.textAlign='center';
+    ctx.fillText('🏗️ CASCO',0,32);
+  }
+  else if(prog>=2){
+    // ── ARCA COMPLETA 2.5D épica ──
+    const topD=14;
+    const BW=100, BH=26, WH=40, RH=30;
+    const glowPulse=Math.sin(T2/2800)*0.5+0.5;
+
+    // Sombra
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.beginPath();ctx.ellipse(topD/2,BH/2+12,BW/2+12,9,0,0,Math.PI*2);ctx.fill();
+
+    // Cara lateral derecha — perspectiva completa
+    ctx.fillStyle='#2a1204';
+    ctx.beginPath();
+    ctx.moveTo(BW/2-4,BH/2+4);ctx.lineTo(BW/2-4+topD,BH/2+4-topD);
+    ctx.lineTo(BW/2-4+topD,-WH+4-topD);ctx.lineTo(BW/2-4,-WH+4);
+    ctx.closePath();ctx.fill();
+    // Tablones laterales
+    for(let y=-WH+6;y<BH/2;y+=7){
+      ctx.fillStyle=y%14===0?'#3a1808':'#4a2410';
+      ctx.beginPath();
+      ctx.moveTo(BW/2-4,y);ctx.lineTo(BW/2-4+topD,y-topD);
+      ctx.lineTo(BW/2-4+topD,y+6-topD);ctx.lineTo(BW/2-4,y+6);
+      ctx.closePath();ctx.fill();
+    }
+
+    // Quilla
+    ctx.fillStyle='#3d2008';
+    ctx.beginPath();ctx.moveTo(-BW/2+6,BH/2+6);ctx.lineTo(-BW/2,-2);
+    ctx.lineTo(BW/2,-2);ctx.lineTo(BW/2+6,BH/2+6);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5a3010';
+    ctx.beginPath();ctx.moveTo(-BW/2+8,BH/2+4);ctx.lineTo(-BW/2+3,-1);
+    ctx.lineTo(BW/2-3,-1);ctx.lineTo(BW/2+3,BH/2+4);ctx.closePath();ctx.fill();
+    // Clavos de brea
+    ctx.fillStyle='#1a0800';ctx.fillRect(-BW/2,-1,BW,2);
+    ctx.fillStyle='#8a8a6a';for(let xi=-BW/2+8;xi<BW/2;xi+=16){ctx.fillRect(xi,0,2,4);}
+
+    // Paredes laterales
+    ctx.fillStyle='#4a2a08';ctx.fillRect(-BW/2+3,-WH,14,WH);ctx.fillRect(BW/2-17,-WH,14,WH);
+    ctx.fillStyle='#5a3410';ctx.fillRect(-BW/2+5,-WH+2,10,WH-4);ctx.fillRect(BW/2-15,-WH+2,10,WH-4);
+    // Ventanas en paredes
+    ctx.fillStyle='#2a1608';ctx.fillRect(-BW/2+6,-WH+12,10,8);
+    ctx.fillStyle='rgba(180,200,255,0.2)';ctx.fillRect(-BW/2+7,-WH+13,8,6);
+    ctx.fillStyle='#2a1608';ctx.fillRect(BW/2-16,-WH+12,10,8);
+    ctx.fillStyle='rgba(180,200,255,0.2)';ctx.fillRect(BW/2-15,-WH+13,8,6);
+
+    // Cubierta central
+    ctx.fillStyle='#5a3210';ctx.fillRect(-BW/2+17,-WH+3,BW-34,WH);
+    for(let xi=-BW/2+19;xi<BW/2-17;xi+=8){
+      ctx.fillStyle=xi%16===0?'#4a2808':'#6a3814';ctx.fillRect(xi,-WH+4,6,WH-6);
+    }
+    // Cubierta superior 2.5D
+    ctx.fillStyle='#3a2008';
+    ctx.beginPath();
+    ctx.moveTo(-BW/2+17,-WH+3);ctx.lineTo(-BW/2+17+topD,-WH+3-topD);
+    ctx.lineTo(BW/2-17+topD,-WH+3-topD);ctx.lineTo(BW/2-17,-WH+3);
+    ctx.closePath();ctx.fill();
+
+    // Puerta lateral 2.5D
+    ctx.fillStyle='#2a1008';ctx.fillRect(BW/2-40,-WH+6,16,24);
+    ctx.fillStyle='#3a1808';
+    ctx.beginPath();ctx.moveTo(BW/2-40,-WH+6);ctx.lineTo(BW/2-40+topD/2,-WH+6-topD/2);
+    ctx.lineTo(BW/2-24+topD/2,-WH+6-topD/2);ctx.lineTo(BW/2-24,-WH+6);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#c9a84c';ctx.fillRect(BW/2-28,-WH+18,2,2);
+
+    // TECHO a dos aguas 2.5D
+    ctx.fillStyle='#4a2808';
+    ctx.beginPath();ctx.moveTo(-BW/2+17,-WH+3);ctx.lineTo(0,-WH-RH);ctx.lineTo(BW/2-17,-WH+3);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5a3010';
+    ctx.beginPath();ctx.moveTo(-BW/2+22,-WH+3);ctx.lineTo(0,-WH-RH+5);ctx.lineTo(BW/2-22,-WH+3);ctx.closePath();ctx.fill();
+    // Cara lateral del techo
+    ctx.fillStyle='#3a1c08';
+    ctx.beginPath();
+    ctx.moveTo(BW/2-17,-WH+3);ctx.lineTo(0,-WH-RH);
+    ctx.lineTo(topD,-WH-RH-topD);ctx.lineTo(BW/2-17+topD,-WH+3-topD);
+    ctx.closePath();ctx.fill();
+    // Tablillas del tejado
+    ctx.strokeStyle='#3a1808';ctx.lineWidth=1;
+    for(let xi=-BW/2+22;xi<BW/2-17;xi+=10){
+      ctx.beginPath();ctx.moveTo(xi,-WH+3);ctx.lineTo(xi/3,-WH-RH+5);ctx.stroke();
+    }
+    // Buhardilla
+    ctx.fillStyle='#6a4820';ctx.fillRect(-7,-WH-RH+7,14,10);
+    ctx.fillStyle='rgba(200,220,255,0.25)';ctx.fillRect(-6,-WH-RH+8,12,8);
+    ctx.fillStyle='#4a2808';ctx.fillRect(-1,-WH-RH+7,2,10);ctx.fillRect(-5,-WH-RH+12,12,2);
+
+    // Asta con bandera — brilla levemente
+    ctx.strokeStyle='#8a6030';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,-WH-RH);ctx.lineTo(0,-WH-RH-24);ctx.stroke();
+    const flagAlpha=0.85+glowPulse*0.15;
+    ctx.globalAlpha=flagAlpha;
+    ctx.fillStyle='#c9a84c';ctx.fillRect(0,-WH-RH-24,14,8);
+    ctx.font='6px Cinzel,serif';ctx.fillStyle='#1a0800';ctx.textAlign='left';
+    ctx.fillText('✝',2,-WH-RH-17);
+    ctx.globalAlpha=1;
+
+    // Cuerdas de tensión
+    ctx.strokeStyle='rgba(120,80,20,0.55)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(-BW/2+3,-WH/2);ctx.lineTo(-BW/2+17,-WH+3);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(BW/2-3,-WH/2);ctx.lineTo(BW/2-17,-WH+3);ctx.stroke();
+
+    // Anillas metálicas
+    ctx.fillStyle='#8a8a6a';
+    for(let xi=-BW/2+20;xi<BW/2-17;xi+=20){ctx.fillRect(xi+1,-2,3,5);}
+
+    // Brillo dorado suave si arca completa (prog>=3)
+    if(prog>=3){
+      ctx.fillStyle=`rgba(201,168,76,${glowPulse*0.07})`;
+      ctx.fillRect(-BW/2+17,-WH+3,BW-34,WH);
+      ctx.fillStyle=`rgba(201,168,76,${glowPulse*0.04})`;
+      ctx.beginPath();ctx.moveTo(-BW/2+17,-WH+3);ctx.lineTo(0,-WH-RH);ctx.lineTo(BW/2-17,-WH+3);ctx.closePath();ctx.fill();
+    }
+    ctx.font='bold 8px Cinzel,serif';ctx.fillStyle='rgba(201,168,76,0.95)';ctx.textAlign='center';
+    ctx.fillText('⛵ EL ARCA',0,BH/2+18);
+  }
+  ctx.restore();
+}
 
 // ── Suelo especial dentro del recinto del muro ──────────
 function drawSueloDentroMuro(cx,cy){
@@ -2897,6 +3100,17 @@ function drawStrAt(s,sx,sy){
 
     // ══ ARTILLERÍA DEL MURO ══════════════════════════════════
     case'arco_muro':{
+      // Destello de disparo si recién disparó (cdTiro<6)
+      if(s.cdTiro!==undefined&&s.cdTiro<6){
+        ctx.save();
+        ctx.globalAlpha=(6-s.cdTiro)/6*0.9;
+        const gf=ctx.createRadialGradient(sx,sy-18,0,sx,sy-18,12);
+        gf.addColorStop(0,'rgba(255,230,80,0.9)');
+        gf.addColorStop(1,'rgba(255,120,0,0)');
+        ctx.fillStyle=gf;ctx.beginPath();ctx.arc(sx,sy-18,12,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      }
+      // Arco del muro
       // Base de madera
       ctx.fillStyle='#4a2808';ctx.fillRect(-10,0,20,10);
       ctx.fillStyle='#6a3a10';ctx.fillRect(-8,1,16,7);
@@ -2920,6 +3134,17 @@ function drawStrAt(s,sx,sy){
       break;}
 
     case'ballista':{
+      if(s.cdTiro!==undefined&&s.cdTiro<8){
+        ctx.save();
+        ctx.globalAlpha=(8-s.cdTiro)/8*0.95;
+        const gb=ctx.createRadialGradient(sx,sy-14,0,sx,sy-14,14);
+        gb.addColorStop(0,'rgba(120,200,255,1)');
+        gb.addColorStop(0.4,'rgba(60,140,255,0.6)');
+        gb.addColorStop(1,'rgba(0,80,200,0)');
+        ctx.fillStyle=gb;ctx.beginPath();ctx.arc(sx,sy-14,14,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      }
+      // Ballista
       // Base giratoria
       ctx.fillStyle='#3a2008';ctx.fillRect(-14,2,28,10);ctx.fillRect(-10,0,20,4);
       ctx.fillStyle='#5a3010';ctx.fillRect(-12,3,24,7);
@@ -2943,6 +3168,21 @@ function drawStrAt(s,sx,sy){
       break;}
 
     case'catapulta':{
+      if(s.cdTiro!==undefined&&s.cdTiro<12){
+        ctx.save();
+        ctx.globalAlpha=(12-s.cdTiro)/12*0.85;
+        const gc=ctx.createRadialGradient(sx,sy-10,0,sx,sy-10,18);
+        gc.addColorStop(0,'rgba(255,180,40,0.9)');
+        gc.addColorStop(0.5,'rgba(200,80,10,0.5)');
+        gc.addColorStop(1,'rgba(100,20,0,0)');
+        ctx.fillStyle=gc;ctx.beginPath();ctx.arc(sx,sy-10,18,0,Math.PI*2);ctx.fill();
+        // Humo de pólvora
+        ctx.globalAlpha*=0.4;
+        ctx.fillStyle='rgba(180,160,130,0.5)';
+        ctx.beginPath();ctx.arc(sx+4,sy-16,10,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      }
+      // Catapulta
       // Base robusta con ruedas
       ctx.fillStyle='#3a2008';ctx.fillRect(-18,4,36,12);
       ctx.fillStyle='#5a3010';ctx.fillRect(-16,5,32,9);
@@ -3572,6 +3812,8 @@ function update(){
   const nx=P.x+dx*spd,ny=P.y+dy*spd;
   const bl=colCheck(nx,ny);
   if(!bl.x)P.x=nx;if(!bl.y)P.y=ny;
+  // ── Colisión con el muro perimetral ──
+  if(nivelMuro>0) aplicarColisionMuro();
   // Wrap robusto — mapa infinito circular
   const mapW=MW*TILE, mapH=MH*TILE;
   if(P.x < 0)     P.x += mapW;
@@ -3841,8 +4083,13 @@ window.doInteract=function(){
       const pieQty=4+Math.floor(Math.random()*3);
       const barQty=Math.random()<0.4?2:1;
       addItem('piedra',pieQty);addItem('barro',barQty);
+      // Obsidiana de noche (3% roca) — material raro para muro
+      const obsQty=(wTime>0.78||wTime<0.25)&&Math.random()<0.03?1:0;
+      if(obsQty){addItem('obsidiana',1);notif('🟫 ¡Obsidiana! Roca volcánica — sirve para el muro','gld');}
       removeObj(o);sndCollect();addXP(8);
-      addLootAnim(o.tx*TILE,o.ty*TILE-20,[{e:'🪨',qty:pieQty},{e:'🟫',qty:barQty}]);
+      const lootRoc=[{e:'🪨',qty:pieQty},{e:'🟫',qty:barQty}];
+      if(obsQty) lootRoc.push({e:'🟫',qty:1});
+      addLootAnim(o.tx*TILE,o.ty*TILE-20,lootRoc);
     } else {
       addItem('piedra',1);
     }
@@ -4370,6 +4617,12 @@ window.closeLevelUp=function(){
 function doOrar(){
   if(!structs.find(s=>s.tipo==='altar'&&Math.hypot(s.tx*TILE-P.x,s.ty*TILE-P.y)<80)){
     notif('Debes estar junto al altar','red');return;
+  }
+  // Resina Sagrada — al orar con 5 resinas se bendicen
+  if(cntItem('resina')>=5){
+    removeItem('resina',5);addItem('resina_s',1);
+    notif('🟡 ¡Resina Sagrada! Bendecida en el altar (+1)','gld');
+    sndLevelUp(); return;
   }
   const sp=P.sp; // puntos de talento
   // La oración cuesta 1 minuto de juego (tick)
@@ -6391,6 +6644,84 @@ function spawnNefilim(){
   sndNotifBad();
 }
 
+// ── Colisión de Noé con el muro — solo entra por la puerta ──
+// La puerta está en el muro NORTE, centro X = MURO_CX, tile Y = MURO_CY-MURO_R
+function aplicarColisionMuro(){
+  const pr=10; // radio del jugador en px
+  const wallPx=TILE*0.52; // grosor de colisión del muro
+
+  // Límites del recinto interior
+  const left  =(MURO_CX-MURO_R)*TILE;
+  const right =(MURO_CX+MURO_R)*TILE+TILE;
+  const top   =(MURO_CY-MURO_R)*TILE;
+  const bottom=(MURO_CY+MURO_R)*TILE+TILE;
+
+  // Zona de la puerta (norte, centro)
+  const gateLeft =(MURO_CX-1)*TILE;
+  const gateRight=(MURO_CX+2)*TILE;
+  const gateTop  = top - TILE*1.5;
+  const gateBot  = top + TILE*1.5;
+
+  const px=P.x, py=P.y;
+
+  // ¿Está intentando cruzar el muro NORTE?
+  if(px>left+TILE && px<right-TILE){
+    // Cruce norte → entrar al recinto
+    if(py+pr>top && py-pr<top+wallPx){
+      // Permitir solo por la puerta
+      if(px<gateLeft||px>gateRight){
+        P.y = top - pr;  // empujar afuera
+      }
+    }
+    // Cruce norte → salir del recinto
+    if(py-pr<top+TILE && py+pr>top-wallPx && noeDentroMuro){
+      if(px<gateLeft||px>gateRight){
+        P.y = top + TILE + pr;  // empujar adentro
+      }
+    }
+  }
+
+  // ¿Está intentando cruzar el muro SUR?
+  if(px>left+TILE && px<right-TILE){
+    if(py-pr<bottom && py+pr>bottom-wallPx){
+      P.y=bottom-wallPx-pr;
+    }
+    if(py+pr>bottom-TILE && py-pr<bottom+wallPx){
+      P.y=bottom+wallPx+pr;
+    }
+  }
+
+  // ¿Está intentando cruzar el muro OESTE?
+  if(py>top+TILE && py<bottom-TILE){
+    if(px+pr>left && px-pr<left+wallPx){
+      P.x = px < left+wallPx/2 ? left-pr : left+wallPx+pr;
+    }
+  }
+
+  // ¿Está intentando cruzar el muro ESTE?
+  if(py>top+TILE && py<bottom-TILE){
+    if(px-pr<right && px+pr>right-wallPx){
+      P.x = px > right-wallPx/2 ? right+pr : right-wallPx-pr;
+    }
+  }
+
+  // Detectar si Noé cruzó la puerta (auto-toggle noeDentroMuro)
+  const dentroAhora = (px>left+TILE && px<right-TILE && py>top+TILE && py<bottom-TILE);
+  if(dentroAhora !== noeDentroMuro){
+    // Solo cambiar si se pasó por la zona de la puerta
+    const enZonaPuerta=px>=gateLeft && px<=gateRight && py>=gateTop && py<=gateBot+TILE*2;
+    if(enZonaPuerta){
+      noeDentroMuro=dentroAhora;
+      puertoAbierta=dentroAhora;
+      if(dentroAhora) notif('🏰 Noé entró al refugio','gld');
+      else notif('🚪 Noé salió del refugio','');
+    } else if(!dentroAhora){
+      // Estaba dentro pero salió por el muro (bug) — devolverlo
+      P.y=top+TILE*2; P.x=Math.max(left+TILE,Math.min(right-TILE,P.x));
+    }
+  }
+}
+
 function updateNefilim(){
   const isNight=wTime>0.78||wTime<0.25;
   if(!isNight){nefilim=[];return;}
@@ -6412,33 +6743,36 @@ function updateNefilim(){
     }
     if(fogonNear&&distP<200){n.stunT=60;return;}
 
-    // Targeting: muro perimetral > arca > jugador
-    const arca=structs.find(s=>s.tipo==='arca1'||s.tipo==='arca2'||s.tipo==='arca3');
-    const distArca=arca?Math.hypot(arca.tx*TILE-n.x,arca.ty*TILE-n.y):9999;
+    // ── TARGETING: muro perimetral ↔ jugador (alternan) ──
+    // Los Nefilim siempre tienen DOS objetivos: el muro y Noé.
+    const muroTX=MURO_CX*TILE, muroTY=MURO_CY*TILE;
+    const muroRad=MURO_R*TILE;
+    const distMuro=Math.max(0,Math.hypot(n.x-muroTX,n.y-muroTY)-muroRad);
 
-    // ¿El Nefilim está cerca del muro perimetral?
-    const muroTX=MURO_CX*TILE, muroTY=MURO_CY*TILE, muroRad=MURO_R*TILE;
-    const dxMuro=n.x-muroTX, dyMuro=n.y-muroTY;
-    const enPerimetro=(Math.abs(dxMuro)<muroRad+80||Math.abs(dyMuro)<muroRad+80);
-    const fueraDentro=(Math.abs(dxMuro)>muroRad-40||Math.abs(dyMuro)>muroRad-40);
-    const cercaDeMuro=nivelMuro>0&&enPerimetro&&fueraDentro;
-
-    if(cercaDeMuro){
-      n.target='muro';n._targetStruct=null;
-    } else if(arca&&distArca<200&&distP>200&&Math.random()<0.45){
-      n.target='arca';n._targetStruct=arca;
+    // Prioridad dinámica: si el muro está cerca, atacarlo; si no, ir a Noé
+    const muroExiste=nivelMuro>0;
+    const prefiereMuro=muroExiste && (distMuro<TILE*3 || (distP>400&&distMuro<TILE*8));
+    // Líderes siempre atacan el muro primero
+    const esLider=n.lider||n.escala>1.5;
+    if(muroExiste&&(prefiereMuro||esLider)){
+      n.target='muro';
+    } else if(!muroExiste || distP<distMuro*0.6){
+      n.target='jugador';
     } else {
-      n.target='jugador';n._targetStruct=null;
+      // Alternar objetivos cada ~5 segundos para crear tensión
+      n.target=(Math.floor((tick+idx*37)/300)%2===0)?'muro':'jugador';
+      if(!muroExiste) n.target='jugador';
     }
+    n._targetStruct=null;
 
     let tx,ty;
     if(n.target==='muro'){
-      // Moverse hacia el punto del muro más cercano
-      const clampX=Math.max(muroTX-muroRad,Math.min(muroTX+muroRad,n.x));
-      const clampY=Math.max(muroTY-muroRad,Math.min(muroTY+muroRad,n.y));
-      tx=clampX;ty=clampY;
-    } else if(n.target==='arca'&&arca){tx=arca.tx*TILE;ty=arca.ty*TILE;}
-    else{tx=P.x;ty=P.y;}
+      // Moverse hacia el punto de la pared del muro más cercano a ellos
+      const fromCX=n.x-muroTX, fromCY=n.y-muroTY;
+      const angle=Math.atan2(fromCY,fromCX);
+      tx=muroTX+Math.cos(angle)*muroRad;
+      ty=muroTY+Math.sin(angle)*muroRad;
+    } else {tx=P.x;ty=P.y;}
 
     const dx=tx-n.x,dy=ty-n.y,dist=Math.hypot(dx,dy);
     if(dist>55){
@@ -6448,16 +6782,23 @@ function updateNefilim(){
       if(n.attackT>40){
         n.attackT=0;
         if(n.target==='muro'&&nivelMuro>0){
-          // Daño al muro perimetral
-          const muroDmg=Math.floor(n.dmg*(1+n.lider?0.5:0));
+          const muroDmg=Math.floor(n.dmg*(n.lider?1.8:1));
           hpMuro=Math.max(0,hpMuro-muroDmg);
-          addPart(n.x,n.y-20,`-${muroDmg}`);
-          if(tick%120===0) notif(`👹 ¡Gigante ataca el muro! -${muroDmg}`,'red');
+          addPart(n.x,n.y-20,`💥-${muroDmg}`);
+          // Partículas de impacto en el muro
+          for(let pi=0;pi<5;pi++){
+            const pa=Math.random()*Math.PI*2;
+            parts.push({x:n.x+(Math.random()-0.5)*20,y:n.y-10,
+              vx:Math.cos(pa)*1.5,vy:Math.sin(pa)*1.5-1.5,
+              life:22,ml:22,e:'flash',isFlash:true});
+          }
+          if(tick%90===0) notif(`👹 ¡Gigante golpea el muro! -${muroDmg}`,'red');
           if(hpMuro<=0){
             nivelMuro=Math.max(0,nivelMuro-1);
             if(nivelMuro>0){hpMuro=MURO_NIVELES[nivelMuro].HP;}
+            else{hpMuro=0;}
             sndNotifBad();
-            notif('💥 ¡El muro fue degradado a un nivel inferior!','red');
+            notif('💥 ¡El muro fue destruido! Reconstruye para proteger el Arca.','red');
           }
         } else if(n.target==='jugador'){
           // Si Noé está dentro del recinto protegido, los Nefilim no alcanzan al jugador
@@ -6494,7 +6835,7 @@ function updateNefilim(){
 // La artillería detecta Nefilim en su perímetro y lanza
 // proyectiles reales que viajan hasta el objetivo.
 function tickArtilleria(){
-  if(nivelMuro<1) return;  // sin muro = sin artillería fija
+  if(nivelMuro<1) return;
   const ARTY=['arco_muro','ballista','catapulta'];
   const isNight=wTime>0.78||wTime<0.25;
   if(!isNight||!nefilim.length) return;
@@ -6504,8 +6845,7 @@ function tickArtilleria(){
       s.cdTiro=(s.cdTiro||0)+1;
       const cd=tipo==='arco_muro'?50:tipo==='ballista'?80:130;
       if(s.cdTiro<cd) return;
-      const rango=tipo==='arco_muro'?280:tipo==='ballista'?380:320;
-      // Buscar nefilim dentro del rango
+      const rango=tipo==='arco_muro'?300:tipo==='ballista'?400:340;
       let closest=null,minD=rango;
       nefilim.forEach(n=>{
         if(n.hp<=0) return;
@@ -6515,8 +6855,11 @@ function tickArtilleria(){
       if(!closest) return;
       s.cdTiro=0;
       const nv=s.nivel||1;
-      // Disparar proyectil visual
       const ox=s.tx*TILE+TILE/2, oy=s.ty*TILE+TILE/2;
+
+      // ── Partículas de DISPARO desde el arma ──
+      addParticulasDisparo(ox,oy,closest.x,closest.y,tipo);
+
       if(tipo==='arco_muro'){
         const dmg=Math.floor((8+nv*4)*(1+nv*0.18));
         proyectiles.push({x:ox,y:oy-10,tx:closest.x,ty:closest.y-10,
@@ -6525,13 +6868,50 @@ function tickArtilleria(){
         const dmg=Math.floor((18+nv*8)*(1+nv*0.15));
         proyectiles.push({x:ox,y:oy-8,tx:closest.x,ty:closest.y-8,
           spd:12,tipo:'perno',dmg,targetRef:closest,life:120,splash:false});
-      } else { // catapulta
+      } else {
         const dmg=Math.floor(12+nv*5);
         proyectiles.push({x:ox,y:oy-6,tx:closest.x,ty:closest.y,
-          spd:5,tipo:'roca',dmg,targetRef:closest,life:180,splash:true,splashR:100});
+          spd:5,tipo:'roca',dmg,targetRef:closest,life:180,splash:true,splashR:110});
       }
     });
   });
+}
+
+// ── Partículas de DISPARO — destello en el cañon del arma ──
+function addParticulasDisparo(ox,oy,tx,ty,tipo){
+  const ang=Math.atan2(ty-oy,tx-ox);
+  if(tipo==='arco_muro'){
+    // Chispa dorada breve en la cuerda del arco
+    for(let i=0;i<5;i++){
+      const sp=1.5+Math.random()*2.5, a=ang+(Math.random()-0.5)*0.6;
+      parts.push({x:ox,y:oy-10,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.5,
+        life:14,ml:14,e:'flash',isFlash:true});
+    }
+    // Humo blanco leve
+    parts.push({x:ox,y:oy-12,vx:Math.cos(ang)*0.8,vy:-1.2,
+      life:20,ml:20,e:'💨',isFlash:false});
+  } else if(tipo==='ballista'){
+    // Destello más brillante, metálico
+    for(let i=0;i<8;i++){
+      const sp=2+Math.random()*4, a=ang+(Math.random()-0.5)*0.4;
+      parts.push({x:ox,y:oy-8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.5,
+        life:18,ml:18,e:'flash',isFlash:true});
+    }
+    parts.push({x:ox,y:oy-8,vx:Math.cos(ang)*1.2,vy:-0.8,
+      life:25,ml:25,e:'💨',isFlash:false});
+  } else {
+    // Catapulta — polvo y escombros al lanzar
+    for(let i=0;i<10;i++){
+      const sp=1+Math.random()*3, a=ang+(Math.random()-0.5)*1.2;
+      parts.push({x:ox,y:oy-6,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,
+        life:22,ml:22,e:'flash',isFlash:true});
+    }
+    parts.push({x:ox,y:oy-6,vx:-Math.cos(ang)*0.5,vy:-2.5,
+      life:28,ml:28,e:'💨',isFlash:false});
+    // Fragmento de piedra visual
+    parts.push({x:ox+Math.cos(ang)*8,y:oy+Math.sin(ang)*8-6,
+      vx:Math.cos(ang)*1.5,vy:-1.8,life:35,ml:35,e:'🪨',isFlash:false});
+  }
 }
 
 // ── Actualizar proyectiles (mover + impacto) ──────────────
@@ -6539,72 +6919,134 @@ function tickProyectiles(){
   proyectiles=proyectiles.filter(p=>{
     p.life--;
     if(p.life<=0) return false;
+    // Actualizar target si el nefilim se movió
+    if(p.targetRef&&p.targetRef.hp>0){
+      p.tx=p.targetRef.x; p.ty=p.targetRef.y-(p.tipo==='roca'?0:10);
+    }
     const dx=p.tx-p.x, dy=p.ty-p.y;
     const dist=Math.hypot(dx,dy);
-    if(dist<p.spd+2){
-      // Impacto
+    if(dist<p.spd+4){
       if(p.splash){
-        // Catapulta — daño en área
-        nefilim.forEach(n=>{
-          if(Math.hypot(n.x-p.tx,n.y-p.ty)<(p.splashR||100)){
-            n.hp-=p.dmg;
-          }
-        });
-        // Explosión visual
+        // ── IMPACTO CATAPULTA — explosión épica ──
+        const hitAny=nefilim.filter(n=>Math.hypot(n.x-p.tx,n.y-p.ty)<(p.splashR||110));
+        hitAny.forEach(n=>{ n.hp-=p.dmg; n.stunT=30; });
+        // Onda expansiva de destellos
+        for(let i=0;i<14;i++){
+          const ang=i/14*Math.PI*2, sp=2+Math.random()*4;
+          parts.push({x:p.tx,y:p.ty,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-1,
+            life:35,ml:35,e:'flash',isFlash:true});
+        }
+        // Fragmentos de roca volando
         for(let i=0;i<6;i++){
-          const ang=i/6*Math.PI*2;
-          parts.push({x:p.tx+Math.cos(ang)*14,y:p.ty+Math.sin(ang)*14,
-            vy:-0.8-Math.random()*1.2,vx:Math.cos(ang)*1.5,
-            life:30,ml:30,e:'flash',isFlash:true});
+          const ang=Math.random()*Math.PI*2, sp=1.5+Math.random()*3;
+          parts.push({x:p.tx,y:p.ty,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-2,
+            life:40,ml:40,e:'🪨',isFlash:false});
         }
-        addPart(p.tx,p.ty-4,'💥');
-      } else {
-        // Flecha/perno — daño directo
-        if(p.targetRef&&p.targetRef.hp>0){
-          p.targetRef.hp-=p.dmg;
-          addFlash(p.tx,p.ty);
+        // Polvo
+        parts.push({x:p.tx,y:p.ty-6,vx:0,vy:-1.8,life:35,ml:35,e:'💨',isFlash:false});
+        addPart(p.tx,p.ty-10,'💥');
+        if(hitAny.length>0) addPart(p.tx,p.ty-28,`-${p.dmg}×${hitAny.length}`);
+      } else if(p.targetRef&&p.targetRef.hp>0){
+        const wasAlive=p.targetRef.hp>0;
+        p.targetRef.hp-=p.dmg;
+        // ── IMPACTO FLECHA/PERNO ──
+        if(p.tipo==='flecha'){
+          // Chispas de sangre/impacto
+          for(let i=0;i<8;i++){
+            const ang=Math.random()*Math.PI*2, sp=0.8+Math.random()*2.5;
+            parts.push({x:p.tx,y:p.ty,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-1,
+              life:20,ml:20,e:'flash',isFlash:true});
+          }
+          addPart(p.tx,p.ty-20,`🏹-${p.dmg}`);
+        } else {
+          // Perno de ballista — impacto metálico más fuerte
+          for(let i=0;i<12;i++){
+            const ang=Math.random()*Math.PI*2, sp=1.5+Math.random()*3;
+            parts.push({x:p.tx,y:p.ty,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-1.5,
+              life:25,ml:25,e:'flash',isFlash:true});
+          }
+          // Chispas metálicas
+          for(let i=0;i<4;i++){
+            const ang=(i/4)*Math.PI*2, sp=2+Math.random()*2;
+            parts.push({x:p.tx,y:p.ty,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp-2,
+              life:18,ml:18,e:'✨',isFlash:false});
+          }
+          addPart(p.tx,p.ty-24,`⚡-${p.dmg}`);
         }
+        // Sacudida del Nefilim
+        if(p.targetRef.hp>0) p.targetRef.stunT=15;
       }
       return false;
     }
-    // Mover el proyectil
     p.x+=dx/dist*p.spd;
     p.y+=dy/dist*p.spd;
-    if(p.tipo==='roca') p.y+=0.3; // gravedad leve en roca
+    if(p.tipo==='roca'){ p.y+=0.4; p._arc=(p._arc||0)+0.06; p.y+=Math.sin(p._arc)*0.5; }
     return true;
   });
 }
 
-// ── Dibujar proyectiles en pantalla ───────────────────────
+// ── Dibujar proyectiles con estelas de partículas ───────────────
 function drawProyectiles(cx,cy){
   if(!proyectiles.length) return;
   const T2=Date.now();
   proyectiles.forEach(p=>{
     const sx=p.x-cx, sy=p.y-cy;
-    const a=Math.min(1,p.life/20);
+    const lifeRatio=Math.min(1,p.life/30);
     ctx.save();
+
     if(p.tipo==='flecha'){
-      // Flecha pixel art — pequeño segmento girado hacia el objetivo
       const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
+      // Estela dorada
+      for(let t=1;t<=4;t++){
+        ctx.globalAlpha=lifeRatio*(0.35-t*0.07);
+        ctx.fillStyle='rgba(255,200,50,0.6)';
+        ctx.beginPath();
+        ctx.arc(sx-Math.cos(ang)*t*4, sy-Math.sin(ang)*t*4, 1.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.globalAlpha=lifeRatio;
       ctx.translate(sx,sy);ctx.rotate(ang);
-      ctx.fillStyle=`rgba(180,140,60,${a})`;ctx.fillRect(-6,-1,10,2);
-      ctx.fillStyle=`rgba(220,60,20,${a})`;ctx.fillRect(-6,-2,4,4); // plumas
-      ctx.fillStyle=`rgba(180,180,130,${a})`;ctx.fillRect(4,-1,3,2); // punta
+      ctx.fillStyle='#b48c3c';ctx.fillRect(-7,-1,11,2);  // asta
+      ctx.fillStyle='#d04010';ctx.fillRect(-7,-2,4,4);   // plumas rojas
+      ctx.fillStyle='#c8c8a0';ctx.fillRect(4,-1.5,4,3);  // punta metal
+
     } else if(p.tipo==='perno'){
-      // Perno de ballesta — más grueso y oscuro
       const ang=Math.atan2(p.ty-p.y,p.tx-p.x);
+      // Estela azul metálica
+      for(let t=1;t<=5;t++){
+        ctx.globalAlpha=lifeRatio*(0.4-t*0.07);
+        ctx.fillStyle='rgba(100,180,255,0.5)';
+        ctx.beginPath();
+        ctx.arc(sx-Math.cos(ang)*t*5, sy-Math.sin(ang)*t*5, 2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.globalAlpha=lifeRatio;
       ctx.translate(sx,sy);ctx.rotate(ang);
-      ctx.fillStyle=`rgba(100,90,70,${a})`;ctx.fillRect(-8,-1.5,12,3);
-      ctx.fillStyle=`rgba(180,180,160,${a})`;ctx.fillRect(4,-2,5,4); // punta metal
-      ctx.fillStyle=`rgba(80,60,30,${a})`;ctx.fillRect(-8,-2,4,4); // culata
+      ctx.fillStyle='#786050';ctx.fillRect(-9,-2,14,4);  // cuerpo grueso
+      ctx.fillStyle='#d0d0b0';ctx.fillRect(5,-2.5,5,5);  // punta brillante
+      ctx.fillStyle='#504030';ctx.fillRect(-9,-2.5,5,5); // culata
+
     } else {
-      // Roca de catapulta — círculo oscuro con trayectoria parabólica
-      const pulse=0.85+Math.sin(T2/80)*0.15;
-      ctx.globalAlpha=a*pulse;
-      ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(sx,sy,5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#444';ctx.beginPath();ctx.arc(sx-1,sy-1,2.5,0,Math.PI*2);ctx.fill();
-      ctx.globalAlpha=a*0.3;
-      ctx.fillStyle='#666';ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
+      // Roca — sombra sobre el suelo + estela de polvo
+      const pulse=0.9+Math.sin(T2/70)*0.1;
+      // Sombra en el suelo (escala con altura de arco)
+      const shadowScale=0.5+0.5*Math.min(1,p.life/p.ml||1);
+      ctx.globalAlpha=0.25*shadowScale;
+      ctx.fillStyle='#000';
+      ctx.beginPath();ctx.ellipse(sx,sy+8,8*shadowScale,3,0,0,Math.PI*2);ctx.fill();
+      // Estela de polvo
+      for(let t=1;t<=3;t++){
+        const dx=(p.x-(p.tx||p.x))/Math.max(1,Math.hypot(p.tx-p.x,p.ty-p.y)||1);
+        const dy=(p.y-(p.ty||p.y))/Math.max(1,Math.hypot(p.tx-p.x,p.ty-p.y)||1);
+        ctx.globalAlpha=lifeRatio*(0.25-t*0.07);
+        ctx.fillStyle='rgba(160,130,80,0.5)';
+        ctx.beginPath();ctx.arc(sx+dx*t*6,sy+dy*t*6,3,0,Math.PI*2);ctx.fill();
+      }
+      ctx.globalAlpha=lifeRatio*pulse;
+      ctx.fillStyle='#2a2520';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#3d3530';ctx.beginPath();ctx.arc(sx-2,sy-2,3,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=lifeRatio*0.4;
+      ctx.fillStyle='#555';ctx.beginPath();ctx.arc(sx,sy,8,0,Math.PI*2);ctx.fill();
     }
     ctx.globalAlpha=1;
     ctx.restore();
@@ -6730,6 +7172,17 @@ function attackNefilim(){
       n.stunT=20;
       if(n.hp<=0){
         const sc=n.lider?(10+Math.floor(wDay/2)):(3+Math.floor(wDay/3));
+        // Drops raros de líderes
+        if(n.lider){
+          if(n.liderTipo?.id==='goliat'&&Math.random()<0.30){
+            addItem('hierro_div',1);
+            notif('🔩 ¡Hierro Divino de Goliat! Material ultrarraro','gld');
+          }
+          if(Math.random()<0.25){
+            addItem('hueso_g',1);
+            notif('🦴 ¡Hueso de Gigante! Material raro para el muro','gld');
+          }
+        }
         nefilim.splice(i,1);addXP(n.lider?80:30);addSiclos(sc);
         notif(n.lider?`⚔️ ¡${n.liderTipo.n} derrotado! +${sc}🥈`:`⚔️ ¡Gigante derrotado! +${sc}🥈`,'gld');
         sndLevelUp();
@@ -6749,7 +7202,7 @@ const ARCA_PARTES = [
   { id:'casco',    n:'Casco',           emoji:'🪵', req: ()=>arcaProgress>=1,   desc:'Estructura exterior' },
   { id:'cubierta', n:'Cubierta',        emoji:'🏗️', req: ()=>arcaProgress>=2,   desc:'Cubierta principal' },
   { id:'techo',    n:'Techo',           emoji:'🏠', req: ()=>arcaProgress>=3,   desc:'Techo y ventanas' },
-  { id:'brea',     n:'Brea protectora', emoji:'⬛', req: ()=>cntItem('brea')>=5, desc:'Sellado con brea' },
+  { id:'brea',     n:'Brea protectora', emoji:'⬛', req: ()=>cntItem('brea')>=3, desc:'Sellado con brea (3 unidades)' },
   { id:'animales', n:'Animales a bordo',emoji:'🐾', req: ()=>animalesEnArca>=2,  desc:'Animales embarcados' },
 ];
 
@@ -7365,6 +7818,11 @@ function drawNightVision(cx,cy){
 //  FASE 2 — DILUVIO
 // ════════════════════════════════════════════
 function updateDiluvio(){
+  // Cristal del Diluvio — 4% por tick de lluvia en la fase temprana
+  if(clima==='lluvia'&&Math.random()<0.0004){
+    addItem('cristal_d',1);
+    notif('💎 ¡Cristal del Diluvio! Recolectado de la lluvia','gld');
+  }
   if(arcaProgress<3) return;
   if(victoryAchieved) return;
   // El diluvio comienza a crecer a partir del día 20
@@ -7676,21 +8134,27 @@ window.construirMuro=function(){
 window.repararMuro=function(){
   if(nivelMuro<1){notif('Primero construye el muro','red');return;}
   const nv=MURO_NIVELES[nivelMuro];
-  if(hpMuro>=nv.HP){notif('El muro está en perfecto estado','');return;}
-  const danyo=nv.HP-hpMuro;
-  const madNec=Math.ceil(danyo/50)*(nivelMuro<=3?2:0);
-  const pieNec=Math.ceil(danyo/50)*(nivelMuro>=4?3:0);
-  if(madNec>0&&!hasItem('madera',madNec)){notif(`Necesitas 🪵×${madNec} para reparar`,'red');return;}
-  if(pieNec>0&&!hasItem('piedra',pieNec)){notif(`Necesitas 🪨×${pieNec} para reparar`,'red');return;}
-  if(madNec>0) removeItem('madera',madNec);
-  if(pieNec>0) removeItem('piedra',pieNec);
+  if(hpMuro>=nv.HP){notif('El muro esta en perfecto estado','');return;}
+  // Usar campo rep del nivel actual
+  const repReq=nv.rep||{};
+  if(Object.keys(repReq).length===0){
+    hpMuro=nv.HP;notif('\u{1f527} Muro reparado sin costo','gld');
+    updateHudMuro();return;
+  }
+  const miss=Object.entries(repReq).filter(([k,v])=>cntItem(k)<v);
+  if(miss.length){
+    notif('\u{1f527} Faltan: '+miss.map(([k,v])=>`${ITEMS[k]?.e||k}x${v}`).join(' '),'red');return;
+  }
+  Object.entries(repReq).forEach(([k,v])=>removeItem(k,v));
   hpMuro=nv.HP;
-  notif('🔧 ¡Muro reparado al 100%!','grn');
+  updateHudMuro();
+  notif('\u{1f527} Muro reparado al 100%!','gld');sndLevelUp();
 };
 
 // Helper: verificar si hay items suficientes
 function hasItems(obj){
-  return Object.entries(obj).every(([k,v])=>countItem(k)>=v);
+  if(!obj||typeof obj!=='object') return true;
+  return Object.entries(obj).every(([k,v])=>cntItem(k)>=v);
 }
 function getBonusEdificio(tipo){
   switch(tipo){
@@ -7945,6 +8409,14 @@ function renderPanelMuro(){
         🔧 Reparar muro
       </button>`;
     }
+    html+=`<div style="padding:6px 4px;font-size:0.63rem;color:#7a6a4a;border-top:1px solid rgba(201,168,76,0.15);margin-top:6px">
+      <span style="color:#c9a84c">Materiales raros:</span>
+      🟫 Obsidiana (rompe rocas de noche 3%) &bull;
+      🦴 Hueso Gigante (mata lideres 25%) &bull;
+      💎 Cristal Diluvio (lluvia 4%) &bull;
+      🟡 Resina Sagrada (ora con 5 resinas) &bull;
+      🔩 Hierro Divino (mata Goliat 30%)
+    </div>`;
     html+=`<button class="mbtn" style="font-size:0.72rem;border-color:rgba(255,255,255,0.15)"
       onclick="cerrarPanelMuro()">✕ Cerrar</button>`;
     btDiv.innerHTML=html;
