@@ -800,6 +800,36 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Cr
     title="Ver el Arca" style="border-color:rgba(100,160,255,0.5)">
     <span class="hfloat-icon">⛵</span><span class="hfloat-label">Ver Arca</span>
   </button>
+  <!-- Botón Admin — solo para haroldolmedoanchundia@gmail.com -->
+  <button id="btn-admin-float" onclick="abrirPanelAdmin()" style="display:none;
+    background:rgba(80,10,10,0.92);border:1.5px solid rgba(220,60,60,0.8);
+    border-radius:10px;padding:5px 8px;cursor:pointer;color:#ff9090;
+    font-family:Cinzel,serif;font-size:0.58rem;text-align:center;min-width:44px">
+    <div style="font-size:1rem;line-height:1">⚙️</div>
+    <div style="margin-top:1px;letter-spacing:0.02em">ADMIN</div>
+  </button>
+</div>
+
+<!-- ═══════════ PANEL ADMINISTRADOR ═══════════ -->
+<div id="panel-admin" style="display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);overflow-y:auto">
+  <div style="max-width:480px;margin:20px auto;background:linear-gradient(135deg,#1a0808,#0a0505);
+    border:2px solid rgba(220,60,60,0.7);border-radius:16px;padding:0 0 16px">
+    <!-- Header -->
+    <div style="background:rgba(200,30,30,0.3);border-radius:14px 14px 0 0;
+      padding:14px 18px;display:flex;justify-content:space-between;align-items:center;
+      border-bottom:1px solid rgba(220,60,60,0.4)">
+      <div>
+        <div style="font-family:Cinzel,serif;font-size:1rem;color:#ff8080;font-weight:900">
+          ⚙️ Panel Administrador</div>
+        <div style="font-size:0.62rem;color:#c06060;margin-top:2px">
+          haroldolmedoanchundia@gmail.com</div>
+      </div>
+      <button onclick="cerrarPanelAdmin()" style="background:none;border:1px solid rgba(220,60,60,0.5);
+        border-radius:8px;color:#ff8080;padding:5px 10px;cursor:pointer;font-size:0.8rem">✕</button>
+    </div>
+    <div id="admin-content" style="padding:14px 16px"></div>
+  </div>
 </div>
 
 <!-- Mobile pad -->
@@ -5902,9 +5932,15 @@ function gameOver(){
 }
 
 // ─── FIREBASE AUTH ────────────────────────────
+// ── ADMIN ──────────────────────────────────────────────
+const ADMIN_EMAIL='haroldolmedoanchundia@gmail.com';
+let isAdmin=false;
+
 onAuthStateChanged(auth,async u=>{
   // null → verificando | false → sin sesión | objeto → con sesión
   cu = u || false;
+  isAdmin = !!(u && u.email && u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase());
+  setTimeout(updateAdminBtn, 100); // mostrar/ocultar botón admin
 
   // Ocultar overlay de carga — siempre, pase lo que pase
   try{ document.getElementById('loadOverlay').classList.add('hidden'); }catch(e){}
@@ -9005,6 +9041,226 @@ function initBgMenu(){
 
 // ═══════════════════════════════════════════════════════
 // RANKING GLOBAL — rpg_ranking/{uid}
+
+// ════════════════════════════════════════════════════════════
+//  PANEL ADMINISTRADOR — solo haroldolmedoanchundia@gmail.com
+// ════════════════════════════════════════════════════════════
+function abrirPanelAdmin(){
+  if(!isAdmin){notif('Acceso denegado','red');return;}
+  document.getElementById('panel-admin').style.display='block';
+  gPause=true;
+  renderPanelAdmin();
+}
+window.abrirPanelAdmin=abrirPanelAdmin;
+
+function cerrarPanelAdmin(){
+  document.getElementById('panel-admin').style.display='none';
+  gPause=false;
+}
+window.cerrarPanelAdmin=cerrarPanelAdmin;
+
+function renderPanelAdmin(){
+  if(!isAdmin) return;
+  const el=document.getElementById('admin-content');
+  if(!el) return;
+
+  // Helpers: NO usar template literals con ${}  adentro de strings onclick
+  function ab(label,cmd,style){
+    style=style||'';
+    return '<button onclick="adminCmd(\''+cmd+'\')" style="background:rgba(180,20,20,0.4);border:1px solid rgba(220,60,60,0.6);border-radius:8px;color:#ffb0b0;padding:6px 10px;cursor:pointer;font-size:0.7rem;font-family:Cinzel,serif;margin:3px;'+style+'">'+label+'</button>';
+  }
+  function ag(label,cmd,style){
+    style=style||'';
+    return '<button onclick="'+cmd+'" style="background:rgba(120,90,10,0.5);border:1px solid rgba(201,168,76,0.7);border-radius:8px;color:#f0d080;padding:6px 10px;cursor:pointer;font-size:0.7rem;font-family:Cinzel,serif;margin:3px;'+style+'">'+label+'</button>';
+  }
+  function sec(title,body){
+    return '<div style="margin-bottom:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(220,60,60,0.25);border-radius:10px;overflow:hidden">'+
+      '<div style="background:rgba(180,20,20,0.3);padding:7px 12px;font-family:Cinzel,serif;font-size:0.72rem;color:#ff8080">'+title+'</div>'+
+      '<div style="padding:10px 12px">'+body+'</div></div>';
+  }
+
+  const nv=nivelMuro>0?MURO_NIVELES[nivelMuro]:{nombre:'Sin muro'};
+  const hpPct=nivelMuro>0?Math.ceil(hpMuro/MURO_NIVELES[nivelMuro].HP*100):0;
+
+  // Estado actual
+  let html='';
+  html+=sec('📊 Estado Actual',
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.68rem;color:#c0a0a0">'+
+    '<div>Nivel: <b style="color:#f0d080">Nv.'+P.lv+'</b></div>'+
+    '<div>HP: <b style="color:#e74c3c">'+Math.ceil(P.hp)+'/'+P.mhp+'</b></div>'+
+    '<div>Dia: <b style="color:#c9a84c">'+wDay+'</b></div>'+
+    '<div>Arca: <b style="color:#80c8ff">'+arcaProgress+'/3</b></div>'+
+    '<div>Muro: <b style="color:#a0e080">'+nv.nombre+'</b></div>'+
+    '<div>HP Muro: <b style="color:#80e0a0">'+hpPct+'%</b></div>'+
+    '<div>Familia: <b style="color:#e8c060">'+familia.length+' miembros</b></div>'+
+    '<div>Siclos: <b style="color:#d0d8e8">'+siclos+'🥈</b></div>'+
+    '</div>'
+  );
+
+  // Noé
+  html+=sec('🧑 Noé — Stats',
+    ab('❤️ HP Max',   'hp_max')+
+    ab('⚡ Todo Lleno','fill_all')+
+    ab('🌟 +10 Niveles','lv_up10')+
+    ab('🌟 +1 Nivel',  'lv_up1')+
+    ab('📅 +10 Dias',  'day10')+
+    ab('📅 Dia 100',   'day100')+
+    ab('🥈 +500 Siclos','siclos500')+
+    ab('💫 Max XP',    'max_xp')
+  );
+
+  // Materiales básicos
+  const mats=[
+    ['🪵 Madera x50','madera',50],['🪨 Piedra x50','piedra',50],
+    ['🌿 Fibra x30','fibra',30],['🪢 Cuerda x20','cuerda',20],
+    ['📋 Tabla x20','tabla',20],['🧱 Ladrillo x20','ladrillo',20],
+    ['⛓️ Metal x15','metal',15],['⬛ Brea x10','brea',10],
+    ['🖤 Alquitran x10','alquitran',10],['🌲 Gofer x20','madera_g',20],
+  ];
+  html+=sec('🎒 Materiales Basicos', mats.map(m=>'<button onclick="adminAddItem(\''+m[1]+'\','+m[2]+')" style="background:rgba(180,20,20,0.4);border:1px solid rgba(220,60,60,0.6);border-radius:8px;color:#ffb0b0;padding:6px 10px;cursor:pointer;font-size:0.7rem;font-family:Cinzel,serif;margin:3px;">'+m[0]+'</button>').join(''));
+
+  // Materiales raros
+  const raros=[
+    ['🟫 Obsidiana x10','obsidiana',10],['🦴 Hueso x10','hueso_g',10],
+    ['💎 Cristal x8','cristal_d',8],['🟡 R.Sagrada x10','resina_s',10],
+    ['🔩 Hierro Div x8','hierro_div',8],
+  ];
+  html+=sec('💎 Materiales Raros', raros.map(m=>'<button onclick="adminAddItem(\''+m[1]+'\','+m[2]+')" style="background:rgba(120,90,10,0.5);border:1px solid rgba(201,168,76,0.7);border-radius:8px;color:#f0d080;padding:6px 10px;cursor:pointer;font-size:0.7rem;font-family:Cinzel,serif;margin:3px;">'+m[0]+'</button>').join(''));
+
+  // Arca
+  html+=sec('⛵ Arca',
+    ab('⚓ Progreso 1','arca1')+
+    ab('🏗️ Progreso 2','arca2')+
+    ab('🛖 Arca Completa','arca3')+
+    ag('⬛ +5 Breas','adminAddItem(\'brea\',5)')
+  );
+
+  // Muro
+  let muroHtml='<div style="margin-bottom:6px;font-size:0.65rem;color:#a09080">Nivel del Muro:</div>';
+  for(let n=1;n<=6;n++){
+    const active=n===nivelMuro;
+    muroHtml+='<button onclick="adminCmd(\'muro'+n+'\')" style="background:'+(active?'rgba(20,120,20,0.5)':'rgba(180,20,20,0.4)')+';border:1px solid '+(active?'rgba(80,220,80,0.7)':'rgba(220,60,60,0.6)')+';border-radius:8px;color:'+(active?'#80ff80':'#ffb0b0')+';padding:6px 10px;cursor:pointer;font-size:0.7rem;font-family:Cinzel,serif;margin:3px;">Nv.'+n+(active?' ✓':'')+'</button>';
+  }
+  muroHtml+='<br>'+ab('🔧 HP Muro 100%','muro_hp');
+  html+=sec('🏰 Muro Perimetral', muroHtml);
+
+  // Familia
+  const FAMS=[
+    {id:'shem', n:'Sem',   e:'👦'},
+    {id:'cam',  n:'Cam',   e:'👦'},
+    {id:'jafet',n:'Jafet', e:'👦'},
+    {id:'naama',n:"Na'ama",e:'👩'},
+  ];
+  let famHtml='';
+  FAMS.forEach(f=>{
+    const tiene=familia.some(m=>m.id===f.id);
+    if(tiene){
+      famHtml+='<button disabled style="background:rgba(40,40,40,0.5);border:1px solid rgba(80,80,80,0.4);border-radius:8px;color:#808080;padding:6px 10px;font-size:0.7rem;margin:3px;">'+f.e+' '+f.n+' ✓</button>';
+    } else {
+      famHtml+='<button onclick="adminReclutarFam(\''+f.id+'\')" style="background:rgba(120,90,10,0.5);border:1px solid rgba(201,168,76,0.7);border-radius:8px;color:#f0d080;padding:6px 10px;cursor:pointer;font-size:0.7rem;font-family:Cinzel,serif;margin:3px;">'+f.e+' Añadir '+f.n+'</button>';
+    }
+  });
+  html+=sec('👨‍👦 Familia', famHtml);
+
+  // Skills
+  html+=sec('✨ Habilidades',
+    ag('✨ Todos Talentos',"adminCmd('all_skills')")+
+    ag('⚔️ +5 Talento',   "adminCmd('sp5')")
+  );
+
+  // Tiempo
+  html+=sec('🕐 Tiempo',
+    ab('🌅 Hacer Dia',  'set_day')+
+    ab('🌙 Hacer Noche','set_night')+
+    ab('🌊 +Diluvio',   'flood_up')+
+    ab('🌊 -Diluvio',   'flood_down')
+  );
+
+  // Guardar
+  html+=sec('💾 Partida',
+    ag('💾 Guardar ahora','doSave()')+
+    ab('🗑️ Borrar partida','delete_save')
+  );
+
+  el.innerHTML=html;
+}
+
+// ── Comandos de Admin ──────────────────────────────────────
+window.adminAddItem=function(id,qty){
+  if(!isAdmin) return;
+  addItem(id,qty);
+  notif('✅ +'+ qty +' '+((ITEMS[id]&&ITEMS[id].e)||id),'gld');
+  renderPanelAdmin();
+};
+window.adminCmd=function(cmd){
+  if(!isAdmin) return;
+  switch(cmd){
+    case'hp_max':    P.hp=P.mhp; notif('❤️ HP restaurado al máximo','gld'); break;
+    case'fill_all':  P.hp=P.mhp;P.hunger=100;P.thirst=100;P.energy=100;
+                     notif('⚡ Todo restaurado','gld'); break;
+    case'lv_up1':    P.lv++;P.mhp+=5;P.hp=P.mhp;
+                     notif(`🌟 Nivel ${P.lv}`,'gld'); break;
+    case'lv_up10':   P.lv+=10;P.mhp+=50;P.hp=P.mhp;
+                     notif(`🌟 Nivel ${P.lv}`,'gld'); break;
+    case'day10':     wDay+=10;notif(`📅 Día ${wDay}`,'gld'); break;
+    case'day100':    wDay=100;notif('📅 Día 100','gld'); break;
+    case'siclos500': siclos+=500;P.sp=(P.sp||0)+10;notif('🥈 +500 siclos + 10 SP','gld'); break;
+    case'max_xp':    P.xp=9999;addXP(0);notif('💫 XP máximo','gld'); break;
+    case'sp5':       P.sp=(P.sp||0)+5;notif('✨ +5 puntos talento','gld'); break;
+    case'arca1':     arcaProgress=1;updateArcaHUD();notif('⚓ Arca Progreso 1','gld'); break;
+    case'arca2':     arcaProgress=2;updateArcaHUD();notif('🏗️ Arca Progreso 2','gld'); break;
+    case'arca3':     arcaProgress=3;updateArcaHUD();notif('⛵ Arca Completa!','gld'); break;
+    case'muro1': case'muro2': case'muro3':
+    case'muro4': case'muro5': case'muro6':{
+      const nv=parseInt(cmd.replace('muro',''));
+      nivelMuro=nv; hpMuro=MURO_NIVELES[nv].HP;
+      updateHudMuro(); notif(`🏰 Muro Nivel ${nv}!`,'gld'); break;
+    }
+    case'muro_hp':   if(nivelMuro>0){hpMuro=MURO_NIVELES[nivelMuro].HP;updateHudMuro();}
+                     notif('🔧 HP del muro al 100%','gld'); break;
+    case'all_skills':
+      SKILLS.forEach(s=>{s.u=true;});
+      equipSkills=SKILLS.slice(0,3).map(s=>s.id);
+      notif('✨ Todos los talentos desbloqueados','gld'); break;
+    case'set_day':   wTime=0.35; notif('🌅 Ahora es de dia','gld'); break;
+    case'set_night': wTime=0.82; notif('🌙 Ahora es de noche','gld'); break;
+    case'flood_up':  floodLevel=Math.min(100,(floodLevel||0)+20);
+                     notif(`🌊 Diluvio ${floodLevel}%`,'red'); break;
+    case'flood_down':floodLevel=Math.max(0,(floodLevel||0)-20);
+                     notif(`🌊 Diluvio ${floodLevel}%`,'gld'); break;
+    case'delete_save':
+      if(cu){
+        remove(ref(db,'rpg2/'+cu.uid)).then(()=>notif('🗑️ Partida borrada','red'));
+      } break;
+  }
+  renderPanelAdmin();
+};
+
+// ── Reclutar familiar (admin) ──────────────────────────────
+window.adminReclutarFam=function(id){
+  if(!isAdmin) return;
+  if(familia.some(m=>m.id===id)) return;
+  const FAMS=[
+    {id:'shem',  n:'Sem',    e:'👦',color:'#c89060',task:'madera',emoji:'🪵',intervalo:300,nivel:1},
+    {id:'cam',   n:'Cam',    e:'👦',color:'#a87050',task:'piedra', emoji:'🪨',intervalo:300,nivel:1},
+    {id:'jafet', n:'Jafet',  e:'👦',color:'#b86040',task:'fibra',  emoji:'🌿',intervalo:300,nivel:1},
+    {id:'naama', n:"Na'ama", e:'👩',color:'#c890a0',task:'comida', emoji:'🍎',intervalo:300,nivel:1},
+  ];
+  const fd=FAMS.find(f=>f.id===id);
+  if(fd){
+    familia.push({...fd});
+    notif('👨‍👦 '+fd.n+' se unio a la familia!','gld');
+    sndLevelUp();
+    renderPanelAdmin();
+  }
+};
+
+// ── Activar/ocultar botón Admin segun sesión ───────────────
+function updateAdminBtn(){
+  const btn=document.getElementById('btn-admin-float');
+  if(btn) btn.style.display=isAdmin?'block':'none';
+}
+
 // Campos: nick, lv, day, arcaP, savedAt, score
 // score = lv*1000 + day*10 + arcaP*500
 // ═══════════════════════════════════════════════════════
